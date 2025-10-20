@@ -1,0 +1,104 @@
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from flask_migrate import Migrate
+from flask_mail import Mail
+from flask_wtf.csrf import CSRFProtect
+from datetime import datetime
+from config.config import config
+
+db = SQLAlchemy()
+login_manager = LoginManager()
+migrate = Migrate()
+mail = Mail()
+csrf = CSRFProtect()
+
+def create_app(config_name='default'):
+    app = Flask(__name__)
+    app.config.from_object(config[config_name])
+    config[config_name].init_app(app)
+
+    # Initialize extensions
+    db.init_app(app)
+    login_manager.init_app(app)
+    migrate.init_app(app, db)
+    mail.init_app(app)
+    csrf.init_app(app)
+
+    # Configure login manager
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'Please log in to access this page.'
+    login_manager.login_message_category = 'info'
+
+    # Global context processor
+    @app.context_processor
+    def inject_permissions():
+        from app.models.user import Permission
+        return dict(Permission=Permission)
+
+    # Custom filters
+    @app.template_filter('timeago')
+    def timeago(dt):
+        """Convert datetime to human readable 'time ago' format"""
+        if dt is None:
+            return "Never"
+
+        now = datetime.utcnow()
+        diff = now - dt
+
+        if diff.days > 365:
+            years = diff.days // 365
+            return f"{years} year{'s' if years != 1 else ''} ago"
+        elif diff.days > 30:
+            months = diff.days // 30
+            return f"{months} month{'s' if months != 1 else ''} ago"
+        elif diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        else:
+            return "Just now"
+
+    # Register blueprints
+    from app.views.auth import auth as auth_blueprint
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')
+
+    from app.views.wiki import wiki as wiki_blueprint
+    app.register_blueprint(wiki_blueprint)
+
+    from app.views.admin import admin as admin_blueprint
+    app.register_blueprint(admin_blueprint, url_prefix='/admin')
+
+    from app.views.api import api as api_blueprint
+    app.register_blueprint(api_blueprint, url_prefix='/api')
+
+    # Error handlers
+    @app.errorhandler(403)
+    def forbidden(error):
+        from flask import render_template
+        return render_template('errors/403.html'), 403
+
+    @app.errorhandler(404)
+    def not_found(error):
+        from flask import render_template
+        return render_template('errors/404.html'), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        from flask import render_template
+        db.session.rollback()
+        return render_template('errors/500.html'), 500
+
+    # Security headers
+    @app.after_request
+    def security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        return response
+
+    return app

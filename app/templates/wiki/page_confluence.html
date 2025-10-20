@@ -1,0 +1,646 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}{{ page.title }} - Enterprise Wiki{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="d-flex align-items-center mb-3">
+    <nav aria-label="breadcrumb" style="flex: 1;">
+        <ol class="breadcrumb mb-0" style="background: none; padding: 0;">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('wiki.index') }}" class="text-decoration-none">
+                    <i class="fas fa-home me-1"></i>Home
+                </a>
+            </li>
+            {% if page.category %}
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('wiki.category_view', category_id=page.category.id) }}" class="text-decoration-none">
+                    <i class="fas fa-folder me-1"></i>{{ page.category.name }}
+                </a>
+            </li>
+            {% endif %}
+            <li class="breadcrumb-item active">{{ page.title }}</li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <h1 class="page-title" id="pageTitle">{{ page.title }}</h1>
+
+    <div class="page-meta">
+        <span>
+            <i class="fas fa-user me-1"></i>
+            Created by <strong>{{ page.author.username if page.author else 'Unknown' }}</strong>
+            on {{ page.created_at.strftime('%B %d, %Y') }}
+        </span>
+        {% if page.last_editor and page.last_editor.id != page.author.id %}
+        <span>
+            • Last edited by <strong>{{ page.last_editor.username }}</strong>
+            on {{ page.updated_at.strftime('%B %d, %Y at %I:%M %p') }}
+        </span>
+        {% elif page.updated_at != page.created_at %}
+        <span>
+            • Last edited on {{ page.updated_at.strftime('%B %d, %Y at %I:%M %p') }}
+        </span>
+        {% endif %}
+        <span>
+            <i class="fas fa-eye me-1"></i>{{ page.view_count }} views
+        </span>
+    </div>
+
+    <div class="page-actions">
+        <button class="btn-wiki" onclick="enableEditMode()" id="editBtn">
+            <i class="fas fa-edit me-2"></i>Edit
+        </button>
+
+        <div class="dropdown">
+            <button class="btn-wiki dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <ul class="dropdown-menu">
+                {% if current_user.is_authenticated and current_user.is_administrator() %}
+                <li><a class="dropdown-item text-danger" href="#" onclick="deletePage({{ page.id }})">
+                    <i class="fas fa-trash me-2"></i>Delete Page
+                </a></li>
+                {% endif %}
+                <li><a class="dropdown-item" href="{{ url_for('wiki.page_history', page_id=page.id) }}">
+                    <i class="fas fa-history me-2"></i>View History
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="copyToClipboard(window.location.href)">
+                    <i class="fas fa-link me-2"></i>Copy Link
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" onclick="exportPage()">
+                    <i class="fas fa-download me-2"></i>Export
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="printPage()">
+                    <i class="fas fa-print me-2"></i>Print
+                </a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Status Badges -->
+    <div style="margin-top: 16px;">
+        {% if page.is_published %}
+        <span class="badge bg-success me-2">Published</span>
+        {% else %}
+        <span class="badge bg-secondary me-2">Draft</span>
+        {% endif %}
+        {% if page.is_public %}
+        <span class="badge bg-info me-2">Public</span>
+        {% else %}
+        <span class="badge bg-warning me-2">Private</span>
+        {% endif %}
+        {% if page.category %}
+        <span class="badge bg-primary me-2">
+            <i class="fas fa-folder me-1"></i>{{ page.category.name }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Page Content Display -->
+<div id="contentDisplay" class="content-display">
+    {% if page.content_html %}
+    {{ page.content_html | safe }}
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">No content yet</h5>
+        <p class="text-muted">
+            This page doesn't have any content yet.
+            {% if current_user.is_authenticated and page.can_edit(current_user) %}
+            <button class="btn-wiki primary" onclick="enableEditMode()">
+                <i class="fas fa-plus me-2"></i>Add content
+            </button>
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Content Editor (Hidden by default) -->
+<div id="contentEditor" class="content-editor" style="display: none;">
+    <div class="editor-toolbar">
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="formatText('bold')" title="Bold (Ctrl+B)">
+                <i class="fas fa-bold"></i>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('italic')" title="Italic (Ctrl+I)">
+                <i class="fas fa-italic"></i>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('heading')" title="Heading">
+                <i class="fas fa-heading"></i>
+            </button>
+        </div>
+
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="formatText('link')" title="Link (Ctrl+K)">
+                <i class="fas fa-link"></i>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('image')" title="Image">
+                <i class="fas fa-image"></i>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('code')" title="Code">
+                <i class="fas fa-code"></i>
+            </button>
+        </div>
+
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="formatText('ul')" title="Bullet List">
+                <i class="fas fa-list-ul"></i>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('ol')" title="Numbered List">
+                <i class="fas fa-list-ol"></i>
+            </button>
+            <button class="toolbar-btn" onclick="formatText('quote')" title="Quote">
+                <i class="fas fa-quote-left"></i>
+            </button>
+        </div>
+
+        <div class="toolbar-group">
+            <button class="toolbar-btn" id="previewToggle" onclick="togglePreview()" title="Toggle Preview">
+                <i class="fas fa-eye"></i>
+            </button>
+            <button class="toolbar-btn" onclick="insertFullscreen()" title="Fullscreen">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="editor-content">
+        <div class="editor-pane">
+            <textarea id="markdownInput" class="editor-input" placeholder="Start writing in Markdown...">{{ page.content or '' }}</textarea>
+        </div>
+        <div class="editor-preview" id="previewPane" style="display: none;">
+            <div id="previewContent"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Editor Actions -->
+<div id="editorActions" class="page-actions" style="display: none; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+    <div class="d-flex align-items-center justify-content-between">
+        <div>
+            <input type="text" id="changeSummary" class="form-control" placeholder="Describe what you changed..." style="width: 300px;">
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn-wiki" onclick="cancelEdit()">
+                <i class="fas fa-times me-2"></i>Cancel
+            </button>
+            <button class="btn-wiki" onclick="saveDraft()">
+                <i class="fas fa-save me-2"></i>Save Draft
+            </button>
+            <button class="btn-wiki primary" onclick="savePage()">
+                <i class="fas fa-check me-2"></i>Save
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Attachments Section -->
+{% if attachments %}
+<div class="card mt-4" style="border: 1px solid var(--border-color);">
+    <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
+        <h6 class="mb-0">
+            <i class="fas fa-paperclip me-2"></i>Attachments ({{ attachments|length }})
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for attachment in attachments %}
+            <div class="col-md-6 mb-3">
+                <div class="card h-100" style="border: 1px solid var(--border-color);">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                {% if attachment.is_image() %}
+                                <img src="{{ url_for('static', filename='uploads/' + attachment.filename) }}"
+                                     alt="{{ attachment.original_filename }}"
+                                     class="img-thumbnail" style="max-width: 60px; max-height: 60px;">
+                                {% else %}
+                                <i class="fas fa-file fa-2x text-muted"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ attachment.original_filename }}</h6>
+                                <small class="text-muted">
+                                    {{ attachment.get_size_display() }}
+                                    • {{ attachment.uploaded_at.strftime('%Y-%m-%d') }}
+                                </small>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('static', filename='uploads/' + attachment.filename) }}"
+                                   class="btn-wiki" download>
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% if attachment.description %}
+                        <p class="mt-2 mb-0 small text-muted">{{ attachment.description }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Page Summary -->
+{% if page.summary %}
+<div class="alert alert-light mt-4" style="background: var(--sidebar-bg); border: 1px solid var(--border-color);">
+    <h6><i class="fas fa-info-circle me-2"></i>Summary</h6>
+    <p class="mb-0">{{ page.summary }}</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+let editor = null;
+let isPreviewMode = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Enable click-to-edit functionality
+    enableClickToEdit();
+
+    // Initialize CodeMirror if we have the markdown input
+    const markdownInput = document.getElementById('markdownInput');
+    if (markdownInput) {
+        editor = CodeMirror.fromTextArea(markdownInput, {
+            mode: 'markdown',
+            theme: 'default',
+            lineNumbers: true,
+            lineWrapping: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            indentWithTabs: false
+        });
+
+        // Auto-save functionality
+        let autoSaveTimer;
+        editor.on('change', function() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(autoSave, 2000);
+
+            if (isPreviewMode) {
+                updatePreview();
+            }
+        });
+
+        // Keyboard shortcuts
+        editor.setOption('extraKeys', {
+            'Ctrl-B': function() { formatText('bold'); },
+            'Cmd-B': function() { formatText('bold'); },
+            'Ctrl-I': function() { formatText('italic'); },
+            'Cmd-I': function() { formatText('italic'); },
+            'Ctrl-K': function() { formatText('link'); },
+            'Cmd-K': function() { formatText('link'); },
+            'Ctrl-S': function() { savePage(); },
+            'Cmd-S': function() { savePage(); },
+            'Escape': function() { cancelEdit(); }
+        });
+    }
+});
+
+function enableEditMode() {
+    if (window.wikiState.isEditing) return;
+
+    window.wikiState.isEditing = true;
+    window.wikiState.originalContent = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+
+    // Hide display, show editor
+    document.getElementById('contentDisplay').style.display = 'none';
+    document.getElementById('contentEditor').style.display = 'block';
+    document.getElementById('editorActions').style.display = 'block';
+
+    // Update button
+    const editBtn = document.getElementById('editBtn');
+    editBtn.innerHTML = '<i class="fas fa-times me-2"></i>Cancel';
+    editBtn.onclick = cancelEdit;
+
+    // Focus editor
+    if (editor) {
+        editor.refresh();
+        editor.focus();
+    }
+
+    // Add editing class to body
+    document.body.classList.add('editing-mode');
+}
+
+function cancelEdit() {
+    if (!window.wikiState.isEditing) return;
+
+    // Check for unsaved changes
+    const currentContent = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+    if (currentContent !== window.wikiState.originalContent) {
+        if (!confirm('You have unsaved changes. Are you sure you want to cancel?')) {
+            return;
+        }
+    }
+
+    window.wikiState.isEditing = false;
+
+    // Show display, hide editor
+    document.getElementById('contentDisplay').style.display = 'block';
+    document.getElementById('contentEditor').style.display = 'none';
+    document.getElementById('editorActions').style.display = 'none';
+
+    // Update button
+    const editBtn = document.getElementById('editBtn');
+    editBtn.innerHTML = '<i class="fas fa-edit me-2"></i>Edit';
+    editBtn.onclick = enableEditMode;
+
+    // Remove editing class
+    document.body.classList.remove('editing-mode');
+}
+
+function savePage() {
+    const content = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+    const changeSummary = document.getElementById('changeSummary').value;
+
+    fetch(`/api/pages/{{ page.id }}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            content: content,
+            change_summary: changeSummary,
+            save_draft: false
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.wikiState.isEditing = false;
+            window.wikiState.currentContent = content;
+
+            // Update the display
+            document.getElementById('contentDisplay').innerHTML = data.rendered_content;
+
+            // Hide editor, show display
+            document.getElementById('contentDisplay').style.display = 'block';
+            document.getElementById('contentEditor').style.display = 'none';
+            document.getElementById('editorActions').style.display = 'none';
+
+            // Update button
+            const editBtn = document.getElementById('editBtn');
+            editBtn.innerHTML = '<i class="fas fa-edit me-2"></i>Edit';
+            editBtn.onclick = enableEditMode;
+
+            showToast('Page saved successfully!', 'success');
+
+            // Re-enable click-to-edit
+            enableClickToEdit();
+        } else {
+            showToast(data.error || 'Error saving page', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving page:', error);
+        showToast('Error saving page', 'error');
+    });
+}
+
+function saveDraft() {
+    const content = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+
+    fetch(`/api/pages/{{ page.id }}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            content: content,
+            save_draft: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Draft saved', 'success');
+        } else {
+            showToast('Error saving draft', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving draft:', error);
+        showToast('Error saving draft', 'error');
+    });
+}
+
+function formatText(format) {
+    if (!editor) return;
+
+    const cursor = editor.getCursor();
+    let text = '';
+    let replaceText = '';
+
+    switch(format) {
+        case 'bold':
+            text = editor.getSelection() || 'bold text';
+            replaceText = `**${text}**`;
+            break;
+        case 'italic':
+            text = editor.getSelection() || 'italic text';
+            replaceText = `*${text}*`;
+            break;
+        case 'heading':
+            text = editor.getSelection() || 'Heading';
+            replaceText = `## ${text}`;
+            break;
+        case 'link':
+            const url = prompt('Enter URL:');
+            if (url) {
+                text = editor.getSelection() || 'link text';
+                replaceText = `[${text}](${url})`;
+            }
+            break;
+        case 'image':
+            const imageUrl = prompt('Enter image URL:');
+            if (imageUrl) {
+                const alt = prompt('Enter alt text:', 'image');
+                replaceText = `![${alt}](${imageUrl})`;
+            }
+            break;
+        case 'code':
+            text = editor.getSelection() || 'code';
+            replaceText = `\`${text}\``;
+            break;
+        case 'ul':
+            replaceText = '- List item';
+            break;
+        case 'ol':
+            replaceText = '1. List item';
+            break;
+        case 'quote':
+            text = editor.getSelection() || 'Quote';
+            replaceText = `> ${text}`;
+            break;
+    }
+
+    if (replaceText) {
+        editor.replaceSelection(replaceText);
+        editor.focus();
+    }
+}
+
+function togglePreview() {
+    isPreviewMode = !isPreviewMode;
+    const previewPane = document.getElementById('previewPane');
+    const previewToggle = document.getElementById('previewToggle');
+
+    if (isPreviewMode) {
+        previewPane.style.display = 'block';
+        previewToggle.classList.add('active');
+        updatePreview();
+    } else {
+        previewPane.style.display = 'none';
+        previewToggle.classList.remove('active');
+    }
+}
+
+function updatePreview() {
+    const content = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+    const previewContent = document.getElementById('previewContent');
+    previewContent.innerHTML = marked.parse(content);
+}
+
+function insertFullscreen() {
+    const editorContainer = document.querySelector('.content-editor');
+    if (editorContainer) {
+        editorContainer.classList.toggle('fullscreen');
+    }
+}
+
+function autoSave() {
+    const content = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+    localStorage.setItem('page_draft_{{ page.id }}', JSON.stringify({
+        content: content,
+        timestamp: new Date().toISOString()
+    }));
+
+    // Show save indicator
+    showToast('Draft auto-saved', 'info');
+}
+
+function deletePage(pageId) {
+    if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/delete/${pageId}`;
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function exportPage() {
+    const title = '{{ page.title }}';
+    const content = editor ? editor.getValue() : document.querySelector('.content-display').innerText;
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(`# ${title}\n\n${content}`));
+    element.setAttribute('download', `${title}.md`);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+}
+
+function printPage() {
+    window.print();
+}
+
+// Load auto-saved draft on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedDraft = localStorage.getItem('page_draft_{{ page.id }}');
+    if (savedDraft) {
+        try {
+            const draft = JSON.parse(savedDraft);
+            if (confirm(`Restore unsaved draft from ${new Date(draft.timestamp).toLocaleString()}?`)) {
+                if (editor) {
+                    editor.setValue(draft.content);
+                } else {
+                    document.getElementById('markdownInput').value = draft.content;
+                }
+            }
+        } catch (e) {
+            console.error('Error loading draft:', e);
+        }
+    }
+});
+
+// Clear draft on save
+document.addEventListener('DOMContentLoaded', function() {
+    // Override the save functions to clear draft
+    const originalSavePage = savePage;
+    savePage = function() {
+        originalSavePage();
+        localStorage.removeItem('page_draft_{{ page.id }}');
+    };
+});
+</script>
+
+<style>
+/* Fullscreen editor */
+.content-editor.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    border-radius: 0;
+}
+
+.content-editor.fullscreen .editor-content {
+    height: calc(100vh - 120px);
+}
+
+/* Editing mode styles */
+.editing-mode .page-title:hover {
+    background-color: #fffbe6;
+    cursor: text;
+}
+
+/* Print styles */
+@media print {
+    .wiki-header, .wiki-sidebar, .page-actions, .btn-wiki, .alert {
+        display: none !important;
+    }
+
+    .wiki-main {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .content-display, .content-editor {
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .page-content {
+        font-size: 12pt;
+        line-height: 1.4;
+    }
+}
+</style>
+{% endblock %}

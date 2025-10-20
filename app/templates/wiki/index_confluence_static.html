@@ -1,0 +1,304 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}Enterprise Wiki - Home{% endblock %}
+
+{% block content %}
+<!-- Welcome Header -->
+<div class="page-header">
+    <h1 class="page-title">Welcome to Enterprise Wiki</h1>
+    <p class="lead" style="color: var(--text-secondary); margin-top: 16px;">
+        A modern knowledge management platform for your team
+    </p>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="d-flex gap-3">
+            {% if current_user.is_authenticated %}
+            <button class="btn-wiki primary" onclick="window.location.href='{{ url_for('wiki.create_page') }}'">
+                <i class="fas fa-plus me-2"></i>Create New Page
+            </button>
+            {% endif %}
+            <div class="search-box" style="width: 300px;">
+                <i class="fas fa-search"></i>
+                <input type="search" placeholder="Search wiki..." onkeyup="if (event.key === 'Enter') window.location.href='/wiki/search?q=' + this.value">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Recent Pages -->
+        <div class="card mb-4" style="border: 1px solid var(--border-color);">
+            <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Pages
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_pages %}
+                <div class="list-group list-group-flush">
+                    {% for page in recent_pages %}
+                    {% if page.can_view(current_user) %}
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start" style="border: none; padding: 16px 0;">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                                <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="text-decoration-none">
+                                    {{ page.title }}
+                                </a>
+                            </h6>
+                            <p class="mb-1 text-muted small">
+                                {% if page.summary %}
+                                    {{ page.summary }}
+                                {% elif page.content %}
+                                    {{ page.content|striptags }}
+                                {% endif %}
+                            </p>
+                            <small class="text-muted">
+                                <i class="fas fa-user me-1"></i>{{ page.author.username if page.author else 'Unknown' }}
+                                • {{ page.updated_at.strftime('%B %d, %Y') }}
+                                {% if page.category %}
+                                • <i class="fas fa-folder me-1"></i>{{ page.category.name }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            {% if page.is_published %}
+                            <span class="badge bg-success">Published</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Draft</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No pages yet</h5>
+                    <p class="text-muted">
+                        {% if current_user.is_authenticated %}
+                        <button class="btn-wiki primary" onclick="window.location.href='{{ url_for('wiki.create_page') }}'">
+                            <i class="fas fa-plus me-2"></i>Create the first page
+                        </button>
+                        {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn-wiki primary">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login to create pages
+                        </a>
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Popular Categories -->
+        {% if categories %}
+        <div class="card" style="border: 1px solid var(--border-color);">
+            <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
+                <h5 class="mb-0">
+                    <i class="fas fa-folder me-2"></i>Categories
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for category in categories[:6] %}
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('wiki.category_view', category_id=category.id) }}" class="text-decoration-none">
+                            <div class="card h-100" style="border: 1px solid var(--border-color); transition: all 0.2s ease;">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-folder fa-2x text-primary mb-2"></i>
+                                    <h6 class="card-title">{{ category.name }}</h6>
+                                    {% if category.description %}
+                                    <p class="card-text small text-muted">{{ category.description }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if categories|length > 6 %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('wiki.category_view', category_id=1) }}" class="btn-wiki">
+                        View All Categories
+                        <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Quick Stats -->
+        <div class="card mb-4" style="border: 1px solid var(--border-color);">
+            <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Wiki Statistics
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="h4 mb-0 text-primary">{{ recent_pages|length }}</div>
+                        <small class="text-muted">Total Pages</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 mb-0 text-success">{{ categories|length }}</div>
+                        <small class="text-muted">Categories</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Static Categories Sidebar -->
+        <div class="card mb-4" style="border: 1px solid var(--border-color);">
+            <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
+                <h6 class="mb-0">
+                    <i class="fas fa-folder me-2"></i>Categories
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if categories %}
+                <ul class="list-unstyled">
+                    {% for category in categories %}
+                    <li class="mb-2">
+                        <a href="{{ url_for('wiki.category_view', category_id=category.id) }}" class="text-decoration-none">
+                            <i class="fas fa-folder-open me-2 text-primary"></i>
+                            {{ category.name }}
+                        </a>
+                        {% if category.children %}
+                        <ul class="list-unstyled ms-4 mt-1">
+                            {% for child in category.children %}
+                            <li class="mb-1">
+                                <a href="{{ url_for('wiki.category_view', category_id=child.id) }}" class="text-decoration-none small">
+                                    <i class="fas fa-folder me-1 text-muted"></i>
+                                    {{ child.name }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small">No categories available</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Static Recent Pages Sidebar -->
+        <div class="card mb-4" style="border: 1px solid var(--border-color);">
+            <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
+                <h6 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Pages
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if recent_pages %}
+                <ul class="list-unstyled">
+                    {% for page in recent_pages[:5] %}
+                    {% if page.can_view(current_user) %}
+                    <li class="mb-2">
+                        <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="text-decoration-none">
+                            <i class="fas fa-file-alt me-2 text-muted"></i>
+                            <span class="small">{{ page.title }}</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small">No recent pages available</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Getting Started -->
+        <div class="card mb-4" style="border: 1px solid var(--border-color);">
+            <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>Getting Started
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="#" class="text-decoration-none">
+                            <i class="fas fa-book me-2 text-primary"></i>
+                            Wiki User Guide
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-decoration-none">
+                            <i class="fas fa-code me-2 text-primary"></i>
+                            Markdown Syntax Guide
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-decoration-none">
+                            <i class="fas fa-users me-2 text-primary"></i>
+                            Team Collaboration
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-decoration-none">
+                            <i class="fas fa-cog me-2 text-primary"></i>
+                            Admin Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="card" style="border: 1px solid var(--border-color);">
+            <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Pro Tips
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info" style="background: #e3f2fd; border: 1px solid #bbdefb; color: #1565c0;">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Click to Edit:</strong> On any page, simply click on the title or content to start editing inline!
+                </div>
+                <div class="alert alert-warning" style="background: #fff3e0; border: 1px solid #ffcc02; color: #e65100;">
+                    <i class="fas fa-keyboard me-2"></i>
+                    <strong>Keyboard Shortcuts:</strong> Use <kbd>Ctrl+S</kbd> to save, <kbd>Ctrl+B</kbd> for bold, <kbd>Ctrl+I</kbd> for italic.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+}
+
+.list-group-item:hover {
+    background-color: var(--sidebar-hover);
+}
+
+kbd {
+    background: #f4f5f7;
+    border: 1px solid #dfe1e6;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.8em;
+    font-family: monospace;
+}
+</style>
+{% endblock %}

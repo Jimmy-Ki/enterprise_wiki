@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}My Sessions{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-desktop"></i> My Active Sessions</h1>
+        <div class="text-muted">
+            <i class="fas fa-circle text-success"></i> {{ sessions|length }} active session(s)
+        </div>
+    </div>
+
+    {% if sessions %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>IP Address</th>
+                    <th>User Agent</th>
+                    <th>Created</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th>Current</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                <tr>
+                    <td>
+                        <code>{{ session.ip_address or 'Unknown' }}</code>
+                    </td>
+                    <td>
+                        <div class="text-truncate" style="max-width: 300px;" title="{{ session.user_agent or 'Unknown' }}">
+                            {{ session.user_agent or 'Unknown' }}
+                        </div>
+                    </td>
+                    <td>{{ session.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ session.expires_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>
+                        {% if session.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if session.session_token == request.cookies.get('session_token') %}
+                            <span class="badge bg-primary">Current</span>
+                        {% else %}
+                            <span class="text-muted">Other</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if session.is_active %}
+                            {% if session.session_token != request.cookies.get('session_token') %}
+                            <form method="POST" action="{{ url_for('auth.revoke_session', session_id=session.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Revoke Session"
+                                        onclick="return confirm('Are you sure you want to revoke this session? This will log out that device.')">
+                                    <i class="fas fa-ban"></i> Revoke
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="text-muted small">Current session</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-muted">Revoked</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <strong>Security Tip:</strong> If you see any sessions you don't recognize, revoke them immediately to secure your account.
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-desktop fa-3x text-muted mb-3"></i>
+        <h4>No Active Sessions</h4>
+        <p class="text-muted">You don't have any active sessions at the moment.</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Session Management</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>What are sessions?</h6>
+                        <p class="text-muted small">
+                            Sessions keep you logged in across different devices and browsers. Each session represents an active login.
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Security recommendations:</h6>
+                        <ul class="text-muted small mb-0">
+                            <li>Regularly review your active sessions</li>
+                            <li>Revoke sessions from devices you no longer use</li>
+                            <li>Log out from shared devices when done</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-key"></i> Change Password
+                        </a>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger ms-2">
+                            <i class="fas fa-sign-out-alt"></i> Sign Out All Sessions
+                        </a>
+                    </div>
+                    <small class="text-muted">
+                        Sessions expire automatically after 24 hours of inactivity
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

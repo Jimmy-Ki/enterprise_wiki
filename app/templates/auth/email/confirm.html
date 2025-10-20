@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Enterprise Wiki Account</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 300;
+        }
+        .header .logo {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .welcome-message {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 500;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .security-info {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+        }
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .user-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .steps {
+            margin: 20px 0;
+        }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        .step-number {
+            background-color: #007bff;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .step-content {
+            flex-grow: 1;
+        }
+        @media only screen and (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .header, .content, .footer {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">📚</div>
+            <h1>Enterprise Wiki</h1>
+        </div>
+
+        <div class="content">
+            <div class="welcome-message">
+                <h2>Welcome to Enterprise Wiki, {{ user.username }}!</h2>
+                <p>Thank you for registering for an account. We're excited to have you join our knowledge base community.</p>
+            </div>
+
+            <h3>🔐 Activate Your Account</h3>
+            <p>To complete your registration and activate your account, please click the confirmation button below:</p>
+
+            <div style="text-align: center;">
+                <a href="{{ url_for('auth.confirm', token=token, _external=true) }}" class="btn">
+                    ✅ Confirm Your Email Address
+                </a>
+            </div>
+
+            <div class="user-info">
+                <h4>📋 Your Account Details:</h4>
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Registration Date:</strong> {{ moment(user.member_since).format('MMMM Do, YYYY') }}</p>
+            </div>
+
+            <div class="steps">
+                <h4>🚀 What's Next?</h4>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <strong>Confirm your email</strong> - Click the button above to verify your email address
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <strong>Explore the wiki</strong> - Browse categories and search for content
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <strong>Start contributing</strong> - Create new pages and edit existing content
+                    </div>
+                </div>
+            </div>
+
+            <div class="security-info">
+                <h4>🔒 Security Notice</h4>
+                <ul>
+                    <li>This confirmation link will expire in <strong>1 hour</strong> for security reasons</li>
+                    <li>If you didn't register for an account, please ignore this email</li>
+                    <li>Never share your confirmation link with anyone</li>
+                    <li>If you have any concerns, contact our support team immediately</li>
+                </ul>
+            </div>
+
+            <h4>❓ Need Help?</h4>
+            <p>If you encounter any issues during the confirmation process or have questions about using Enterprise Wiki, our support team is here to help:</p>
+            <ul>
+                <li>📧 Email: support@company.com</li>
+                <li>🌐 Help Center: <a href="{{ url_for('wiki.index', _external=True) }}">Visit our Wiki</a></li>
+                <li>💬 Live Chat: Available on our website</li>
+            </ul>
+
+            <p>We look forward to seeing you contribute to our knowledge base!</p>
+
+            <p style="text-align: center; margin-top: 30px;">
+                <strong>Best regards,<br>
+                The Enterprise Wiki Team 📚</strong>
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2024 Enterprise Wiki. All rights reserved.</p>
+            <p>
+                <a href="{{ url_for('wiki.index', _external=True) }}">Home</a> |
+                <a href="#">Privacy Policy</a> |
+                <a href="#">Terms of Service</a> |
+                <a href="#">Contact Support</a>
+            </p>
+            <p style="font-size: 12px; margin-top: 10px;">
+                This is an automated message. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

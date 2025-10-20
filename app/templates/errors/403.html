@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied - Enterprise Wiki{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white text-center">
+                <h1 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-3"></i>403 - Access Denied
+                </h1>
+            </div>
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-lock fa-5x text-danger"></i>
+                </div>
+
+                <h2 class="mb-3">Oops! You don't have permission to access this page.</h2>
+
+                <p class="text-muted mb-4">
+                    This page requires special permissions that you don't currently have.
+                    If you believe this is an error, please contact your system administrator.
+                </p>
+
+                <!-- Possible Solutions -->
+                <div class="row justify-content-center mb-4">
+                    <div class="col-md-8">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-lightbulb me-2"></i>What can you do?
+                                </h5>
+                                <div class="list-group list-group-flush text-start">
+                                    <div class="list-group-item">
+                                        <i class="fas fa-sign-in-alt me-2 text-primary"></i>
+                                        {% if current_user.is_anonymous %}
+                                        <strong>Log in</strong> with an account that has appropriate permissions
+                                        {% else %}
+                                        <strong>Log out</strong> and try again with a different account
+                                        {% endif %}
+                                    </div>
+                                    <div class="list-group-item">
+                                        <i class="fas fa-user me-2 text-success"></i>
+                                        Contact an administrator to request the necessary permissions
+                                    </div>
+                                    <div class="list-group-item">
+                                        <i class="fas fa-home me-2 text-info"></i>
+                                        Return to the <a href="{{ url_for('wiki.index') }}">home page</a> and navigate to a page you can access
+                                    </div>
+                                    <div class="list-group-item">
+                                        <i class="fas fa-search me-2 text-warning"></i>
+                                        Use the <a href="{{ url_for('wiki.search') }}">search function</a> to find content you can access
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Status -->
+                {% if current_user.is_authenticated %}
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Your current status:</strong><br>
+                    Username: {{ current_user.username }}<br>
+                    Role: {{ current_user.role.name if current_user.role else 'No role assigned' }}<br>
+                    Email Confirmed: {% if current_user.confirmed %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-warning">No</span>{% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-center gap-2">
+                    {% if current_user.is_anonymous %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('wiki.index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i>Go Home
+                    </a>
+                    <a href="javascript:history.back()" class="btn btn-outline-info">
+                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>Need Help?
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Permission Levels</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Viewer:</strong> Can read public and authenticated content</li>
+                            <li><strong>Editor:</strong> Can create and edit own content</li>
+                            <li><strong>Moderator:</strong> Can edit all content and moderate</li>
+                            <li><strong>Administrator:</strong> Full system access</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Common Issues</h6>
+                        <ul class="list-unstyled">
+                            <li>• Not logged in with the correct account</li>
+                            <li>• Your account doesn't have the required role</li>
+                            <li>• The page is restricted to specific users</li>
+                            <li>• Your account may be inactive or locked</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="reportIssue()">
+                        <i class="fas fa-bug me-2"></i>Report Issue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function reportIssue() {
+    const issueDetails = {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString(),
+        userId: {{ current_user.id if current_user.is_authenticated else 'null' }},
+        username: '{{ current_user.username if current_user.is_authenticated else "Anonymous" }}'
+    };
+
+    const subject = encodeURIComponent('Access Denied Issue - Enterprise Wiki');
+    const body = encodeURIComponent(
+        `I'm experiencing an access denied issue.\n\n` +
+        `URL: ${issueDetails.url}\n` +
+        `Time: ${issueDetails.timestamp}\n` +
+        `User: ${issueDetails.username}\n\n` +
+        `Please help me resolve this issue.`
+    );
+
+    // Open email client with pre-filled details
+    window.location.href = `mailto:support@company.com?subject=${subject}&body=${body}`;
+}
+
+// Auto-redirect to login if not authenticated and no action taken in 30 seconds
+{% if current_user.is_anonymous %}
+setTimeout(() => {
+    if (confirm('Would you like to login to access this page?')) {
+        window.location.href = '{{ url_for("auth.login", next=request.url) }}';
+    }
+}, 30000);
+{% endif %}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // H for home
+    if (e.key === 'h' && !e.ctrlKey && !e.metaKey) {
+        window.location.href = '{{ url_for("wiki.index") }}';
+    }
+
+    // B for back
+    if (e.key === 'b' && !e.ctrlKey && !e.metaKey) {
+        history.back();
+    }
+
+    // L for login (if not authenticated)
+    {% if current_user.is_anonymous %}
+    if (e.key === 'l' && !e.ctrlKey && !e.metaKey) {
+        window.location.href = '{{ url_for("auth.login", next=request.url) }}';
+    }
+    {% endif %}
+});
+</script>
+
+<style>
+.card.border-danger {
+    border-width: 2px;
+}
+
+.fa-lock.fa-5x {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.list-group-item i {
+    width: 20px;
+    text-align: center;
+}
+</style>
+{% endblock %}

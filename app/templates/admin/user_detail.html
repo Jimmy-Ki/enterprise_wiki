@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}User Details - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>User Details: {{ user.username }}</h1>
+        <div>
+            <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-warning btn-sm">
+                <i class="fas fa-edit"></i> Edit User
+            </a>
+            <a href="{{ url_for('admin.users') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to Users
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">User Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Username:</strong> {{ user.username }}</p>
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    <p><strong>Name:</strong> {{ user.name or 'Not set' }}</p>
+                    <p><strong>Role:</strong>
+                        <span class="badge bg-primary">{{ user.role.name if user.role else 'No Role' }}</span>
+                    </p>
+                    <p><strong>Status:</strong>
+                        {% if user.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Confirmed:</strong>
+                        {% if user.confirmed %}
+                            <span class="badge bg-success">Yes</span>
+                        {% else %}
+                            <span class="badge bg-warning">No</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Member Since:</strong> {{ user.member_since.strftime('%Y-%m-%d') if user.member_since else 'Unknown' }}</p>
+                    <p><strong>Last Seen:</strong> {{ user.last_seen.strftime('%Y-%m-%d %H:%M') if user.last_seen else 'Never' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Pages ({{ user_pages|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_pages %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Status</th>
+                                        <th>Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for page in user_pages %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('wiki.view_page', slug=page.slug) }}">
+                                                {{ page.title }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if page.is_published %}
+                                                <span class="badge bg-success">Published</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Draft</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ page.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No pages created by this user.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Sessions ({{ user_sessions|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_sessions %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>IP Address</th>
+                                        <th>User Agent</th>
+                                        <th>Created</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for session in user_sessions %}
+                                    <tr>
+                                        <td>{{ session.ip_address or 'Unknown' }}</td>
+                                        <td class="text-truncate" style="max-width: 200px;">
+                                            {{ session.user_agent or 'Unknown' }}
+                                        </td>
+                                        <td>{{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            {% if session.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent sessions for this user.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
