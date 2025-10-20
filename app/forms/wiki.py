@@ -12,10 +12,6 @@ class PageForm(FlaskForm):
     summary = StringField('Summary', validators=[Optional(), Length(max=500)],
                          description='Brief description of the page (optional)')
     category_id = SelectField('Category', coerce=int, validators=[Optional()])
-    parent_id = SelectField('Parent Page', coerce=int, validators=[Optional()],
-                           description='Select a parent page to create hierarchy')
-    sort_order = IntegerField('Sort Order', validators=[Optional(), NumberRange(min=0)],
-                             description='Order in which this page appears in lists')
     change_summary = StringField('Change Summary', validators=[Optional(), Length(max=255)],
                                 description='Describe what you changed in this edit')
     is_published = BooleanField('Published', default=True,
@@ -27,7 +23,6 @@ class PageForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(PageForm, self).__init__(*args, **kwargs)
         self.category_id.choices = [(0, 'No Category')] + [(c.id, c.name) for c in Category.query.all()]
-        self.parent_id.choices = [(0, 'No Parent')] + [(p.id, p.title) for p in Page.query.filter_by(is_published=True).all()]
 
 class CategoryForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired(), Length(1, 64)])

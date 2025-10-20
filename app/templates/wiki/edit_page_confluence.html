@@ -1,0 +1,596 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}{{ page.title }} - Edit - Enterprise Wiki{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <div class="page-title-section">
+            <h1 class="page-title">
+                <i class="fas fa-edit me-2"></i>{{ page.title }}
+            </h1>
+            <p class="page-breadcrumb">
+                <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
+                    <i class="fas fa-home me-1"></i>Home
+                </a>
+                <span class="breadcrumb-separator">/</span>
+                <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="breadcrumb-link">
+                    {{ page.title }}
+                </a>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-current">Edit</span>
+            </p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="btn-wiki">
+                <i class="fas fa-times me-2"></i>Cancel
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="page-content">
+    <form method="POST" name="page_form" id="editPageForm">
+        {{ form.hidden_tag() }}
+
+        <!-- Page Content Card -->
+        <div class="content-card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Page Content
+                    </h5>
+                    <div class="editor-toolbar">
+                        <button type="button" class="btn-wiki small" id="togglePreview">
+                            <i class="fas fa-eye me-1"></i>Preview
+                        </button>
+                        <button type="button" class="btn-wiki small" id="toggleFullscreen">
+                            <i class="fas fa-expand me-1"></i>Fullscreen
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Title Input -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            {{ form.title.label(class="form-label required") }}
+                            {{ form.title(class="form-control form-control-lg" + (" is-invalid" if form.title.errors else ""), placeholder="Enter page title...") }}
+                            {% if form.title.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.title.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            {{ form.category_id.label(class="form-label") }}
+                            {{ form.category_id(class="form-select" + (" is-invalid" if form.category_id.errors else "")) }}
+                            {% if form.category_id.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.category_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Input -->
+                <div class="form-group mb-4">
+                    {{ form.summary.label(class="form-label") }}
+                    {{ form.summary(class="form-control" + (" is-invalid" if form.summary.errors else ""), placeholder="Brief description of the page (optional)...") }}
+                    {% if form.summary.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.summary.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <small class="form-text text-muted">Brief description of the page (optional, max 500 characters)</small>
+                </div>
+
+                <!-- Markdown Editor -->
+                <div class="form-group">
+                    {{ form.content.label(class="form-label required") }}
+                    <div class="editor-container" id="markdownEditor">
+                        <div class="editor-toolbar">
+                            <div class="btn-group">
+                                <button type="button" class="btn-wiki small" data-command="bold" title="Bold (Ctrl+B)">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button type="button" class="btn-wiki small" data-command="italic" title="Italic (Ctrl+I)">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button type="button" class="btn-wiki small" data-command="heading" title="Heading">
+                                    <i class="fas fa-heading"></i>
+                                </button>
+                                <div class="divider"></div>
+                                <button type="button" class="btn-wiki small" data-command="link" title="Link">
+                                    <i class="fas fa-link"></i>
+                                </button>
+                                <button type="button" class="btn-wiki small" data-command="image" title="Image">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                                <button type="button" class="btn-wiki small" data-command="code" title="Code">
+                                    <i class="fas fa-code"></i>
+                                </button>
+                                <div class="divider"></div>
+                                <button type="button" class="btn-wiki small" data-command="ul" title="Unordered List">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <button type="button" class="btn-wiki small" data-command="ol" title="Ordered List">
+                                    <i class="fas fa-list-ol"></i>
+                                </button>
+                                <button type="button" class="btn-wiki small" data-command="quote" title="Quote">
+                                    <i class="fas fa-quote-left"></i>
+                                </button>
+                                <div class="divider"></div>
+                                <button type="button" class="btn-wiki small" data-command="preview" title="Toggle Preview">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn-wiki small" data-command="fullscreen" title="Fullscreen">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="editor-content">
+                            <div class="editor-pane">
+                                {{ form.content(class="editor-input", id="contentInput", rows=20, placeholder="Start writing your page content in Markdown...") }}
+                            </div>
+                            <div class="editor-pane editor-preview" id="previewPane">
+                                <div class="preview-content" id="previewContent">
+                                    <p class="text-muted">Preview will appear here as you type...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if form.content.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in form.content.errors %}
+                                <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Change Summary -->
+                <div class="form-group">
+                    {{ form.change_summary.label(class="form-label") }}
+                    {{ form.change_summary(class="form-control", placeholder="Describe what you changed in this edit...") }}
+                    <small class="form-text text-muted">This will be shown in the page history</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Publishing Options Card -->
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog me-2"></i>Publishing Options
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            {{ form.is_published(class="form-check-input") }}
+                            {{ form.is_published.label(class="form-check-label") }}
+                        </div>
+                        <small class="form-text text-muted">Published pages are visible to other users</small>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            {{ form.is_public(class="form-check-input") }}
+                            {{ form.is_public.label(class="form-check-label") }}
+                        </div>
+                        <small class="form-text text-muted">Public pages can be viewed without logging in</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Information Card -->
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Page Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <strong>Created:</strong><br>
+                            <small class="text-muted">{{ page.created_at.strftime('%Y-%m-%d %H:%M') }} by {{ page.author.username if page.author else 'Unknown' }}</small>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Last Modified:</strong><br>
+                            <small class="text-muted">{{ page.updated_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <strong>View Count:</strong><br>
+                            <small class="text-muted">{{ page.view_count }} views</small>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Revisions:</strong><br>
+                            <small class="text-muted">{{ page.versions.count() }} versions</small>
+                            <a href="{{ url_for('wiki.page_history', page_id=page.id) }}" class="btn-wiki small ms-2">
+                                <i class="fas fa-history me-1"></i>View History
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="content-card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <button type="submit" class="btn-wiki primary" id="saveButton">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                        <button type="submit" name="save_draft" value="true" class="btn-wiki">
+                            <i class="fas fa-save me-2"></i>Save Draft
+                        </button>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="btn-wiki secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.required:after {
+    content: " *";
+    color: var(--danger-color);
+}
+
+.editor-container {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.editor-toolbar {
+    background: var(--sidebar-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 12px;
+}
+
+.btn-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-group .divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+    margin: 0 4px;
+}
+
+.editor-content {
+    display: flex;
+    height: 500px;
+}
+
+.editor-pane {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.editor-input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: none;
+    background: transparent;
+}
+
+.editor-preview {
+    border-left: 1px solid var(--border-color);
+    background: #fafafa;
+}
+
+.preview-content {
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.preview-content h1, .preview-content h2, .preview-content h3,
+.preview-content h4, .preview-content h5, .preview-content h6 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.preview-content h1 { font-size: 2em; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+.preview-content h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+.preview-content h3 { font-size: 1.25em; }
+.preview-content h4 { font-size: 1em; }
+.preview-content h5 { font-size: 0.875em; }
+.preview-content h6 { font-size: 0.75em; }
+
+.preview-content p {
+    margin-bottom: 16px;
+}
+
+.preview-content ul, .preview-content ol {
+    margin-bottom: 16px;
+    padding-left: 24px;
+}
+
+.preview-content li {
+    margin-bottom: 4px;
+}
+
+.preview-content blockquote {
+    border-left: 4px solid var(--primary-color);
+    padding-left: 16px;
+    margin: 16px 0;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.preview-content pre {
+    background: #f6f8fa;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+}
+
+.preview-content code {
+    background: #f6f8fa;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+}
+
+.preview-content pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.preview-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.preview-content th, .preview-content td {
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.preview-content th {
+    background: var(--sidebar-bg);
+    font-weight: 600;
+}
+
+.fullscreen .editor-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+}
+
+.fullscreen .editor-content {
+    flex: 1;
+}
+
+.fullscreen .editor-toolbar {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.editor-toolbar .btn-wiki.small {
+    padding: 4px 8px;
+    font-size: 12px;
+    min-height: auto;
+}
+
+.editor-toolbar .btn-wiki.small i {
+    font-size: 12px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const contentInput = document.getElementById('contentInput');
+    const previewContent = document.getElementById('previewContent');
+    const previewPane = document.getElementById('previewPane');
+    const form = document.getElementById('editPageForm');
+    const saveButton = document.getElementById('saveButton');
+
+    // Preview functionality
+    function updatePreview() {
+        const content = contentInput.value;
+        if (content.trim()) {
+            previewContent.innerHTML = marked.parse(content);
+        } else {
+            previewContent.innerHTML = '<p class="text-muted">Preview will appear here as you type...</p>';
+        }
+    }
+
+    // Auto-preview as user types
+    let previewTimeout;
+    contentInput.addEventListener('input', function() {
+        clearTimeout(previewTimeout);
+        previewTimeout = setTimeout(updatePreview, 300);
+    });
+
+    // Initial preview
+    updatePreview();
+
+    // Toolbar functionality
+    const toolbarButtons = document.querySelectorAll('.editor-toolbar .btn-wiki[data-command]');
+    toolbarButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const command = this.dataset.command;
+            handleCommand(command);
+        });
+    });
+
+    function handleCommand(command) {
+        switch(command) {
+            case 'bold':
+                insertText('**', '**', 'bold text');
+                break;
+            case 'italic':
+                insertText('*', '*', 'italic text');
+                break;
+            case 'heading':
+                insertText('## ', '', 'Heading');
+                break;
+            case 'link':
+                insertText('[', '](url)', 'link text');
+                break;
+            case 'image':
+                insertText('![', '](image-url)', 'alt text');
+                break;
+            case 'code':
+                insertText('`', '`', 'code');
+                break;
+            case 'ul':
+                insertText('- ', '', 'list item');
+                break;
+            case 'ol':
+                insertText('1. ', '', 'numbered item');
+                break;
+            case 'quote':
+                insertText('> ', '', 'quote');
+                break;
+            case 'preview':
+                togglePreview();
+                break;
+            case 'fullscreen':
+                toggleFullscreen();
+                break;
+        }
+    }
+
+    function insertText(before, after, placeholder) {
+        const start = contentInput.selectionStart;
+        const end = contentInput.selectionEnd;
+        const selectedText = contentInput.value.substring(start, end);
+        const text = selectedText || placeholder;
+        const newText = before + text + after;
+
+        contentInput.value = contentInput.value.substring(0, start) + newText + contentInput.value.substring(end);
+        contentInput.selectionStart = start + before.length;
+        contentInput.selectionEnd = start + before.length + text.length;
+        contentInput.focus();
+
+        updatePreview();
+    }
+
+    function togglePreview() {
+        previewPane.style.display = previewPane.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function toggleFullscreen() {
+        document.body.classList.toggle('fullscreen');
+        const fullscreenBtn = document.querySelector('[data-command="fullscreen"] i');
+        if (document.body.classList.contains('fullscreen')) {
+            fullscreenBtn.className = 'fas fa-compress';
+        } else {
+            fullscreenBtn.className = 'fas fa-expand';
+        }
+    }
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const title = document.getElementById('title').value.trim();
+        const content = contentInput.value.trim();
+
+        if (!title) {
+            e.preventDefault();
+            showToast('Please enter a page title', 'warning');
+            document.getElementById('title').focus();
+            return;
+        }
+
+        if (!content) {
+            e.preventDefault();
+            showToast('Please enter page content', 'warning');
+            contentInput.focus();
+            return;
+        }
+    });
+
+    // Keyboard shortcuts
+    contentInput.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.key) {
+                case 's':
+                    e.preventDefault();
+                    form.submit();
+                    break;
+                case 'b':
+                    e.preventDefault();
+                    handleCommand('bold');
+                    break;
+                case 'i':
+                    e.preventDefault();
+                    handleCommand('italic');
+                    break;
+            }
+        }
+    });
+
+    // Toast notification function (reuse from base template)
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

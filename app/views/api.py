@@ -14,11 +14,7 @@ def api_error(message, status_code=400):
     response.status_code = status_code
     return response
 
-# @api.before_request  # Commented out to avoid header modification issue
-# def before_request():
-#     """API rate limiting and authentication"""
-#     # Set JSON content type for all responses
-#     request.headers.setdefault('Accept', 'application/json')
+# API before_request removed to avoid header modification issue
 
 @api.route('/health')
 def health_check():

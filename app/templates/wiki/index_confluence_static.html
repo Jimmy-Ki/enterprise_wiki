@@ -54,7 +54,7 @@
                                 {% if page.summary %}
                                     {{ page.summary }}
                                 {% elif page.content %}
-                                    {{ page.content|striptags }}
+                                    {% set content_text = (page.content|striptags)[:150] %}{{ content_text }}{% if page.content|striptags|length > 150 %}...{% endif %}
                                 {% endif %}
                             </p>
                             <small class="text-muted">
@@ -161,35 +161,59 @@
         <div class="card mb-4" style="border: 1px solid var(--border-color);">
             <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
                 <h6 class="mb-0">
-                    <i class="fas fa-folder me-2"></i>Categories
+                    <i class="fas fa-folder-tree me-2"></i>Category Tree
                 </h6>
             </div>
             <div class="card-body">
-                {% if categories %}
-                <ul class="list-unstyled">
-                    {% for category in categories %}
-                    <li class="mb-2">
-                        <a href="{{ url_for('wiki.category_view', category_id=category.id) }}" class="text-decoration-none">
-                            <i class="fas fa-folder-open me-2 text-primary"></i>
-                            {{ category.name }}
-                        </a>
-                        {% if category.children %}
-                        <ul class="list-unstyled ms-4 mt-1">
-                            {% for child in category.children %}
-                            <li class="mb-1">
-                                <a href="{{ url_for('wiki.category_view', category_id=child.id) }}" class="text-decoration-none small">
-                                    <i class="fas fa-folder me-1 text-muted"></i>
-                                    {{ child.name }}
-                                </a>
-                            </li>
+                {% if category_tree %}
+
+                    {% macro render_category_tree(items, level=0) %}
+                        <ul class="list-unstyled {% if level > 0 %}ms-3{% endif %}">
+                            {% for item in items %}
+                                <li class="mb-2">
+                                    <!-- Category with icon -->
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <a href="{{ url_for('wiki.category_view', category_id=item.category.id) }}"
+                                           class="text-decoration-none d-flex align-items-center flex-grow-1"
+                                           style="padding: 2px 0;">
+                                            {% if item.children %}
+                                                <i class="fas fa-folder-open me-2 text-primary"></i>
+                                            {% else %}
+                                                <i class="fas fa-folder me-2 text-primary"></i>
+                                            {% endif %}
+                                            <span{% if level > 0 %} class="small"{% endif %}>{{ item.category.name }}</span>
+                                        </a>
+                                        <span class="badge bg-secondary" style="font-size: 0.7em;">{{ item.pages|length }}</span>
+                                    </div>
+
+                                    <!-- Pages in this category -->
+                                    {% if item.pages %}
+                                        <ul class="list-unstyled ms-4 mt-1">
+                                            {% for page in item.pages %}
+                                                <li class="mb-1">
+                                                    <a href="{{ url_for('wiki.view_page', slug=page.slug) }}"
+                                                       class="text-decoration-none small d-flex align-items-center"
+                                                       style="padding: 1px 0;">
+                                                        <i class="fas fa-file-alt me-2 text-muted" style="font-size: 0.8em;"></i>
+                                                        <span class="text-muted" style="font-size: 0.85em;">{{ page.title }}</span>
+                                                    </a>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% endif %}
+
+                                    <!-- Child categories -->
+                                    {% if item.children %}
+                                        {{ render_category_tree(item.children, level + 1) }}
+                                    {% endif %}
+                                </li>
                             {% endfor %}
                         </ul>
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
+                    {% endmacro %}
+
+                    {{ render_category_tree(category_tree) }}
                 {% else %}
-                <p class="text-muted small">No categories available</p>
+                    <p class="text-muted small">No categories available</p>
                 {% endif %}
             </div>
         </div>

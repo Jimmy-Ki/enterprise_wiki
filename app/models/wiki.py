@@ -213,9 +213,7 @@ class Page(db.Model):
             'author': self.author.username if self.author else None,
             'category': self.category.name if self.category else None,
             'template': self.template,
-            'parent_id': self.parent_id,
-            'sort_order': self.sort_order
-        }
+          }
         if include_content:
             data['content'] = self.content
             data['content_html'] = self.content_html

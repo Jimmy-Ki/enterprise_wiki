@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from datetime import datetime
 from app import db
-from app.models import Page, Category, Attachment, PageVersion, Permission
+from app.models import Page, Category, Attachment, PageVersion, Permission, User
 from app.decorators import permission_required
 from app.forms.wiki import PageForm, CategoryForm, SearchForm
 from werkzeug.utils import secure_filename
@@ -28,7 +28,34 @@ def index():
     # Filter pages based on permissions
     accessible_pages = [page for page in recent_pages if page.can_view(current_user)]
 
-    return render_template('wiki/index_confluence_static.html', categories=categories, recent_pages=accessible_pages)
+    # Build category tree with pages
+    def build_category_tree_with_pages(categories, parent_id=None):
+        tree = []
+        for category in categories:
+            if category.parent_id == parent_id:
+                # Get pages in this category
+                category_pages = Page.query.filter_by(category_id=category.id, is_published=True)\
+                                       .order_by(Page.title).all()
+                accessible_category_pages = [page for page in category_pages if page.can_view(current_user)]
+
+                # Get child categories
+                children = build_category_tree_with_pages(categories, category.id)
+
+                tree.append({
+                    'category': category,
+                    'pages': accessible_category_pages,
+                    'children': children
+                })
+        return tree
+
+    # Get all categories for building tree
+    all_categories = Category.query.all()
+    category_tree = build_category_tree_with_pages(all_categories)
+
+    return render_template('wiki/index_confluence_static.html',
+                         categories=categories,
+                         recent_pages=accessible_pages,
+                         category_tree=category_tree)
 
 @wiki.route('/search')
 def search():
@@ -38,7 +65,43 @@ def search():
     query = request.args.get('q', '').strip()
 
     if not query:
-        return render_template('wiki/search.html', form=form, results=None, query='')
+        # Build category tree with pages for sidebar
+        def build_category_tree_with_pages(categories, parent_id=None):
+            tree = []
+            for category in categories:
+                if category.parent_id == parent_id:
+                    # Get pages in this category
+                    category_pages = Page.query.filter_by(category_id=category.id, is_published=True)\
+                                           .order_by(Page.title).all()
+                    accessible_category_pages = [page for page in category_pages if page.can_view(current_user)]
+
+                    # Get child categories
+                    children = build_category_tree_with_pages(categories, category.id)
+
+                    tree.append({
+                        'category': category,
+                        'pages': accessible_category_pages,
+                        'children': children
+                    })
+            return tree
+
+        # Get data for sidebar
+        all_categories = Category.query.all()
+        category_tree = build_category_tree_with_pages(all_categories)
+
+        recent_pages = Page.query.filter_by(is_published=True)\
+                               .order_by(Page.updated_at.desc()).limit(10).all()
+        accessible_recent_pages = [page for page in recent_pages if page.can_view(current_user)]
+
+        # Get statistics
+        total_pages = Page.query.count()
+        published_pages = Page.query.filter_by(is_published=True).count()
+        total_categories = Category.query.count()
+
+        return render_template('wiki/search_confluence.html', form=form, results=None, query='',
+                             category_tree=category_tree, recent_pages=accessible_recent_pages,
+                             total_pages=total_pages, published_pages=published_pages,
+                             total_categories=total_categories)
 
     # Use database search (simplified version)
     pages = Page.query.filter(
@@ -57,8 +120,47 @@ def search():
         if page.can_view(current_user):
             accessible_pages.append(page)
 
-    return render_template('wiki/search.html', form=form, pages=accessible_pages,
-                         query=query, pagination=pages)
+    # Build category tree with pages for sidebar
+    def build_category_tree_with_pages(categories, parent_id=None):
+        tree = []
+        for category in categories:
+            if category.parent_id == parent_id:
+                # Get pages in this category
+                category_pages = Page.query.filter_by(category_id=category.id, is_published=True)\
+                                       .order_by(Page.title).all()
+                accessible_category_pages = [page for page in category_pages if page.can_view(current_user)]
+
+                # Get child categories
+                children = build_category_tree_with_pages(categories, category.id)
+
+                tree.append({
+                    'category': category,
+                    'pages': accessible_category_pages,
+                    'children': children
+                })
+        return tree
+
+    # Get data for sidebar
+    all_categories = Category.query.all()
+    category_tree = build_category_tree_with_pages(all_categories)
+
+    recent_pages = Page.query.filter_by(is_published=True)\
+                           .order_by(Page.updated_at.desc()).limit(10).all()
+    accessible_recent_pages = [page for page in recent_pages if page.can_view(current_user)]
+
+    # Get popular pages
+    popular_pages = Page.query.filter_by(is_published=True)\
+                            .order_by(Page.view_count.desc()).limit(5).all()
+    accessible_popular_pages = [page for page in popular_pages if page.can_view(current_user)]
+
+    # Get filter data
+    categories = Category.query.all()
+    authors = db.session.query(Page.author_id, User.username).join(User).filter(Page.is_published == True).distinct().all()
+
+    return render_template('wiki/search_confluence.html', form=form, pages=accessible_pages,
+                         query=query, pagination=pages, category_tree=category_tree,
+                         recent_pages=accessible_recent_pages, popular_pages=accessible_popular_pages,
+                         categories=categories, authors=authors)
 
 @wiki.route('/category/<int:category_id>')
 def category_view(category_id):
@@ -79,8 +181,37 @@ def category_view(category_id):
     # Filter pages based on permissions
     accessible_pages = [page for page in pages if page.can_view(current_user)]
 
-    return render_template('wiki/category.html', category=category,
-                         child_categories=child_categories, pages=accessible_pages)
+    # Build category tree with pages for sidebar
+    def build_category_tree_with_pages(categories, parent_id=None):
+        tree = []
+        for cat in categories:
+            if cat.parent_id == parent_id:
+                # Get pages in this category
+                category_pages = Page.query.filter_by(category_id=cat.id, is_published=True)\
+                                       .order_by(Page.title).all()
+                accessible_category_pages = [page for page in category_pages if page.can_view(current_user)]
+
+                # Get child categories
+                children = build_category_tree_with_pages(categories, cat.id)
+
+                tree.append({
+                    'category': cat,
+                    'pages': accessible_category_pages,
+                    'children': children
+                })
+        return tree
+
+    # Get data for sidebar
+    all_categories = Category.query.all()
+    category_tree = build_category_tree_with_pages(all_categories)
+
+    recent_pages = Page.query.filter_by(is_published=True)\
+                           .order_by(Page.updated_at.desc()).limit(10).all()
+    accessible_recent_pages = [page for page in recent_pages if page.can_view(current_user)]
+
+    return render_template('wiki/category_confluence.html', category=category,
+                         child_categories=child_categories, pages=accessible_pages,
+                         category_tree=category_tree, recent_pages=accessible_recent_pages)
 
 
 @wiki.route('/page/<slug>')
@@ -109,8 +240,36 @@ def view_page(slug):
     # Get all categories for the editor and sidebar
     categories = Category.query.all()
 
+    # Build category tree with pages
+    def build_category_tree_with_pages(categories, parent_id=None):
+        tree = []
+        for category in categories:
+            if category.parent_id == parent_id:
+                # Get pages in this category
+                category_pages = Page.query.filter_by(category_id=category.id, is_published=True)\
+                                       .order_by(Page.title).all()
+                accessible_category_pages = [page for page in category_pages if page.can_view(current_user)]
+
+                # Get child categories
+                children = build_category_tree_with_pages(categories, category.id)
+
+                tree.append({
+                    'category': category,
+                    'pages': accessible_category_pages,
+                    'children': children
+                })
+        return tree
+
+    category_tree = build_category_tree_with_pages(categories)
+
+    # Get recent pages for sidebar
+    recent_pages = Page.query.filter_by(is_published=True)\
+                           .order_by(Page.updated_at.desc()).limit(10).all()
+    accessible_recent_pages = [page for page in recent_pages if page.can_view(current_user)]
+
     return render_template('wiki/page_confluence.html', page=page, versions=versions,
-                         attachments=accessible_attachments, categories=categories)
+                         attachments=accessible_attachments, categories=categories,
+                         category_tree=category_tree, recent_pages=accessible_recent_pages)
 
 @wiki.route('/create', methods=['GET', 'POST'])
 @login_required
@@ -127,8 +286,6 @@ def create_page():
             summary=form.summary.data,
             author_id=current_user.id,
             category_id=form.category_id.data if form.category_id.data != 0 else None,
-            parent_id=form.parent_id.data if form.parent_id.data != 0 else None,
-            sort_order=form.sort_order.data if form.sort_order.data is not None else 0,
             is_published=form.is_published.data,
             is_public=form.is_public.data
         )
@@ -143,7 +300,36 @@ def create_page():
         flash('Page created successfully!', 'success')
         return redirect(url_for('wiki.view_page', slug=page.slug))
 
-    return render_template('wiki/edit_page.html', form=form, is_edit=False)
+    # Build category tree with pages for sidebar
+    def build_category_tree_with_pages(categories, parent_id=None):
+        tree = []
+        for category in categories:
+            if category.parent_id == parent_id:
+                # Get pages in this category
+                category_pages = Page.query.filter_by(category_id=category.id, is_published=True)\
+                                       .order_by(Page.title).all()
+                accessible_category_pages = [page for page in category_pages if page.can_view(current_user)]
+
+                # Get child categories
+                children = build_category_tree_with_pages(categories, category.id)
+
+                tree.append({
+                    'category': category,
+                    'pages': accessible_category_pages,
+                    'children': children
+                })
+        return tree
+
+    # Get data for sidebar
+    all_categories = Category.query.all()
+    category_tree = build_category_tree_with_pages(all_categories)
+
+    recent_pages = Page.query.filter_by(is_published=True)\
+                           .order_by(Page.updated_at.desc()).limit(10).all()
+    accessible_recent_pages = [page for page in recent_pages if page.can_view(current_user)]
+
+    return render_template('wiki/create_page_confluence.html', form=form, is_edit=False,
+                         category_tree=category_tree, recent_pages=accessible_recent_pages)
 
 @wiki.route('/edit/<int:page_id>', methods=['GET', 'POST'])
 @login_required
@@ -174,8 +360,6 @@ def edit_page(page_id):
         page.content = form.content.data
         page.summary = form.summary.data
         page.category_id = form.category_id.data if form.category_id.data != 0 else None
-        page.parent_id = form.parent_id.data if form.parent_id.data != 0 else None
-        page.sort_order = form.sort_order.data if form.sort_order.data is not None else 0
         page.is_published = form.is_published.data
         page.is_public = form.is_public.data
         page.last_editor_id = current_user.id
@@ -193,7 +377,36 @@ def edit_page(page_id):
         flash('Page updated successfully!', 'success')
         return redirect(url_for('wiki.view_page', slug=page.slug))
 
-    return render_template('wiki/edit_page.html', form=form, page=page, is_edit=True)
+    # Build category tree with pages for sidebar
+    def build_category_tree_with_pages(categories, parent_id=None):
+        tree = []
+        for category in categories:
+            if category.parent_id == parent_id:
+                # Get pages in this category
+                category_pages = Page.query.filter_by(category_id=category.id, is_published=True)\
+                                       .order_by(Page.title).all()
+                accessible_category_pages = [page for page in category_pages if page.can_view(current_user)]
+
+                # Get child categories
+                children = build_category_tree_with_pages(categories, category.id)
+
+                tree.append({
+                    'category': category,
+                    'pages': accessible_category_pages,
+                    'children': children
+                })
+        return tree
+
+    # Get data for sidebar
+    all_categories = Category.query.all()
+    category_tree = build_category_tree_with_pages(all_categories)
+
+    recent_pages = Page.query.filter_by(is_published=True)\
+                           .order_by(Page.updated_at.desc()).limit(10).all()
+    accessible_recent_pages = [page for page in recent_pages if page.can_view(current_user)]
+
+    return render_template('wiki/edit_page_confluence.html', form=form, page=page, is_edit=True,
+                         category_tree=category_tree, recent_pages=accessible_recent_pages)
 
 def handle_edit_ajax(page):
     """Handle AJAX edit requests from click-to-edit functionality"""
@@ -286,7 +499,33 @@ def page_history(page_id):
         abort(403)
 
     versions = page.versions.order_by(PageVersion.version_number.desc()).all()
-    return render_template('wiki/history.html', page=page, versions=versions)
+    # Build category tree with pages for sidebar
+    def build_category_tree_with_pages(categories, parent_id=None):
+        tree = []
+        for category in categories:
+            if category.parent_id == parent_id:
+                # Get pages in this category
+                category_pages = Page.query.filter_by(category_id=category.id, is_published=True)\
+                                       .order_by(Page.title).all()
+                accessible_category_pages = [page for page in category_pages if page.can_view(current_user)]
+                children = build_category_tree_with_pages(categories, category.id)
+                tree.append({
+                    'category': category,
+                    'pages': accessible_category_pages,
+                    'children': children
+                })
+        return tree
+
+    # Get data for sidebar
+    all_categories = Category.query.all()
+    category_tree = build_category_tree_with_pages(all_categories)
+
+    recent_pages = Page.query.filter_by(is_published=True)\
+                           .order_by(Page.updated_at.desc()).limit(10).all()
+    accessible_recent_pages = [page for page in recent_pages if page.can_view(current_user)]
+
+    return render_template('wiki/history_confluence.html', page=page, versions=versions,
+                         category_tree=category_tree, recent_pages=accessible_recent_pages)
 
 @wiki.route('/version/<int:version_id>')
 @login_required

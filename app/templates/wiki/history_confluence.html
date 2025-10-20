@@ -1,0 +1,240 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}{{ page.title }} - History - Enterprise Wiki{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <div class="page-title-section">
+            <h1 class="page-title">
+                <i class="fas fa-history me-2"></i>{{ page.title }}
+                <small class="text-muted">Version History</small>
+            </h1>
+            <p class="page-breadcrumb">
+                <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
+                    <i class="fas fa-home me-1"></i>Home
+                </a>
+                <span class="breadcrumb-separator">/</span>
+                <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="breadcrumb-link">
+                    {{ page.title }}
+                </a>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-current">History</span>
+            </p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="btn-wiki">
+                <i class="fas fa-arrow-left me-2"></i>Back to Page
+            </a>
+            {% if current_user.is_authenticated and page.can_edit(current_user) %}
+            <a href="{{ url_for('wiki.edit_page', page_id=page.id) }}" class="btn-wiki primary">
+                <i class="fas fa-edit me-2"></i>Edit Page
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="page-content">
+    <!-- Page Info Card -->
+    <div class="content-card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1">{{ page.title }}</h5>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-user me-1"></i>Created by {{ page.author.username if page.author else 'Unknown' }}
+                        • <i class="fas fa-calendar me-1"></i>{{ page.created_at.strftime('%B %d, %Y') }}
+                        • <i class="fas fa-eye me-1"></i>{{ page.view_count }} views
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    {% if page.is_published %}
+                    <span class="badge bg-success">Published</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Draft</span>
+                    {% endif %}
+                    {% if page.category %}
+                    <span class="badge bg-info">{{ page.category.name }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version History -->
+    <div class="content-card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-history me-2"></i>Version History
+                <span class="badge bg-secondary ms-2">{{ versions|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if versions %}
+            <div class="timeline">
+                {% for version in versions %}
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="card" style="border: 1px solid var(--border-color);">
+                            <div class="card-body">
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-md-8">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="badge bg-primary me-2">v{{ version.version_number }}</span>
+                                            <h6 class="card-title mb-0">{{ version.title }}</h6>
+                                        </div>
+                                        <p class="text-muted small mb-2">
+                                            <i class="fas fa-user-edit me-1"></i>
+                                            {% if version.editor and version.editor != version.author %}
+                                                {{ version.editor.username }} edited {{ version.author.username }}'s version
+                                            {% elif version.editor %}
+                                                {{ version.editor.username }}
+                                            {% else %}
+                                                {{ version.author.username if version.author else 'Unknown' }}
+                                            {% endif %}
+                                            • <i class="fas fa-clock me-1"></i>{{ version.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                        </p>
+                                        {% if version.change_summary %}
+                                        <p class="mb-2">
+                                            <i class="fas fa-comment me-1 text-info"></i>
+                                            <span class="text-info">{{ version.change_summary }}</span>
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('wiki.view_version', version_id=version.id) }}"
+                                               class="btn-wiki small" title="View this version">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if current_user.is_authenticated and page.can_edit(current_user) %}
+                                            <button class="btn-wiki small"
+                                                    onclick="restoreVersion({{ version.id }})"
+                                                    title="Restore this version">
+                                                <i class="fas fa-undo"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Content Preview -->
+                                {% if version.content %}
+                                <div class="content-preview">
+                                    <p class="text-muted small mb-2">Content Preview:</p>
+                                    <div class="border rounded p-2 bg-light" style="max-height: 150px; overflow-y: auto;">
+                                        {% set content_preview = (version.content|striptags)[:200] %}
+                                        <small class="text-muted">{{ content_preview }}{% if version.content|striptags|length > 200 %}...{% endif %}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Version History</h5>
+                <p class="text-muted">This page doesn't have any version history yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -25px;
+    top: 20px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--border-color);
+}
+
+.timeline-content {
+    width: 100%;
+}
+
+.content-preview .bg-light {
+    background-color: var(--sidebar-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+.card {
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.btn-wiki.small {
+    padding: 4px 8px;
+    font-size: 0.875em;
+}
+
+.badge {
+    font-size: 0.7em;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function restoreVersion(versionId) {
+    if (confirm('Are you sure you want to restore this version? This will create a new version with the restored content.')) {
+        fetch(`/wiki/restore-version/${versionId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}' if csrf_token else ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error restoring version: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error restoring version');
+        });
+    }
+}
+</script>
+{% endblock %}
