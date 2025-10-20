@@ -610,14 +610,70 @@
                 <div class="sidebar-section">
                     <div class="sidebar-title">Categories</div>
                     <ul class="tree-nav" id="categoriesTree">
-                        <!-- Categories will be loaded here -->
+                        {% if category_tree is defined %}
+                            {% macro render_category_tree(items, level=0) %}
+                                {% for item in items %}
+                                    <li class="tree-item">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <a href="{{ url_for('wiki.category_view', category_id=item.category.id) }}"
+                                               class="tree-link">
+                                                {% if item.children %}
+                                                    <i class="fas fa-folder-open tree-icon text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-folder tree-icon text-primary"></i>
+                                                {% endif %}
+                                                <span{% if level > 0 %} class="small"{% endif %}>{{ item.category.name }}</span>
+                                            </a>
+                                            <span class="badge bg-secondary" style="font-size: 0.6em;">{{ item.pages|length }}</span>
+                                        </div>
+
+                                        <!-- Pages in this category -->
+                                        {% if item.pages %}
+                                            <ul class="tree-nav">
+                                                {% for page in item.pages %}
+                                                    <li class="tree-item">
+                                                        <a href="{{ url_for('wiki.view_page', slug=page.slug) }}"
+                                                           class="tree-link small">
+                                                            <i class="fas fa-file-alt tree-icon text-muted" style="font-size: 0.8em;"></i>
+                                                            <span class="text-muted">{{ page.title }}</span>
+                                                        </a>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% endif %}
+
+                                        <!-- Child categories -->
+                                        {% if item.children %}
+                                            <ul class="tree-nav">
+                                                {{ render_category_tree(item.children, level + 1) }}
+                                            </ul>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            {% endmacro %}
+
+                            {{ render_category_tree(category_tree) }}
+                        {% else %}
+                            <!-- Categories will be loaded here via JavaScript -->
+                        {% endif %}
                     </ul>
                 </div>
 
                 <div class="sidebar-section">
                     <div class="sidebar-title">Recent Pages</div>
                     <ul class="tree-nav" id="recentPages">
-                        <!-- Recent pages will be loaded here -->
+                        {% if recent_pages is defined %}
+                            {% for page in recent_pages %}
+                                <li class="tree-item">
+                                    <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="tree-link small">
+                                        <i class="fas fa-file-alt tree-icon text-muted"></i>
+                                        <span class="text-muted">{{ page.title }}</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Recent pages will be loaded here via JavaScript -->
+                        {% endif %}
                     </ul>
                 </div>
             </div>

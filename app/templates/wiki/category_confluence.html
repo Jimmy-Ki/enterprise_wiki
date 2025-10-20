@@ -1,0 +1,282 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}{{ category.name }} - Enterprise Wiki{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <div class="page-title-section">
+            <h1 class="page-title">
+                <i class="fas fa-folder me-2"></i>{{ category.name }}
+            </h1>
+            <p class="page-breadcrumb">
+                <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
+                    <i class="fas fa-home me-1"></i>Home
+                </a>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-current">{{ category.name }}</span>
+            </p>
+        </div>
+        <div class="page-actions">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('wiki.create_page') }}" class="btn-wiki primary">
+                <i class="fas fa-plus me-2"></i>Create Page
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="page-content">
+    <!-- Category Description -->
+    {% if category.description %}
+    <div class="content-card mb-4">
+        <div class="card-body">
+            <p class="mb-0">{{ category.description }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Child Categories -->
+    {% if child_categories %}
+    <div class="content-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-folder-open me-2"></i>Subcategories
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for child_category in child_categories %}
+                <div class="col-md-6 mb-3">
+                    <a href="{{ url_for('wiki.category_view', category_id=child_category.id) }}" class="text-decoration-none">
+                        <div class="card h-100" style="border: 1px solid var(--border-color); transition: all 0.2s ease;">
+                            <div class="card-body text-center">
+                                <i class="fas fa-folder fa-2x text-primary mb-2"></i>
+                                <h6 class="card-title">{{ child_category.name }}</h6>
+                                {% if child_category.description %}
+                                <p class="card-text small text-muted">{{ child_category.description }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pages in this Category -->
+    <div class="content-card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i>Pages in this Category
+                    <span class="badge bg-secondary ms-2">{{ pages|length }}</span>
+                </h5>
+                <div class="d-flex align-items-center">
+                    <select class="form-select form-select-sm me-2" id="sortPages" style="width: auto;">
+                        <option value="title">Sort by Title</option>
+                        <option value="updated">Sort by Updated</option>
+                        <option value="created">Sort by Created</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if pages %}
+                <div class="row" id="pagesContainer">
+                    {% for page in pages %}
+                    <div class="col-md-6 mb-3 page-item" data-title="{{ page.title|lower }}"
+                         data-updated="{{ page.updated_at.isoformat() }}"
+                         data-created="{{ page.created_at.isoformat() }}">
+                        <div class="card h-100" style="border: 1px solid var(--border-color); transition: all 0.2s ease;">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="text-decoration-none">
+                                            {{ page.title }}
+                                        </a>
+                                    </h6>
+                                    {% if page.is_published %}
+                                    <span class="badge bg-success">Published</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Draft</span>
+                                    {% endif %}
+                                </div>
+
+                                {% if page.summary %}
+                                <p class="card-text text-muted small mb-2">{{ page.summary }}</p>
+                                {% else %}
+                                <p class="card-text text-muted small mb-2">
+                                    {% set content_text = (page.content|striptags)[:150] %}{{ content_text }}{% if page.content|striptags|length > 150 %}...{% endif %}
+                                </p>
+                                {% endif %}
+
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>
+                                        {{ page.author.username if page.author else 'Unknown' }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ page.updated_at.strftime('%Y-%m-%d') }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent border-top">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-eye me-1"></i>{{ page.view_count }} views
+                                    </small>
+                                    <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="btn-wiki small">
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Empty state for filtered results -->
+                <div id="noResultsMessage" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5>No pages found</h5>
+                    <p class="text-muted">Try adjusting your search or filters.</p>
+                </div>
+
+            {% else %}
+            <!-- No Pages State -->
+            <div class="text-center py-5">
+                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                <h5>No Pages in this Category</h5>
+                <p class="text-muted">
+                    {% if current_user.is_authenticated %}
+                    Be the first to create a page in this category!
+                    {% else %}
+                    There are no pages in this category yet.
+                    {% endif %}
+                </p>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('wiki.create_page') }}" class="btn-wiki primary">
+                    <i class="fas fa-plus me-2"></i>Create First Page
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Category Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="content-card">
+                <div class="card-body text-center">
+                    <h3 class="text-primary mb-0">{{ pages|length }}</h3>
+                    <p class="text-muted small mb-0">Total Pages</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="content-card">
+                <div class="card-body text-center">
+                    <h3 class="text-success mb-0">{{ child_categories|length }}</h3>
+                    <p class="text-muted small mb-0">Subcategories</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="content-card">
+                <div class="card-body text-center">
+                    <h3 class="text-info mb-0">{{ pages|selectattr('is_published')|list|length }}</h3>
+                    <p class="text-muted small mb-0">Published Pages</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.page-item {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.page-item[data-sort="updated"] {
+    order: 1;
+}
+
+.page-item[data-sort="created"] {
+    order: 2;
+}
+
+.badge {
+    font-size: 0.7em;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sortSelect = document.getElementById('sortPages');
+    const pagesContainer = document.getElementById('pagesContainer');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    const pageItems = document.querySelectorAll('.page-item');
+
+    function sortPages(sortBy) {
+        const sortedItems = Array.from(pageItems).sort((a, b) => {
+            switch(sortBy) {
+                case 'title':
+                    return a.dataset.title.localeCompare(b.dataset.title);
+                case 'updated':
+                    return new Date(b.dataset.updated) - new Date(a.dataset.updated);
+                case 'created':
+                    return new Date(b.dataset.created) - new Date(a.dataset.created);
+                default:
+                    return 0;
+            }
+        });
+
+        // Clear and re-append sorted items
+        pagesContainer.innerHTML = '';
+        sortedItems.forEach(item => pagesContainer.appendChild(item));
+
+        // Show/hide no results message
+        if (sortedItems.length === 0) {
+            noResultsMessage.style.display = 'block';
+        } else {
+            noResultsMessage.style.display = 'none';
+        }
+    }
+
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            sortPages(this.value);
+        });
+    }
+
+    // Add hover effects to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    });
+});
+</script>
+{% endblock %}
