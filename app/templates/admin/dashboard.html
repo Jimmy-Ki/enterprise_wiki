@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Enterprise Wiki{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+            </h2>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-primary" onclick="refreshStats()">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh
+                </button>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-cog me-2"></i>Actions
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('admin.backup') }}">
+                            <i class="fas fa-download me-2"></i>Create Backup
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="clearCache()">
+                            <i class="fas fa-trash me-2"></i>Clear Cache
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">
+                            <i class="fas fa-wrench me-2"></i>Settings
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.total_users }}</h4>
+                        <p class="card-text">Total Users</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small>
+                        <i class="fas fa-arrow-up"></i>
+                        {{ stats.active_users }} active
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.total_pages }}</h4>
+                        <p class="card-text">Total Pages</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small>
+                        <i class="fas fa-check-circle"></i>
+                        {{ stats.published_pages }} published
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.total_categories }}</h4>
+                        <p class="card-text">Categories</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-folder fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small>
+                        <i class="fas fa-layer-group"></i>
+                        Organized content
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.total_attachments }}</h4>
+                        <p class="card-text">Attachments</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-paperclip fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small>
+                        <i class="fas fa-database"></i>
+                        File storage
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Pages
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_pages %}
+                <div class="list-group list-group-flush">
+                    {% for page in recent_pages %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="text-decoration-none">
+                                        {{ page.title }}
+                                    </a>
+                                </h6>
+                                <small class="text-muted">
+                                    by {{ page.author.username if page.author else 'Unknown' }}
+                                    • {{ page.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                            </div>
+                            <div>
+                                {% if page.is_published %}
+                                <span class="badge bg-success me-1">Published</span>
+                                {% else %}
+                                <span class="badge bg-secondary me-1">Draft</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No recent pages found.</p>
+                {% endif %}
+                <div class="text-center mt-2">
+                    <a href="{{ url_for('admin.pages') }}" class="btn btn-outline-primary btn-sm">
+                        View All Pages
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-plus me-2"></i>New Users
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_users %}
+                <div class="list-group list-group-flush">
+                    {% for user in recent_users %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ user.gravatar(32) }}" alt="Avatar" class="rounded-circle me-2">
+                                <div>
+                                    <h6 class="mb-1">{{ user.username }}</h6>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                </div>
+                            </div>
+                            <div>
+                                {% if user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            Joined {{ user.member_since.strftime('%Y-%m-%d') }}
+                            • Role: {{ user.role.name if user.role else 'None' }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No recent users found.</p>
+                {% endif %}
+                <div class="text-center mt-2">
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary btn-sm">
+                        View All Users
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>User Growth (Last 30 Days)
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="userGrowthChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Page Creation Trends
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="pageGrowthChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-heartbeat me-2"></i>System Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="fas fa-database fa-2x text-success mb-2"></div>
+                            <h6>Database</h6>
+                            <span class="badge bg-success">Healthy</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="fas fa-memory fa-2x text-info mb-2"></div>
+                            <h6>Memory</h6>
+                            <span class="badge bg-info">Normal</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="fas fa-hdd fa-2x text-warning mb-2"></div>
+                            <h6>Disk Space</h6>
+                            <span class="badge bg-warning">78% Used</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="fas fa-network-wired fa-2x text-success mb-2"></div>
+                            <h6>Network</h6>
+                            <span class="badge bg-success">Good</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <div class="text-center">
+                            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary d-block">
+                                <i class="fas fa-users fa-2x mb-2"></i>
+                                <div>Manage Users</div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <div class="text-center">
+                            <a href="{{ url_for('admin.roles') }}" class="btn btn-outline-success d-block">
+                                <i class="fas fa-user-tag fa-2x mb-2"></i>
+                                <div>Roles & Permissions</div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <div class="text-center">
+                            <a href="{{ url_for('admin.pages') }}" class="btn btn-outline-info d-block">
+                                <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                <div>Content Management</div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <div class="text-center">
+                            <a href="{{ url_for('admin.categories') }}" class="btn btn-outline-warning d-block">
+                                <i class="fas fa-folder fa-2x mb-2"></i>
+                                <div>Categories</div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <div class="text-center">
+                            <a href="{{ url_for('admin.sessions') }}" class="btn btn-outline-secondary d-block">
+                                <i class="fas fa-desktop fa-2x mb-2"></i>
+                                <div>Active Sessions</div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <div class="text-center">
+                            <a href="{{ url_for('admin.settings') }}" class="btn btn-outline-danger d-block">
+                                <i class="fas fa-cog fa-2x mb-2"></i>
+                                <div>Settings</div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts
+    initializeUserGrowthChart();
+    initializePageGrowthChart();
+
+    // Auto-refresh dashboard every 5 minutes
+    setInterval(refreshStats, 300000);
+});
+
+function initializeUserGrowthChart() {
+    const ctx = document.getElementById('userGrowthChart').getContext('2d');
+    const userGrowthData = {{ user_growth | tojson | safe }};
+
+    const labels = userGrowthData.map(item => item.date);
+    const data = userGrowthData.map(item => item.count);
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'New Users',
+                data: data,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function initializePageGrowthChart() {
+    const ctx = document.getElementById('pageGrowthChart').getContext('2d');
+    const pageGrowthData = {{ page_growth | tojson | safe }};
+
+    const labels = pageGrowthData.map(item => item.date);
+    const data = pageGrowthData.map(item => item.count);
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'New Pages',
+                data: data,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function refreshStats() {
+    // Show loading state
+    showToast('Refreshing dashboard...', 'info');
+
+    // Reload the page (simple implementation)
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+function clearCache() {
+    if (confirm('Are you sure you want to clear the system cache?')) {
+        fetch('/admin/clear_cache', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Cache cleared successfully', 'success');
+            } else {
+                showToast('Failed to clear cache', 'danger');
+            }
+        })
+        .catch(error => {
+            showToast('Error clearing cache', 'danger');
+        });
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl/Cmd + R to refresh
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        refreshStats();
+    }
+
+    // Ctrl/Cmd + U for users
+    if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+        e.preventDefault();
+        window.location.href = '{{ url_for("admin.users") }}';
+    }
+
+    // Ctrl/Cmd + P for pages
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        window.location.href = '{{ url_for("admin.pages") }}';
+    }
+});
+</script>
+
+<style>
+.card {
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.btn-outline-primary d-block {
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary d-block:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+</style>
+{% endblock %}

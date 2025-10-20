@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - Enterprise Wiki{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark text-center">
+                <h1 class="mb-0">
+                    <i class="fas fa-search me-3"></i>404 - Page Not Found
+                </h1>
+            </div>
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-map-signs fa-5x text-warning"></i>
+                </div>
+
+                <h2 class="mb-3">Oops! The page you're looking for doesn't exist.</h2>
+
+                <p class="text-muted mb-4">
+                    The page you requested could not be found. It might have been moved, deleted, or never existed.
+                    Let's help you find what you're looking for!
+                </p>
+
+                <!-- Search Suggestions -->
+                <div class="row justify-content-center mb-4">
+                    <div class="col-md-8">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-search me-2"></i>Search for what you need
+                                </h5>
+                                <form method="GET" action="{{ url_for('wiki.search') }}">
+                                    <div class="input-group">
+                                        <input type="text" name="q" class="form-control" placeholder="Search for pages..." autofocus>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-home fa-2x text-primary mb-3"></i>
+                                <h5 class="card-title">Home</h5>
+                                <p class="card-text">Go back to the main page and browse categories</p>
+                                <a href="{{ url_for('wiki.index') }}" class="btn btn-primary">
+                                    <i class="fas fa-home me-2"></i>Go Home
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-folder fa-2x text-success mb-3"></i>
+                                <h5 class="card-title">Categories</h5>
+                                <p class="card-text">Browse content by category</p>
+                                <a href="#" onclick="showCategories()" class="btn btn-success">
+                                    <i class="fas fa-folder me-2"></i>Browse Categories
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-clock fa-2x text-info mb-3"></i>
+                                <h5 class="card-title">Recent Pages</h5>
+                                <p class="card-text">View recently updated content</p>
+                                <a href="#" onclick="showRecentPages()" class="btn btn-info">
+                                    <i class="fas fa-clock me-2"></i>Recent Pages
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Content Area -->
+                <div id="dynamicContent" class="row justify-content-center mb-4" style="display: none;">
+                    <div class="col-md-10">
+                        <!-- Content will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Common Destinations -->
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-star me-2"></i>Popular Pages
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Getting Started</h6>
+                                <ul class="list-unstyled">
+                                    <li><a href="{{ url_for('wiki.index') }}" class="text-decoration-none">
+                                        <i class="fas fa-angle-right me-2"></i>Home Page
+                                    </a></li>
+                                    <li><a href="{{ url_for('wiki.search') }}" class="text-decoration-none">
+                                        <i class="fas fa-angle-right me-2"></i>Search
+                                    </a></li>
+                                    {% if current_user.is_authenticated and current_user.can(Permission.WRITE) %}
+                                    <li><a href="{{ url_for('wiki.create_page') }}" class="text-decoration-none">
+                                        <i class="fas fa-angle-right me-2"></i>Create Page
+                                    </a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Help & Support</h6>
+                                <ul class="list-unstyled">
+                                    <li><a href="#" class="text-decoration-none" onclick="showHelp()">
+                                        <i class="fas fa-angle-right me-2"></i>Help Documentation
+                                    </a></li>
+                                    <li><a href="#" class="text-decoration-none" onclick="reportBrokenLink()">
+                                        <i class="fas fa-angle-right me-2"></i>Report Broken Link
+                                    </a></li>
+                                    {% if current_user.is_authenticated %}
+                                    <li><a href="{{ url_for('auth.sessions') }}" class="text-decoration-none">
+                                        <i class="fas fa-angle-right me-2"></i>Account Settings
+                                    </a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-center gap-2 mt-4">
+                    <button onclick="history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                    </button>
+                    <a href="{{ url_for('wiki.index') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Home Page
+                    </button>
+                    <a href="{{ url_for('wiki.search') }}" class="btn btn-outline-info">
+                        <i class="fas fa-search me-2"></i>Search
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Details (for debugging) -->
+        {% if config.DEBUG %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-bug me-2"></i>Debug Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Requested URL:</strong> {{ request.url }}</p>
+                <p class="mb-2"><strong>Method:</strong> {{ request.method }}</p>
+                <p class="mb-2"><strong>Referrer:</strong> {{ request.referrer or 'None' }}</p>
+                <p class="mb-0"><strong>User Agent:</strong> {{ request.user_agent }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Extract possible page title from URL for search suggestions
+const urlParts = window.location.pathname.split('/');
+const possibleTitle = urlParts[urlParts.length - 1].replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+// Set search input with possible title
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="q"]');
+    if (searchInput && possibleTitle && possibleTitle.length > 2) {
+        searchInput.value = possibleTitle;
+        searchInput.focus();
+        searchInput.select();
+    }
+});
+
+function showCategories() {
+    const dynamicContent = document.getElementById('dynamicContent');
+    dynamicContent.style.display = 'block';
+
+    // Simulate loading categories (in real app, this would be an AJAX call)
+    dynamicContent.querySelector('.col-md-10').innerHTML = `
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-folder-tree me-2"></i>Browse Categories
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                    <p class="text-muted">Loading categories...</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Simulate API call
+    setTimeout(() => {
+        // In real implementation, this would fetch actual categories
+        const categories = [
+            { name: 'Documentation', count: 15 },
+            { name: 'Tutorials', count: 8 },
+            { name: 'API Reference', count: 23 },
+            { name: 'Getting Started', count: 5 }
+        ];
+
+        let categoriesHtml = '<div class="row">';
+        categories.forEach(cat => {
+            categoriesHtml += `
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-folder me-2"></i>${cat.name}
+                                </h6>
+                                <span class="badge bg-primary">${cat.count} pages</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        categoriesHtml += '</div>';
+
+        dynamicContent.querySelector('.col-md-10').innerHTML = `
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-folder-tree me-2"></i>Browse Categories
+                    </h5>
+                </div>
+                <div class="card-body">
+                    ${categoriesHtml}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('wiki.index') }}" class="btn btn-primary">View All Categories</a>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+function showRecentPages() {
+    const dynamicContent = document.getElementById('dynamicContent');
+    dynamicContent.style.display = 'block';
+
+    dynamicContent.querySelector('.col-md-10').innerHTML = `
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recently Updated Pages
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                    <p class="text-muted">Loading recent pages...</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Simulate API call
+    setTimeout(() => {
+        // In real implementation, this would fetch actual recent pages
+        const recentPages = [
+            { title: 'Getting Started Guide', updated: '2024-01-15', author: 'Admin' },
+            { title: 'API Documentation', updated: '2024-01-14', author: 'Developer' },
+            { title: 'Installation Guide', updated: '2024-01-13', author: 'Support' }
+        ];
+
+        let pagesHtml = '';
+        recentPages.forEach(page => {
+            pagesHtml += `
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-1">${page.title}</h6>
+                        <small class="text-muted">${page.updated}</small>
+                    </div>
+                    <small class="text-muted">by ${page.author}</small>
+                </div>
+            `;
+        });
+
+        dynamicContent.querySelector('.col-md-10').innerHTML = `
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>Recently Updated Pages
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        ${pagesHtml}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('wiki.search') }}" class="btn btn-primary">View All Pages</a>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+function showHelp() {
+    const subject = encodeURIComponent('Help Needed - Enterprise Wiki');
+    const body = encodeURIComponent(
+        `Hi,\n\nI need help with the Enterprise Wiki system.\n` +
+        `I was trying to access: ${window.location.href}\n` +
+        `but couldn't find what I was looking for.\n\n` +
+        `Can you please assist me?\n\n` +
+        `Thank you!`
+    );
+
+    window.location.href = `mailto:support@company.com?subject=${subject}&body=${body}`;
+}
+
+function reportBrokenLink() {
+    const subject = encodeURIComponent('Broken Link Report - Enterprise Wiki');
+    const body = encodeURIComponent(
+        `Hi,\n\nI found a broken link in the Enterprise Wiki system.\n\n` +
+        `Broken URL: ${window.location.href}\n` +
+        `Referrer: ${document.referrer || 'Direct access'}\n` +
+        `Time: ${new Date().toISOString()}\n\n` +
+        `Please fix this issue.\n\n` +
+        `Thank you!`
+    );
+
+    window.location.href = `mailto:support@company.com?subject=${subject}&body=${body}`;
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // H for home
+    if (e.key === 'h' && !e.ctrlKey && !e.metaKey) {
+        window.location.href = '{{ url_for("wiki.index") }}';
+    }
+
+    // S for search
+    if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
+        window.location.href = '{{ url_for("wiki.search") }}';
+    }
+
+    // B for back
+    if (e.key === 'b' && !e.ctrlKey && !e.metaKey) {
+        history.back();
+    }
+
+    // Enter to search (when search input is focused)
+    if (e.key === 'Enter' && document.activeElement.name === 'q') {
+        document.querySelector('form').submit();
+    }
+});
+
+// Easter egg: Konami code
+let konamiCode = [];
+const konamiPattern = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+
+document.addEventListener('keydown', function(e) {
+    konamiCode.push(e.key);
+    konamiCode = konamiCode.slice(-10);
+
+    if (konamiCode.join(',') === konamiPattern.join(',')) {
+        document.querySelector('.fa-map-signs').classList.add('fa-spin');
+        setTimeout(() => {
+            alert('🎮 Konami Code Activated! You found the secret!');
+            document.querySelector('.fa-map-signs').classList.remove('fa-spin');
+        }, 2000);
+    }
+});
+</script>
+
+<style>
+.card.border-warning {
+    border-width: 2px;
+}
+
+.fa-map-signs.fa-5x {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
+}
+
+.fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

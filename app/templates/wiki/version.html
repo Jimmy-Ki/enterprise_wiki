@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Version {{ version.version_number }} of {{ page.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas fa-code-branch me-2"></i>
+                Version {{ version.version_number }} of {{ page.title }}
+            </h2>
+            <div class="text-muted">
+                <small>
+                    <i class="fas fa-user"></i> Edited by
+                    <strong>{{ version.editor.username if version.editor else 'Unknown' }}</strong>
+                    on {{ version.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </small>
+            </div>
+        </div>
+        <div>
+            <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Current
+            </a>
+            <a href="{{ url_for('wiki.page_history', page_id=page.id) }}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-history"></i> View All Versions
+            </a>
+            {% if page.can_edit(current_user) %}
+            <form method="POST" action="{{ url_for('wiki.restore_version', page_id=page.id, version_number=version.version_number) }}" class="d-inline">
+                <button type="submit" class="btn btn-warning"
+                        onclick="return confirm('Are you sure you want to restore this version? This will replace the current content.')">
+                    <i class="fas fa-undo"></i> Restore This Version
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Version Info -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-info-circle me-2"></i>Version Information
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Version Number:</strong><br>
+                    <span class="badge bg-primary fs-6">{{ version.version_number }}</span>
+                </div>
+                <div class="col-md-3">
+                    <strong>Created:</strong><br>
+                    {{ version.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Editor:</strong><br>
+                    <a href="{{ url_for('admin.user_detail', user_id=version.editor_id) if version.editor_id else '#' }}">
+                        {{ version.editor.username if version.editor else 'Unknown' }}
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <strong>Change Summary:</strong><br>
+                    <span class="text-muted">{{ version.change_summary or 'No summary provided' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-file-alt me-2"></i>Page Content
+            </h6>
+            <div class="text-muted small">
+                This is how the page appeared at the time this version was created.
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="version-content">
+                {% if version.title %}
+                <h1>{{ version.title }}</h1>
+                {% endif %}
+
+                {% if version.summary %}
+                <div class="alert alert-info">
+                    <strong>Summary:</strong> {{ version.summary }}
+                </div>
+                {% endif %}
+
+                <div class="version-content-body">
+                    {{ version.content_html|safe }}
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <i class="fas fa-clock"></i>
+                    This version was created {{ version.created_at|timeago }} ago
+                </small>
+                <div>
+                    {% if page.can_edit(current_user) %}
+                    <form method="POST" action="{{ url_for('wiki.restore_version', page_id=page.id, version_number=version.version_number) }}" class="d-inline">
+                        <button type="submit" class="btn btn-warning btn-sm"
+                                onclick="return confirm('Are you sure you want to restore this version? This will replace the current content.')">
+                            <i class="fas fa-undo"></i> Restore This Version
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="{{ url_for('wiki.page_history', page_id=page.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-history"></i> Version History
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.version-content {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.version-content-body {
+    line-height: 1.6;
+}
+
+.version-content-body h1, .version-content-body h2, .version-content-body h3,
+.version-content-body h4, .version-content-body h5, .version-content-body h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.version-content-body pre {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    overflow-x: auto;
+}
+
+.version-content-body code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+}
+
+.version-content-body blockquote {
+    border-left: 4px solid #007bff;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.version-content-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.version-content-body th,
+.version-content-body td {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.version-content-body th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+</style>
+
+{% endblock %}
