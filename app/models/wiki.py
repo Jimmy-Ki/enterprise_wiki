@@ -325,9 +325,193 @@ class Attachment(db.Model):
 # Register event listeners
 from sqlalchemy import event
 
+# Watch event listeners
+def trigger_watch_event(event_type, target_type, target_id, actor_id=None):
+    """触发watch事件"""
+    try:
+        from app.services.watch_service import WatchService
+        from app.models import WatchTargetType, WatchEventType
+
+        # 转换事件类型
+        event_map = {
+            'page_created': WatchEventType.PAGE_CREATED,
+            'page_updated': WatchEventType.PAGE_UPDATED,
+            'page_deleted': WatchEventType.PAGE_DELETED,
+            'category_created': WatchEventType.CATEGORY_CREATED,
+            'category_updated': WatchEventType.CATEGORY_UPDATED,
+            'category_deleted': WatchEventType.CATEGORY_DELETED,
+            'attachment_added': WatchEventType.ATTACHMENT_ADDED,
+            'attachment_removed': WatchEventType.ATTACHMENT_REMOVED
+        }
+
+        target_map = {
+            'page': WatchTargetType.PAGE,
+            'category': WatchTargetType.CATEGORY
+        }
+
+        watch_event_type = event_map.get(event_type)
+        watch_target_type = target_map.get(target_type)
+
+        if watch_event_type and watch_target_type:
+            WatchService.trigger_event(watch_event_type, watch_target_type, target_id, actor_id)
+
+    except ImportError:
+        # Watch服务未加载，忽略
+        pass
+    except Exception as e:
+        # 记录错误但不影响主流程
+        print(f"Error triggering watch event: {e}")
+
+@event.listens_for(Page, 'after_insert')
+def on_page_created(mapper, connection, target):
+    """页面创建后触发事件"""
+    try:
+        from flask import current_app
+        from app.models import WatchTargetType, WatchEventType
+        # 将事件信息存储在应用上下文中，稍后处理
+        if not hasattr(current_app, '_pending_watch_events'):
+            current_app._pending_watch_events = []
+        current_app._pending_watch_events.append({
+            'event_type': WatchEventType.PAGE_CREATED,
+            'target_type': WatchTargetType.PAGE,
+            'target_id': target.id,
+            'actor_id': target.author_id
+        })
+    except Exception as e:
+        print(f"Warning: Failed to queue watch event: {e}")
+
+@event.listens_for(Page, 'after_update')
+def on_page_updated(mapper, connection, target):
+    """页面更新后触发事件"""
+    # 检查是否有实际内容变更（避免版本控制等非内容更新）
+    if hasattr(target, '_watch_content_changed') and target._watch_content_changed:
+        # 使用异步方式触发事件，避免数据库会话冲突
+        try:
+            from flask import current_app
+            from app.models import WatchTargetType, WatchEventType
+            # 将事件信息存储在应用上下文中，稍后处理
+            if not hasattr(current_app, '_pending_watch_events'):
+                current_app._pending_watch_events = []
+            current_app._pending_watch_events.append({
+                'event_type': WatchEventType.PAGE_UPDATED,
+                'target_type': WatchTargetType.PAGE,
+                'target_id': target.id,
+                'actor_id': target.last_editor_id
+            })
+        except Exception as e:
+            print(f"Warning: Failed to queue watch event: {e}")
+
+@event.listens_for(Page, 'before_delete')
+def on_page_deleted(mapper, connection, target):
+    """页面删除前触发事件"""
+    try:
+        from flask import current_app
+        # 将事件信息存储在应用上下文中，稍后处理
+        if not hasattr(current_app, '_pending_watch_events'):
+            current_app._pending_watch_events = []
+        current_app._pending_watch_events.append({
+            'event_type': 'page_deleted',
+            'target_type': 'page',
+            'target_id': target.id,
+            'actor_id': None
+        })
+    except Exception as e:
+        print(f"Warning: Failed to queue watch event: {e}")
+
+@event.listens_for(Category, 'after_insert')
+def on_category_created(mapper, connection, target):
+    """分类创建后触发事件"""
+    try:
+        from flask import current_app
+        # 将事件信息存储在应用上下文中，稍后处理
+        if not hasattr(current_app, '_pending_watch_events'):
+            current_app._pending_watch_events = []
+        current_app._pending_watch_events.append({
+            'event_type': 'category_created',
+            'target_type': 'category',
+            'target_id': target.id,
+            'actor_id': target.created_by
+        })
+    except Exception as e:
+        print(f"Warning: Failed to queue watch event: {e}")
+
+@event.listens_for(Category, 'after_update')
+def on_category_updated(mapper, connection, target):
+    """分类更新后触发事件"""
+    try:
+        from flask import current_app
+        # 将事件信息存储在应用上下文中，稍后处理
+        if not hasattr(current_app, '_pending_watch_events'):
+            current_app._pending_watch_events = []
+        current_app._pending_watch_events.append({
+            'event_type': 'category_updated',
+            'target_type': 'category',
+            'target_id': target.id,
+            'actor_id': None
+        })
+    except Exception as e:
+        print(f"Warning: Failed to queue watch event: {e}")
+
+@event.listens_for(Category, 'before_delete')
+def on_category_deleted(mapper, connection, target):
+    """分类删除前触发事件"""
+    try:
+        from flask import current_app
+        # 将事件信息存储在应用上下文中，稍后处理
+        if not hasattr(current_app, '_pending_watch_events'):
+            current_app._pending_watch_events = []
+        current_app._pending_watch_events.append({
+            'event_type': 'category_deleted',
+            'target_type': 'category',
+            'target_id': target.id,
+            'actor_id': None
+        })
+    except Exception as e:
+        print(f"Warning: Failed to queue watch event: {e}")
+
+@event.listens_for(Attachment, 'after_insert')
+def on_attachment_added(mapper, connection, target):
+    """附件添加后触发事件"""
+    try:
+        from flask import current_app
+        if target.page_id:
+            # 将事件信息存储在应用上下文中，稍后处理
+            if not hasattr(current_app, '_pending_watch_events'):
+                current_app._pending_watch_events = []
+            current_app._pending_watch_events.append({
+                'event_type': 'attachment_added',
+                'target_type': 'page',
+                'target_id': target.page_id,
+                'actor_id': target.uploaded_by
+            })
+    except Exception as e:
+        print(f"Warning: Failed to queue watch event: {e}")
+
+@event.listens_for(Attachment, 'before_delete')
+def on_attachment_removed(mapper, connection, target):
+    """附件删除前触发事件"""
+    try:
+        from flask import current_app
+        if target.page_id:
+            # 将事件信息存储在应用上下文中，稍后处理
+            if not hasattr(current_app, '_pending_watch_events'):
+                current_app._pending_watch_events = []
+            current_app._pending_watch_events.append({
+                'event_type': 'attachment_removed',
+                'target_type': 'page',
+                'target_id': target.page_id,
+                'actor_id': target.uploaded_by
+            })
+    except Exception as e:
+        print(f"Warning: Failed to queue watch event: {e}")
+
+# 页面内容变更监听器
 @event.listens_for(Page.content, 'set')
-def on_page_content_change(target, value, oldvalue, initiator):
+def on_page_content_change_with_watch(target, value, oldvalue, initiator):
     Page.on_changed_content(target, value, oldvalue, initiator)
     target.updated_at = datetime.utcnow()
     if target.summary is None or not target.summary:
         target.generate_summary()
+
+    # 标记内容已更改，用于watch事件
+    target._watch_content_changed = True

@@ -1,67 +1,69 @@
-{% extends "base.html" %}
+{% extends "admin/admin_base_confluence.html" %}
 
 {% block title %}Category Management{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="fas fa-folder"></i> Category Management</h1>
-        <a href="{{ url_for('admin.create_category') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Create New Category
+{% set show_nav = true %}
+{% set subtitle = "Organize content with categories and subcategories" %}
+
+<!-- Actions Bar -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="admin-actions">
+        <a href="{{ url_for('admin.create_category') }}" class="admin-btn primary">
+            <i class="fas fa-plus me-2"></i>Create New Category
         </a>
     </div>
+</div>
 
     {% if categories %}
     <div class="row">
         {% for category in categories %}
         <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
+            <div class="admin-card h-100">
+                <div class="admin-card-header">
                     <h5 class="mb-0">{{ category.name }}</h5>
                 </div>
-                <div class="card-body">
-                    <p class="text-muted">{{ category.description or 'No description' }}</p>
+                <div class="admin-card-body">
+                    <p class="text-muted mb-3">{{ category.description or 'No description' }}</p>
 
-                    <div class="mb-2">
-                        <small class="text-muted">
-                            <i class="fas fa-user"></i> Created by:
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-2">
+                            <i class="fas fa-user me-2"></i> Created by:
                             <strong>{{ category.creator.username if category.creator else 'Unknown' }}</strong>
                         </small>
-                    </div>
-
-                    <div class="mb-2">
-                        <small class="text-muted">
-                            <i class="fas fa-calendar"></i> Created: {{ category.created_at.strftime('%Y-%m-%d') }}
+                        <small class="text-muted d-block">
+                            <i class="fas fa-calendar me-2"></i> Created: {{ category.created_at.strftime('%Y-%m-%d') }}
                         </small>
                     </div>
 
                     <div class="mb-3">
                         {% if category.is_public %}
-                            <span class="badge bg-success">Public</span>
+                            <span class="admin-badge success">Public</span>
                         {% else %}
-                            <span class="badge bg-warning">Private</span>
+                            <span class="admin-badge warning">Private</span>
                         {% endif %}
 
                         {% if category.parent %}
-                            <span class="badge bg-info">Child of {{ category.parent.name }}</span>
+                            <span class="admin-badge info">Child of {{ category.parent.name }}</span>
                         {% else %}
-                            <span class="badge bg-secondary">Root Category</span>
+                            <span class="admin-badge" style="background: #6c757d; color: white;">Root Category</span>
                         {% endif %}
                     </div>
 
                     <div class="text-muted">
                         <small>
+                            <i class="fas fa-file-alt me-2"></i>
                             <strong>{{ category.pages.count() }}</strong> page(s) in this category
                         </small>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <div class="btn-group w-100" role="group">
-                        <a href="{{ url_for('wiki.category_view', category_id=category.id) }}" class="btn btn-outline-info btn-sm">
-                            <i class="fas fa-eye"></i> View
+                <div class="admin-card-footer border-top" style="padding: 16px 24px;">
+                    <div class="admin-actions justify-content-between">
+                        <a href="{{ url_for('wiki.category_view', category_id=category.id) }}" class="admin-btn" style="background: #17a2b8; color: white; border-color: #17a2b8;">
+                            <i class="fas fa-eye me-1"></i> View
                         </a>
-                        <a href="{{ url_for('admin.edit_category', category_id=category.id) }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-edit"></i> Edit
+                        <a href="{{ url_for('admin.edit_category', category_id=category.id) }}" class="admin-btn primary">
+                            <i class="fas fa-edit me-1"></i> Edit
                         </a>
                     </div>
                 </div>
@@ -74,10 +76,9 @@
         <i class="fas fa-folder fa-3x text-muted mb-3"></i>
         <h4>No Categories Found</h4>
         <p class="text-muted">No categories have been created yet.</p>
-        <a href="{{ url_for('admin.create_category') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Create First Category
+        <a href="{{ url_for('admin.create_category') }}" class="admin-btn primary">
+            <i class="fas fa-plus me-2"></i>Create First Category
         </a>
     </div>
     {% endif %}
-</div>
 {% endblock %}

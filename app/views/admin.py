@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, abort, jsonify
+from flask import Blueprint, render_template, redirect, url_for, request, flash, abort, jsonify, current_app
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
-from app import db
+from app import db, mail
 from app.models import User, Role, Page, Category, Attachment, UserSession, Permission
 from app.decorators import admin_required
 from app.forms.admin import UserForm, RoleForm, CategoryForm
@@ -58,6 +58,117 @@ def dashboard():
     return render_template('admin/dashboard.html', stats=stats,
                          recent_pages=recent_pages, recent_users=recent_users,
                          user_growth=user_growth, page_growth=page_growth)
+
+@admin.route('/users/create', methods=['GET', 'POST'])
+def create_user():
+    """Create a new user (admin only)"""
+    from app.forms.admin import UserForm
+    form = UserForm()
+
+    if form.validate_on_submit():
+        from app.models import User, Role
+        from werkzeug.security import generate_password_hash
+        from app import db
+        import secrets
+        import string
+
+        # Check if username already exists
+        if User.query.filter_by(username=form.username.data).first():
+            flash('Username already exists!', 'danger')
+            return render_template('admin/create_user.html', form=form)
+
+        # Check if email already exists
+        if User.query.filter_by(email=form.email.data).first():
+            flash('Email already exists!', 'danger')
+            return render_template('admin/create_user.html', form=form)
+
+        # Generate random password
+        password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+
+        # Get default role if none specified
+        default_role = Role.query.filter_by(default=True).first()
+        role_id = form.role_id.data or (default_role.id if default_role else None)
+
+        # Create new user
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            name=form.name.data,
+            role_id=role_id,
+            is_active=form.is_active.data,
+            confirmed=form.confirmed.data
+        )
+
+        # Set password using the User model's password setter
+        user.password = password
+
+        db.session.add(user)
+        try:
+            db.session.commit()
+
+            # If email confirmation is required, send confirmation email
+            if not user.confirmed:
+                from app.email import send_email
+                token = user.generate_confirmation_token()
+
+                # Create email template content
+                email_html = f'''
+                <h2>Welcome to Enterprise Wiki!</h2>
+                <p>Hello {user.name},</p>
+                <p>Thank you for creating an account on Enterprise Wiki. Your account has been created successfully.</p>
+                <p><strong>Your temporary password is:</strong></p>
+                <p style="background-color: #f0f0f0; padding: 10px; font-family: monospace; font-size: 16px;">{password}</p>
+                <p>Please change your password after logging in for security reasons.</p>
+                <p><a href="{url_for('auth.confirm', token=token, _external=True)}">Click here to confirm your email address</a></p>
+                <p>If you did not create this account, please contact the administrator.</p>
+                <p>Best regards,<br>Enterprise Wiki Team</p>
+                '''
+
+                email_text = f'''
+                Welcome to Enterprise Wiki!
+
+                Hello {user.name},
+
+                Thank you for creating an account on Enterprise Wiki. Your account has been created successfully.
+
+                Your temporary password is: {password}
+
+                Please change your password after logging in for security reasons.
+
+                Click here to confirm your email address: {url_for('auth.confirm', token=token, _external=True)}
+
+                If you did not create this account, please contact the administrator.
+
+                Best regards,
+                Enterprise Wiki Team
+                '''
+
+                try:
+                    # Use Flask-Mail to send email directly
+                    from flask_mail import Message
+                    msg = Message(
+                        subject='Welcome to Enterprise Wiki - Your Account is Ready',
+                        sender=current_app.config.get('MAIL_SENDER', 'noreply@enterprise-wiki.com'),
+                        recipients=[user.email],
+                        html=email_html,
+                        body=email_text
+                    )
+                    mail.send(msg)
+                    flash(f'User created successfully! Temporary password: {password}', 'success')
+                except Exception as e:
+                    # If email sending fails, still show success message but note the email issue
+                    flash(f'User created successfully! Temporary password: {password}', 'warning')
+                    flash(f'Note: Email delivery failed - {str(e)}', 'warning')
+            else:
+                flash(f'User created successfully! Temporary password: {password}', 'success')
+
+            return redirect(url_for('admin.users'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating user: {str(e)}', 'danger')
+
+    return render_template('admin/create_user.html', form=form)
 
 @admin.route('/users')
 def users():

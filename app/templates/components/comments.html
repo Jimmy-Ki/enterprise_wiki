@@ -1,0 +1,138 @@
+<!-- 评论系统组件 -->
+<div class="comments-section" id="comments-section">
+    <div class="comments-header">
+        <h3 class="comments-title">
+            <i class="fas fa-comments me-2"></i>Comments
+        </h3>
+        <span class="comments-count" id="comments-count">0</span>
+    </div>
+
+    <!-- 评论表单 -->
+    {% if current_user.is_authenticated %}
+    <div class="comment-form">
+        <form id="main-comment-form">
+            <div class="d-flex align-items-start mb-3">
+                <img src="{{ current_user.avatar or '/static/img/default-avatar.png' }}"
+                     alt="{{ current_user.name or current_user.username }}"
+                     class="comment-avatar me-3">
+                <div class="flex-grow-1">
+                    <textarea class="form-control comment-textarea"
+                              id="main-comment-textarea"
+                              placeholder="Share your thoughts..."
+                              rows="4"
+                              required></textarea>
+                    <small class="form-text text-muted">
+                        You can use <code>@username</code> to mention other users.
+                    </small>
+                </div>
+            </div>
+            <div class="comment-actions">
+                <button type="button" class="btn btn-outline-secondary btn-sm comment-preview-toggle">
+                    <i class="fas fa-eye me-1"></i>Preview
+                </button>
+                <button type="submit" class="btn btn-primary" id="main-comment-submit">
+                    <i class="fas fa-paper-plane me-2"></i>Post Comment
+                </button>
+            </div>
+        </form>
+
+        <!-- 预览区域 -->
+        <div class="comment-preview" id="main-comment-preview" style="display: none;">
+            <h6>Preview:</h6>
+            <div id="main-comment-preview-content"></div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Please <a href="{{ url_for('auth.login') }}">sign in</a> to participate in the discussion.
+    </div>
+    {% endif %}
+
+    <!-- 评论列表 -->
+    <div class="comments-list" id="comments-list">
+        <div class="comments-loading">
+            <div class="comments-spinner"></div>
+            <div>Loading comments...</div>
+        </div>
+    </div>
+
+    <!-- 分页 -->
+    <div class="comments-pagination" id="comments-pagination">
+        <!-- 动态生成分页 -->
+    </div>
+</div>
+
+<!-- 初始化评论系统的JavaScript -->
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化评论系统
+    if (typeof window.initCommentSystem === 'function') {
+        window.commentSystem = window.initCommentSystem({
+            targetType: '{{ target_type }}',
+            targetId: {{ target_id }},
+            currentUser: {% if current_user.is_authenticated %}{
+                id: {{ current_user.id }},
+                username: '{{ current_user.username }}',
+                name: '{{ current_user.name or current_user.username }}',
+                avatar: '{{ current_user.avatar or '/static/img/default-avatar.png' }}'
+            }{% else %}null{% endif %},
+            apiBaseUrl: '',
+            enableMentions: true,
+            enablePreview: true,
+            autoRefresh: true
+        });
+
+        // 加载草稿
+        {% if current_user.is_authenticated %}
+        const mainTextarea = document.getElementById('main-comment-textarea');
+        if (mainTextarea && window.commentSystem) {
+            window.commentSystem.loadDraft(mainTextarea);
+        }
+        {% endif %}
+    }
+
+    // 添加CSS
+    const commentCSS = document.createElement('link');
+    commentCSS.rel = 'stylesheet';
+    commentCSS.href = '/static/css/comment.css';
+    document.head.appendChild(commentCSS);
+});
+
+// 全局函数：刷新评论
+window.refreshComments = function() {
+    if (window.commentSystem) {
+        window.commentSystem.loadComments(1);
+    }
+};
+
+// 全局函数：滚动到指定评论
+window.scrollToComment = function(commentId) {
+    const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+    if (commentElement) {
+        commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        commentElement.classList.add('highlighted');
+        setTimeout(() => {
+            commentElement.classList.remove('highlighted');
+        }, 3000);
+    }
+};
+
+// 添加高亮样式
+const style = document.createElement('style');
+style.textContent = `
+    .comment-item.highlighted {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding-left: 1rem;
+        margin-left: -1rem;
+        animation: highlightPulse 2s ease-in-out;
+    }
+
+    @keyframes highlightPulse {
+        0% { background-color: #ffc107; }
+        100% { background-color: #fff3cd; }
+    }
+`;
+document.head.appendChild(style);
+</script>

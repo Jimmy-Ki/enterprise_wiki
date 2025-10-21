@@ -1,63 +1,99 @@
-{% extends "base.html" %}
+{% extends "admin/admin_base_confluence.html" %}
 
 {% block title %}User Details - {{ user.username }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>User Details: {{ user.username }}</h1>
-        <div>
-            <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-warning btn-sm">
-                <i class="fas fa-edit"></i> Edit User
-            </a>
-            <a href="{{ url_for('admin.users') }}" class="btn btn-secondary btn-sm">
-                <i class="fas fa-arrow-left"></i> Back to Users
-            </a>
-        </div>
+{% set show_nav = true %}
+{% set subtitle = "View detailed user information and activity" %}
+
+<!-- Actions Bar -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="admin-actions">
+        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="admin-btn" style="background: #ffc107; color: #212529; border-color: #ffc107;">
+            <i class="fas fa-edit me-2"></i>Edit User
+        </a>
+        <a href="{{ url_for('admin.users') }}" class="admin-btn">
+            <i class="fas fa-arrow-left me-2"></i>Back to Users
+        </a>
     </div>
+</div>
 
     <div class="row">
         <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">User Information</h5>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">
+                        <i class="fas fa-user"></i>
+                        User Information
+                    </h5>
                 </div>
-                <div class="card-body">
-                    <p><strong>Username:</strong> {{ user.username }}</p>
-                    <p><strong>Email:</strong> {{ user.email }}</p>
-                    <p><strong>Name:</strong> {{ user.name or 'Not set' }}</p>
-                    <p><strong>Role:</strong>
-                        <span class="badge bg-primary">{{ user.role.name if user.role else 'No Role' }}</span>
-                    </p>
-                    <p><strong>Status:</strong>
-                        {% if user.is_active %}
-                            <span class="badge bg-success">Active</span>
-                        {% else %}
-                            <span class="badge bg-danger">Inactive</span>
-                        {% endif %}
-                    </p>
-                    <p><strong>Confirmed:</strong>
-                        {% if user.confirmed %}
-                            <span class="badge bg-success">Yes</span>
-                        {% else %}
-                            <span class="badge bg-warning">No</span>
-                        {% endif %}
-                    </p>
-                    <p><strong>Member Since:</strong> {{ user.member_since.strftime('%Y-%m-%d') if user.member_since else 'Unknown' }}</p>
-                    <p><strong>Last Seen:</strong> {{ user.last_seen.strftime('%Y-%m-%d %H:%M') if user.last_seen else 'Never' }}</p>
+                <div class="admin-card-body">
+                    <div class="text-center mb-3">
+                        <img src="{{ user.gravatar(128) }}" alt="{{ user.username }}" class="rounded-circle mb-2" style="width: 128px; height: 128px;">
+                        <h4 class="mb-1">{{ user.username }}</h4>
+                    </div>
+                    <div class="user-info">
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Email</small>
+                            <strong>{{ user.email }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Name</small>
+                            <strong>{{ user.name or 'Not set' }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Role</small>
+                            {% if user.role.name == 'Administrator' %}
+                                <span class="admin-badge danger">{{ user.role.name }}</span>
+                            {% elif user.role.name == 'Moderator' %}
+                                <span class="admin-badge warning">{{ user.role.name }}</span>
+                            {% elif user.role %}
+                                <span class="admin-badge info">{{ user.role.name }}</span>
+                            {% else %}
+                                <span class="admin-badge">No Role</span>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Status</small>
+                            {% if user.is_active %}
+                                <span class="admin-badge success">Active</span>
+                            {% else %}
+                                <span class="admin-badge danger">Inactive</span>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Confirmed</small>
+                            {% if user.confirmed %}
+                                <span class="admin-badge success">Yes</span>
+                            {% else %}
+                                <span class="admin-badge warning">No</span>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Member Since</small>
+                            <strong>{{ user.member_since.strftime('%Y-%m-%d') if user.member_since else 'Unknown' }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Last Seen</small>
+                            <strong>{{ user.last_seen.strftime('%Y-%m-%d %H:%M') if user.last_seen else 'Never' }}</strong>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Recent Pages ({{ user_pages|length }})</h5>
+            <div class="admin-card mb-4">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">
+                        <i class="fas fa-file-alt"></i>
+                        Recent Pages ({{ user_pages|length }})
+                    </h5>
                 </div>
-                <div class="card-body">
+                <div class="admin-card-body">
                     {% if user_pages %}
                         <div class="table-responsive">
-                            <table class="table table-sm">
+                            <table class="admin-table">
                                 <thead>
                                     <tr>
                                         <th>Title</th>
@@ -69,15 +105,15 @@
                                     {% for page in user_pages %}
                                     <tr>
                                         <td>
-                                            <a href="{{ url_for('wiki.view_page', slug=page.slug) }}">
+                                            <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="text-decoration-none">
                                                 {{ page.title }}
                                             </a>
                                         </td>
                                         <td>
                                             {% if page.is_published %}
-                                                <span class="badge bg-success">Published</span>
+                                                <span class="admin-badge success">Published</span>
                                             {% else %}
-                                                <span class="badge bg-secondary">Draft</span>
+                                                <span class="admin-badge" style="background: #6c757d; color: white;">Draft</span>
                                             {% endif %}
                                         </td>
                                         <td>{{ page.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
@@ -87,19 +123,22 @@
                             </table>
                         </div>
                     {% else %}
-                        <p class="text-muted">No pages created by this user.</p>
+                        <p class="text-muted text-center py-4">No pages created by this user.</p>
                     {% endif %}
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Recent Sessions ({{ user_sessions|length }})</h5>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">
+                        <i class="fas fa-clock"></i>
+                        Recent Sessions ({{ user_sessions|length }})
+                    </h5>
                 </div>
-                <div class="card-body">
+                <div class="admin-card-body">
                     {% if user_sessions %}
                         <div class="table-responsive">
-                            <table class="table table-sm">
+                            <table class="admin-table">
                                 <thead>
                                     <tr>
                                         <th>IP Address</th>
@@ -111,16 +150,16 @@
                                 <tbody>
                                     {% for session in user_sessions %}
                                     <tr>
-                                        <td>{{ session.ip_address or 'Unknown' }}</td>
-                                        <td class="text-truncate" style="max-width: 200px;">
+                                        <td><code>{{ session.ip_address or 'Unknown' }}</code></td>
+                                        <td class="text-truncate" style="max-width: 200px;" title="{{ session.user_agent or 'Unknown' }}">
                                             {{ session.user_agent or 'Unknown' }}
                                         </td>
                                         <td>{{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                                         <td>
                                             {% if session.is_active %}
-                                                <span class="badge bg-success">Active</span>
+                                                <span class="admin-badge success">Active</span>
                                             {% else %}
-                                                <span class="badge bg-secondary">Inactive</span>
+                                                <span class="admin-badge" style="background: #6c757d; color: white;">Inactive</span>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -129,11 +168,10 @@
                             </table>
                         </div>
                     {% else %}
-                        <p class="text-muted">No recent sessions for this user.</p>
+                        <p class="text-muted text-center py-4">No recent sessions for this user.</p>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
-</div>
 {% endblock %}

@@ -724,6 +724,27 @@
                 Create
             </button>
 
+            <!-- Notifications -->
+            <div class="dropdown position-relative">
+                <button class="btn-wiki notification-icon" data-bs-toggle="dropdown" onclick="loadNotifications()">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">0</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end notifications-dropdown p-0" style="min-width: 350px;">
+                    <div class="notifications-header">
+                        <span>通知</span>
+                        <button class="close-btn" onclick="closeNotifications()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="notification-list">
+                        <div class="text-center p-3">
+                            <i class="fas fa-spinner fa-spin"></i> 加载中...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="dropdown">
                 <button class="btn-wiki dropdown-toggle" data-bs-toggle="dropdown">
                     {% if current_user.avatar %}
@@ -829,6 +850,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/markdown/markdown.min.js"></script>
     <!-- Marked.js for markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Watch functionality -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/watch.css') }}">
+    <script src="{{ url_for('static', filename='js/watch.js') }}"></script>
 
     <script>
         // Global wiki state
@@ -1174,6 +1198,20 @@
                 console.error('Error saving field:', error);
                 showToast('Error updating page', 'error');
             });
+        }
+
+        // Notification functions
+        function loadNotifications() {
+            if (window.watchManager) {
+                window.watchManager.loadNotifications();
+            }
+        }
+
+        function closeNotifications() {
+            const dropdown = document.querySelector('.notifications-dropdown');
+            if (dropdown) {
+                dropdown.classList.remove('show');
+            }
         }
 
         function showToast(message, type = 'info') {

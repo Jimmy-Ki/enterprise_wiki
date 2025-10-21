@@ -19,6 +19,12 @@
         </div>
         <div class="page-actions">
             {% if current_user.is_authenticated %}
+            <button class="btn-wiki watch-btn"
+                    data-target-type="category"
+                    data-target-id="{{ category.id }}"
+                    title="关注此分类">
+                <i class="fas fa-eye"></i> 关注
+            </button>
             <a href="{{ url_for('wiki.create_page') }}" class="btn-wiki primary">
                 <i class="fas fa-plus me-2"></i>Create Page
             </a>

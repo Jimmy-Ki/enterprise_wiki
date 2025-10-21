@@ -1,31 +1,42 @@
-{% extends "base.html" %}
+{% extends "admin/admin_base_confluence.html" %}
 
 {% block title %}Active Sessions{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="fas fa-users"></i> Active Sessions</h1>
-        <div class="text-muted">
-            <i class="fas fa-circle text-success"></i> {{ sessions.total }} active session(s)
-        </div>
+{% set show_nav = true %}
+{% set subtitle = "Monitor and manage active user sessions" %}
+
+<!-- Status Bar -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="text-muted">
+        <i class="fas fa-circle text-success me-2"></i>
+        <strong>{{ sessions.total }}</strong> active session(s)
     </div>
+</div>
 
     {% if sessions.items %}
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead class="table-light">
-                <tr>
-                    <th>User</th>
-                    <th>IP Address</th>
-                    <th>User Agent</th>
-                    <th>Created</th>
-                    <th>Expires</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h5 class="admin-card-title">
+                <i class="fas fa-list"></i>
+                Active Sessions
+            </h5>
+        </div>
+        <div class="admin-card-body p-0">
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>IP Address</th>
+                            <th>User Agent</th>
+                            <th>Created</th>
+                            <th>Expires</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                 {% for session in sessions.items %}
                 <tr>
                     <td>
@@ -51,17 +62,17 @@
                     <td>{{ session.expires_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                     <td>
                         {% if session.is_active %}
-                            <span class="badge bg-success">Active</span>
+                            <span class="admin-badge success">Active</span>
                         {% else %}
-                            <span class="badge bg-secondary">Inactive</span>
+                            <span class="admin-badge" style="background: #6c757d; color: white;">Inactive</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if session.is_active %}
                         <form method="POST" action="{{ url_for('admin.revoke_session', session_id=session.id) }}" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Revoke Session"
+                            <button type="submit" class="admin-btn danger" title="Revoke Session"
                                     onclick="return confirm('Are you sure you want to revoke this session?')">
-                                <i class="fas fa-ban"></i> Revoke
+                                <i class="fas fa-ban me-1"></i> Revoke
                             </button>
                         </form>
                         {% else %}
@@ -71,48 +82,51 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
-    </div>
+                </table>
+            </div>
 
-    <!-- Pagination -->
-    {% if sessions.pages > 1 %}
-    <nav aria-label="Session pagination">
-        <ul class="pagination justify-content-center">
-            {% if sessions.has_prev %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('admin.sessions', page=sessions.prev_num) }}">Previous</a>
-                </li>
+            <!-- Pagination -->
+            {% if sessions.pages > 1 %}
+            <div class="p-3 border-top">
+                <nav aria-label="Session pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if sessions.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.sessions', page=sessions.prev_num) }}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        {% for page_num in sessions.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != sessions.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.sessions', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if sessions.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.sessions', page=sessions.next_num) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="text-muted text-center mt-2">
+                    Showing {{ sessions.items|length }} of {{ sessions.total }} active sessions
+                </div>
+            </div>
             {% endif %}
-
-            {% for page_num in sessions.iter_pages() %}
-                {% if page_num %}
-                    {% if page_num != sessions.page %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('admin.sessions', page=page_num) }}">{{ page_num }}</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item active">
-                            <span class="page-link">{{ page_num }}</span>
-                        </li>
-                    {% endif %}
-                {% else %}
-                    <li class="page-item disabled">
-                        <span class="page-link">…</span>
-                    </li>
-                {% endif %}
-            {% endfor %}
-
-            {% if sessions.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('admin.sessions', page=sessions.next_num) }}">Next</a>
-                </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
-
-    <div class="text-muted">
-        Showing {{ sessions.items|length }} of {{ sessions.total }} active sessions
+        </div>
     </div>
 
     {% else %}
@@ -122,5 +136,4 @@
         <p class="text-muted">There are no active user sessions at the moment.</p>
     </div>
     {% endif %}
-</div>
 {% endblock %}
