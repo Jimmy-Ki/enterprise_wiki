@@ -292,6 +292,9 @@
     <p class="mb-0">{{ page.summary }}</p>
 </div>
 {% endif %}
+
+<!-- Comments Section -->
+{% include 'components/comments.html' with context %}
 {% endblock %}
 
 {% block scripts %}

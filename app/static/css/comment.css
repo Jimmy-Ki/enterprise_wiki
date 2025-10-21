@@ -1,39 +1,398 @@
 /* 评论系统样式 */
 .comments-section {
     margin-top: 2rem;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+/* 富文本编辑器样式 */
+.comment-editor-toolbar {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-bottom: none;
+    border-radius: 0.375rem 0.375rem 0 0;
+    padding: 0.5rem;
+    margin-bottom: 0;
+}
+
+.toolbar-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.toolbar-btn:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.toolbar-btn:active {
+    background-color: #dee2e6;
+    border-color: #adb5bd;
+}
+
+.toolbar-btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.comment-editor {
+    background-color: white;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    min-height: 150px;
+    max-height: 300px;
+    overflow-y: auto;
+    line-height: 1.6;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.comment-editor:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: 0;
+}
+
+.comment-editor[contenteditable="true"]:empty:before {
+    content: attr(data-placeholder);
+    color: #6c757d;
+    font-style: italic;
+}
+
+.comment-editor a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.comment-editor a:hover {
+    text-decoration: underline;
+}
+
+.comment-editor code {
+    background-color: #f8f9fa;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.comment-editor pre {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+}
+
+.comment-editor blockquote {
+    border-left: 4px solid #007bff;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.comment-editor ul,
+.comment-editor ol {
+    margin: 1rem 0;
+    padding-left: 2rem;
+}
+
+.comment-editor li {
+    margin: 0.25rem 0;
+}
+
+.comment-meta {
+    margin-top: 0.5rem;
+}
+
+/* 表情符号选择器样式 */
+.emoji-picker {
+    position: absolute;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1050;
+    width: 350px;
+    max-height: 400px;
+}
+
+.emoji-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.emoji-picker-title {
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
+}
+
+.emoji-picker-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+}
+
+.emoji-picker-close:hover {
+    color: #495057;
+}
+
+.emoji-picker-tabs {
+    display: flex;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+    gap: 0.25rem;
+    overflow-x: auto;
+}
+
+.emoji-tab {
+    background: none;
+    border: 1px solid transparent;
+    padding: 0.375rem 0.75rem;
+    font-size: 1.25rem;
+    border-radius: 0.25rem 0.25rem 0 0;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.emoji-tab:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.emoji-tab.active {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.emoji-picker-content {
+    padding: 1rem;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.25rem;
+}
+
+.emoji-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.emoji-item:hover {
+    background-color: #f8f9fa;
+}
+
+.emoji-item:active {
+    background-color: #e9ecef;
+}
+
+/* Markdown切换按钮样式 */
+.comment-markdown-toggle.active {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+/* 预览模式样式 */
+.comment-preview .comment-preview-content {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    min-height: 100px;
+}
+
+.comment-preview .comment-preview-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.375rem;
+}
+
+.comment-preview .comment-preview-content pre {
+    background-color: #212529;
+    color: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    overflow-x: auto;
+}
+
+.comment-preview .comment-preview-content blockquote {
+    border-left: 4px solid #6c757d;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* 链接插入对话框 */
+.link-dialog {
+    position: absolute;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1050;
+    padding: 1rem;
+    width: 300px;
+}
+
+.link-dialog-header {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.link-dialog input {
+    margin-bottom: 0.5rem;
+}
+
+.link-dialog-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* 图片插入对话框 */
+.image-dialog {
+    position: absolute;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1050;
+    padding: 1rem;
+    width: 400px;
+}
+
+.image-dialog-header {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.image-dialog input {
+    margin-bottom: 0.5rem;
+}
+
+.image-dialog-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* 撤销/重做按钮状态 */
+.toolbar-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .comment-editor-toolbar {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .btn-group {
+        margin-bottom: 0.25rem;
+    }
+
+    .emoji-picker {
+        width: 300px;
+        max-height: 350px;
+    }
+
+    .emoji-picker-content {
+        max-height: 200px;
+    }
+
+    .emoji-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+
+    .link-dialog,
+    .image-dialog {
+        width: 250px;
+    }
 }
 
 .comments-header {
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
+    padding: 1.5rem;
     border-bottom: 1px solid #e9ecef;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
 }
 
 .comments-title {
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1.5rem;
+    font-weight: 700;
     margin: 0;
-    color: #495057;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .comments-count {
-    background-color: #e9ecef;
-    color: #495057;
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.comments-count:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
 }
 
 /* 评论表单 */
 .comment-form {
-    background-color: #f8f9fa;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 2rem;
+    margin: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.comment-form:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
 }
 
 .comment-textarea {
@@ -60,13 +419,46 @@
 }
 
 /* 评论列表 */
+.comments-list {
+    padding: 0 1.5rem 1.5rem;
+}
+
 .comment-item {
-    border-bottom: 1px solid #e9ecef;
-    padding: 1.5rem 0;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.comment-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.comment-item:hover::before {
+    transform: scaleY(1);
+}
+
+.comment-item:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+    border-color: #667eea;
 }
 
 .comment-item:last-child {
-    border-bottom: none;
+    margin-bottom: 0;
 }
 
 .comment-header {
@@ -77,11 +469,18 @@
 }
 
 .comment-avatar {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid #e9ecef;
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.comment-avatar:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .comment-meta {
@@ -89,29 +488,33 @@
 }
 
 .comment-author {
-    font-weight: 600;
-    color: #495057;
+    font-weight: 700;
+    color: #2c3e50;
     text-decoration: none;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    transition: color 0.2s ease;
+    font-size: 1rem;
 }
 
 .comment-author:hover {
-    color: #007bff;
+    color: #667eea;
     text-decoration: none;
 }
 
 .comment-author.current-user {
-    color: #007bff;
+    color: #667eea;
 }
 
 .comment-badge {
     font-size: 0.75rem;
-    padding: 0.125rem 0.5rem;
+    padding: 0.25rem 0.75rem;
     border-radius: 1rem;
-    background-color: #e9ecef;
-    color: #6c757d;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
 }
 
 .comment-time {
@@ -154,26 +557,34 @@
 .comment-delete-btn {
     color: #6c757d;
     text-decoration: none;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    transition: all 0.15s ease-in-out;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
     cursor: pointer;
-    background: none;
-    border: none;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
     font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
 .comment-reply-btn:hover,
 .comment-edit-btn:hover {
-    color: #007bff;
-    background-color: #e3f2fd;
-    text-decoration: none;
+    color: #667eea;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8f0fe 100%);
+    border-color: #667eea;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
 }
 
 .comment-delete-btn:hover {
     color: #dc3545;
-    background-color: #f8d7da;
-    text-decoration: none;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+    border-color: #dc3545;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
 }
 
 /* 回复评论 */

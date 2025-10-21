@@ -128,7 +128,7 @@ class WatchNotification(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    watch_id = db.Column(db.Integer, db.ForeignKey('watches.id'), nullable=False)
+    watch_id = db.Column(db.Integer, db.ForeignKey('watches.id'))  # 允许为NULL，用于@提及等直接通知
 
     # 事件信息
     event_type = db.Column(db.Enum(WatchEventType), nullable=False)

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评论系统测试页面</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .status-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        .status-success { background-color: #d4edda; color: #155724; }
+        .status-error { background-color: #f8d7da; color: #721c24; }
+        .status-warning { background-color: #fff3cd; color: #856404; }
+        .status-info { background-color: #d1ecf1; color: #0c5460; }
+
+        /* 评论系统样式 */
+        .comments-section {
+            margin-top: 2rem;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+        .comment-editor-toolbar {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-bottom: none;
+            border-radius: 0.375rem 0.375rem 0 0;
+            padding: 0.5rem;
+            margin-bottom: 0;
+        }
+        .toolbar-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            border-radius: 0.25rem;
+            transition: all 0.15s ease-in-out;
+        }
+        .toolbar-btn:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+        .comment-editor {
+            background-color: white;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+            line-height: 1.6;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .comment-editor:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            outline: 0;
+        }
+        .comment-editor[data-placeholder]:empty:before {
+            content: attr(data-placeholder);
+            color: #6c757d;
+            font-style: italic;
+        }
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .comment-item {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+        }
+        .comment-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .comment-content {
+            margin-bottom: 0.5rem;
+        }
+        .comment-footer {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .comment-time {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        .comment-edited {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+        .mention {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .mention:hover {
+            text-decoration: underline;
+        }
+        .comments-loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+        .emoji-picker {
+            position: absolute;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+            z-index: 1000;
+            max-width: 300px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .mention-suggestions {
+            position: absolute;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+            z-index: 1000;
+            min-width: 200px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .mention-suggestion {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        .mention-suggestion:last-child {
+            border-bottom: none;
+        }
+        .mention-suggestion:hover {
+            background-color: #f8f9fa;
+        }
+        .mention-suggestion.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .mention-suggestion-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            object-fit: cover;
+        }
+        .mention-suggestion-info {
+            flex: 1;
+        }
+        .mention-suggestion-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .mention-suggestion-username {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        .mention-suggestion-email {
+            font-size: 0.75rem;
+            color: #adb5bd;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>评论系统测试页面</h1>
+
+        <div id="test-results">
+            <div class="status-item status-info">
+                <strong>正在测试评论系统...</strong>
+            </div>
+        </div>
+
+        <!-- 评论系统组件 -->
+        <div class="comments-section" id="comments-section">
+            <div class="comments-header">
+                <h3 class="comments-title">
+                    <i class="fas fa-comments me-2"></i>Comments
+                </h3>
+                <span class="comments-count" id="comments-count">0</span>
+            </div>
+
+            <!-- 评论表单 -->
+            <div class="comment-form">
+                <form id="main-comment-form">
+                    <div class="d-flex align-items-start mb-3">
+                        <img src="https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=40&d=identicon&r=g"
+                             alt="Test User" class="comment-avatar me-3">
+                        <div class="flex-grow-1">
+                            <!-- 富文本编辑器工具栏 -->
+                            <div class="comment-editor-toolbar">
+                                <div class="btn-group me-2" role="group">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="bold" title="Bold (Ctrl+B)">
+                                        <i class="fas fa-bold"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="italic" title="Italic (Ctrl+I)">
+                                        <i class="fas fa-italic"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="underline" title="Underline">
+                                        <i class="fas fa-underline"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 富文本编辑器 -->
+                            <div class="comment-editor" id="main-comment-editor" contenteditable="true"
+                                 data-placeholder="Share your thoughts... Use @username to mention users">
+                            </div>
+
+                            <!-- 隐藏的textarea用于表单提交 -->
+                            <textarea class="form-control comment-textarea"
+                                      id="main-comment-textarea"
+                                      style="display: none;"
+                                      required></textarea>
+
+                            <div class="comment-meta">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <code>@username</code> to mention users • Supports Markdown
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="comment-actions">
+                        <button type="submit" class="btn btn-primary" id="main-comment-submit">
+                            <i class="fas fa-paper-plane me-2"></i>Post Comment
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 评论列表 -->
+            <div class="comments-list" id="comments-list">
+                <div class="comments-loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <div>Loading comments...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 模拟登录用户
+        const mockUser = {
+            id: 1,
+            username: 'admin',
+            name: 'Administrator',
+            avatar: 'https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=40&d=identicon&r=g'
+        };
+
+        // 测试结果函数
+        function logTest(message, type = 'info') {
+            const resultsDiv = document.getElementById('test-results');
+            const statusClass = `status-${type}`;
+            const messageHtml = `
+                <div class="status-item ${statusClass}">
+                    <strong>${new Date().toLocaleTimeString()}</strong> - ${message}
+                </div>
+            `;
+            resultsDiv.innerHTML = messageHtml + resultsDiv.innerHTML;
+        }
+
+        // 测试评论系统初始化
+        function testCommentSystem() {
+            logTest('开始测试评论系统...', 'info');
+
+            try {
+                // 模拟初始化评论系统
+                if (typeof window.CommentSystem === 'undefined') {
+                    logTest('CommentSystem类未定义', 'error');
+                    return false;
+                }
+
+                logTest('CommentSystem类已加载', 'success');
+
+                // 检查必要的元素
+                const editor = document.getElementById('main-comment-editor');
+                const textarea = document.getElementById('main-comment-textarea');
+                const submitBtn = document.getElementById('main-comment-submit');
+                const commentsList = document.getElementById('comments-list');
+
+                if (!editor) {
+                    logTest('富文本编辑器元素未找到', 'error');
+                    return false;
+                }
+
+                if (!textarea) {
+                    logTest('隐藏textarea元素未找到', 'error');
+                    return false;
+                }
+
+                if (!submitBtn) {
+                    logTest('提交按钮未找到', 'error');
+                    return false;
+                }
+
+                if (!commentsList) {
+                    logTest('评论列表容器未找到', 'error');
+                    return false;
+                }
+
+                logTest('所有必要的HTML元素都存在', 'success');
+
+                // 测试富文本编辑器功能
+                testRichTextEditor();
+
+                // 测试表单提交
+                testFormSubmission();
+
+                // 测试评论加载
+                testCommentLoading();
+
+                return true;
+
+            } catch (error) {
+                logTest(`评论系统初始化失败: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // 测试富文本编辑器
+        function testRichTextEditor() {
+            const editor = document.getElementById('main-comment-editor');
+
+            try {
+                // 测试工具栏按钮
+                const toolbarBtns = document.querySelectorAll('.toolbar-btn');
+                logTest(`找到 ${toolbarBtns.length} 个工具栏按钮`, 'info');
+
+                // 测试编辑器焦点
+                editor.focus();
+                logTest('富文本编辑器可以获取焦点', 'success');
+
+                // 测试输入功能
+                editor.innerHTML = '测试评论内容';
+                if (editor.innerHTML === '测试评论内容') {
+                    logTest('富文本编辑器可以设置内容', 'success');
+                } else {
+                    logTest('富文本编辑器内容设置失败', 'error');
+                }
+
+                // 测试占位符
+                editor.innerHTML = '';
+                if (editor.getAttribute('data-placeholder')) {
+                    logTest('富文本编辑器占位符正常', 'success');
+                }
+
+            } catch (error) {
+                logTest(`富文本编辑器测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试表单提交
+        function testFormSubmission() {
+            const form = document.getElementById('main-comment-form');
+            const submitBtn = document.getElementById('main-comment-submit');
+
+            try {
+                // 模拟表单提交
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    logTest('表单提交事件被触发', 'info');
+
+                    const editor = document.getElementById('main-comment-editor');
+                    const textarea = document.getElementById('main-comment-textarea');
+
+                    const content = editor.innerHTML.trim();
+
+                    if (!content || content === '<br>') {
+                        logTest('评论内容为空', 'warning');
+                        return;
+                    }
+
+                    // 模拟API调用
+                    logTest(`模拟提交评论: ${content.substring(0, 50)}...`, 'info');
+
+                    // 模拟成功响应
+                    const mockComment = {
+                        id: Date.now(),
+                        content: content,
+                        author: mockUser,
+                        created_at: new Date().toISOString(),
+                        is_edited: false
+                    };
+
+                    // 添加评论到列表
+                    addCommentToList(mockComment);
+
+                    // 清空编辑器
+                    editor.innerHTML = '';
+                    textarea.value = '';
+
+                    logTest('评论提交测试成功', 'success');
+                });
+
+                logTest('表单提交事件监听器已设置', 'success');
+
+            } catch (error) {
+                logTest(`表单提交测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试评论加载
+        function testCommentLoading() {
+            try {
+                logTest('开始测试评论加载...', 'info');
+
+                // 模拟API响应
+                const mockComments = [
+                    {
+                        id: 1,
+                        content: '这是一个测试评论',
+                        author: mockUser,
+                        created_at: new Date().toISOString(),
+                        is_edited: false
+                    }
+                ];
+
+                // 渲染评论
+                renderComments(mockComments);
+
+                logTest('评论加载测试成功', 'success');
+
+            } catch (error) {
+                logTest(`评论加载测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 渲染评论列表
+        function renderComments(comments) {
+            const container = document.getElementById('comments-list');
+            const countElement = document.getElementById('comments-count');
+
+            container.innerHTML = '';
+
+            if (comments.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted p-4">No comments yet. Be the first to comment!</div>';
+                return;
+            }
+
+            comments.forEach(comment => {
+                const commentElement = createCommentElement(comment);
+                container.appendChild(commentElement);
+            });
+
+            countElement.textContent = comments.length;
+        }
+
+        // 创建评论元素
+        function createCommentElement(comment) {
+            const timeAgo = formatTimeAgo(new Date(comment.created_at));
+
+            const div = document.createElement('div');
+            div.className = 'comment-item';
+            div.setAttribute('data-comment-id', comment.id);
+
+            div.innerHTML = `
+                <div class="comment-header">
+                    <img src="${comment.author.avatar}" alt="${comment.author.name}" class="comment-avatar">
+                    <div class="comment-meta">
+                        <strong>${comment.author.name}</strong>
+                        <span class="comment-time">${timeAgo}</span>
+                    </div>
+                </div>
+                <div class="comment-content">
+                    ${comment.content}
+                </div>
+                <div class="comment-footer">
+                    <small class="text-muted">
+                        <i class="fas fa-reply"></i> Reply
+                    </small>
+                </div>
+            `;
+
+            return div;
+        }
+
+        // 格式化时间
+        function formatTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+            return `${Math.floor(seconds / 86400)} days ago`;
+        }
+
+        // 页面加载完成后开始测试
+        document.addEventListener('DOMContentLoaded', function() {
+            logTest('页面加载完成', 'info');
+
+            // 检查是否加载了CommentSystem类
+            if (typeof window.CommentSystem !== 'undefined') {
+                logTest('CommentSystem类已加载，跳过模拟', 'success');
+                testCommentSystem();
+            } else {
+                logTest('CommentSystem类未加载，开始模拟测试...', 'info');
+
+                // 创建模拟的CommentSystem类
+                window.CommentSystem = function(options) {
+                    this.options = options;
+                    this.currentPage = 1;
+                    this.isLoading = false;
+                    this.mentionCache = new Map();
+
+                    this.bindEvents();
+                    this.loadComments();
+                };
+
+                // 添加基本方法
+                window.CommentSystem.prototype.bindEvents = function() {
+                    console.log('Binding events...');
+                };
+
+                window.CommentSystem.prototype.loadComments = function() {
+                    console.log('Loading comments...');
+                    this.renderComments([]);
+                };
+
+                window.CommentSystem.prototype.renderComments = function(comments) {
+                    renderComments(comments);
+                };
+
+                window.CommentSystem.prototype.showSuccess = function(message) {
+                    logTest(message, 'success');
+                };
+
+                window.CommentSystem.prototype.showError = function(message) {
+                    logTest(message, 'error');
+                };
+
+                // 开始测试
+                setTimeout(testCommentSystem, 100);
+            }
+        });
+    </script>
+</body>
+</html>

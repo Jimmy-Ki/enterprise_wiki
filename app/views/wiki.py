@@ -269,7 +269,8 @@ def view_page(slug):
 
     return render_template('wiki/page_confluence.html', page=page, versions=versions,
                          attachments=accessible_attachments, categories=categories,
-                         category_tree=category_tree, recent_pages=accessible_recent_pages)
+                         category_tree=category_tree, recent_pages=accessible_recent_pages,
+                         target_type='page', target_id=page.id)
 
 @wiki.route('/create', methods=['GET', 'POST'])
 @login_required

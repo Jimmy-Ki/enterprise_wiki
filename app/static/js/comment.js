@@ -71,18 +71,61 @@ class CommentSystem {
             this.cancelAction($(e.currentTarget));
         });
 
-        // 文本区域输入事件（用于@提及）
-        $(document).on('input', '.comment-textarea', (e) => {
-            this.handleTextareaInput(e.target);
+        // 富文本编辑器工具栏按钮
+        $(document).on('click', '.toolbar-btn[data-command]', (e) => {
+            e.preventDefault();
+            this.execCommand($(e.currentTarget).data('command'));
+        });
 
-            // 自动保存草稿
-            this.saveDraft(e.target);
+        // 表情符号按钮
+        $(document).on('click', '.emoji-picker-btn', (e) => {
+            e.preventDefault();
+            this.toggleEmojiPicker($(e.currentTarget));
+        });
+
+        // 表情符号选择
+        $(document).on('click', '.emoji-item', (e) => {
+            e.preventDefault();
+            this.insertEmoji($(e.currentTarget).text());
+        });
+
+        // 表情符号标签页
+        $(document).on('click', '.emoji-tab', (e) => {
+            e.preventDefault();
+            this.switchEmojiTab($(e.currentTarget));
+        });
+
+        // 表情符号选择器关闭
+        $(document).on('click', '.emoji-picker-close', (e) => {
+            e.preventDefault();
+            this.hideEmojiPicker();
+        });
+
+        // Markdown切换
+        $(document).on('click', '.comment-markdown-toggle', (e) => {
+            e.preventDefault();
+            this.toggleMarkdownMode($(e.currentTarget));
         });
 
         // 预览切换
         $(document).on('click', '.comment-preview-toggle', (e) => {
             e.preventDefault();
             this.togglePreview($(e.currentTarget));
+        });
+
+        // 富文本编辑器输入事件
+        $(document).on('input', '.comment-editor', (e) => {
+            this.handleEditorInput(e.target);
+            this.updateHiddenTextarea(e.target);
+            // 自动保存草稿
+            this.saveDraft(e.target);
+        });
+
+        // 文本区域输入事件（用于@提及）
+        $(document).on('input', '.comment-textarea', (e) => {
+            this.handleTextareaInput(e.target);
+            // 自动保存草稿
+            this.saveDraft(e.target);
         });
 
         // @提及建议点击
@@ -97,10 +140,22 @@ class CommentSystem {
             this.loadPage($(e.currentTarget).data('page'));
         });
 
+        // 全局点击事件（关闭弹出层）
+        $(document).on('click', (e) => {
+            if (!$(e.target).closest('.emoji-picker, .emoji-picker-btn').length) {
+                this.hideEmojiPicker();
+            }
+            if (!$(e.target).closest('.comment-textarea, #mention-suggestions').length) {
+                this.hideMentionSuggestions();
+            }
+        });
+
         // ESC键取消操作
         $(document).on('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.cancelAllActions();
+                this.hideEmojiPicker();
+                this.hideMentionSuggestions();
             }
         });
     }
@@ -223,12 +278,22 @@ class CommentSystem {
      */
     async handleCommentSubmit(form) {
         const $form = $(form);
+        const $editor = $form.find('.comment-editor');
         const $textarea = $form.find('.comment-textarea');
         const $submitBtn = $form.find('button[type="submit"]');
-        const content = $textarea.val().trim();
 
-        if (!content) {
-            this.showValidationError($textarea, 'Please enter a comment');
+        // 获取内容，优先从富文本编辑器获取
+        let content = '';
+        if ($editor.length > 0) {
+            content = $editor.html().trim();
+            // 同时更新隐藏的textarea
+            $textarea.val(this.htmlToText(content));
+        } else {
+            content = $textarea.val().trim();
+        }
+
+        if (!content || content === '<br>') {
+            this.showValidationError($editor.length > 0 ? $editor : $textarea, 'Please enter a comment');
             return;
         }
 
@@ -283,8 +348,13 @@ class CommentSystem {
             }
 
             // 清空表单
-            $textarea.val('');
-            this.clearDraft($textarea[0]);
+            if ($editor.length > 0) {
+                $editor.html('');
+                $textarea.val('');
+            } else {
+                $textarea.val('');
+            }
+            this.clearDraft($editor.length > 0 ? $editor[0] : $textarea[0]);
 
             // 移除表单（如果是回复或编辑表单）
             if (parent_id || comment_id) {
@@ -486,16 +556,35 @@ class CommentSystem {
         if (!this.options.enableMentions) return;
 
         const $textarea = $(textarea);
-        const cursorPos = $textarea[0].selectionStart;
-        const text = $textarea.val();
-        const textBeforeCursor = text.substring(0, cursorPos);
+        let text, cursorPos;
+
+        // 判断是富文本编辑器还是普通textarea
+        if ($textarea.hasClass('comment-editor')) {
+            // 富文本编辑器
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents($textarea[0]);
+                preCaretRange.setEnd(range.endContainer, range.endOffset);
+                text = preCaretRange.toString();
+                cursorPos = text.length;
+            } else {
+                text = $textarea.text();
+                cursorPos = text.length;
+            }
+        } else {
+            // 普通textarea
+            cursorPos = $textarea[0].selectionStart;
+            text = $textarea.val();
+        }
 
         // 检查是否正在输入@提及
-        const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+        const mentionMatch = text.match(/@(\w*)$/);
 
         if (mentionMatch) {
             const query = mentionMatch[1];
-            if (query.length >= 2) {
+            if (query.length >= 1) { // 降低触发阈值，让用户更容易看到提示
                 this.showMentionSuggestions(query, $textarea);
             } else {
                 this.hideMentionSuggestions();
@@ -640,18 +729,106 @@ class CommentSystem {
 
         if (!$textarea) return;
 
-        const text = $textarea.val();
-        const cursorPos = $textarea[0].selectionStart;
-        const textBeforeCursor = text.substring(0, cursorPos);
+        if ($textarea.hasClass('comment-editor')) {
+            // 富文本编辑器处理
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents($textarea[0]);
+                preCaretRange.setEnd(range.endContainer, range.endOffset);
 
-        // 替换@user部分
-        const newText = textBeforeCursor.replace(/@\w*$/, '@' + username) + text.substring(cursorPos);
+                const text = preCaretRange.toString();
+                const mentionMatch = text.match(/@(\w*)$/);
 
-        $textarea.val(newText);
+                if (mentionMatch) {
+                    // 找到@符号的位置
+                    const mentionStart = text.lastIndexOf('@');
+                    const mentionEnd = text.length;
 
-        // 设置光标位置
-        const newCursorPos = textBeforeCursor.replace(/@\w*$/, '@' + username).length;
-        $textarea[0].setSelectionRange(newCursorPos, newCursorPos);
+                    // 选择@username部分
+                    const startRange = document.createRange();
+                    const endRange = range.cloneRange();
+
+                    // 设置选择范围
+                    endRange.setEnd(range.endContainer, range.endOffset);
+                    endRange.setStart(range.endContainer, Math.max(0, range.endOffset - mentionMatch[1].length));
+
+                    try {
+                        // 创建一个从@符号开始的范围
+                        const walker = document.createTreeWalker(
+                            $textarea[0],
+                            NodeFilter.SHOW_TEXT,
+                            null,
+                            false
+                        );
+
+                        let node, totalLength = 0;
+                        let startNode = null, startOffset = 0;
+                        let endNode = null, endOffset = 0;
+
+                        while ((node = walker.nextNode())) {
+                            const nodeLength = node.textContent.length;
+                            const nodeStart = totalLength;
+                            const nodeEnd = totalLength + nodeLength;
+
+                            if (!startNode && nodeEnd >= mentionStart) {
+                                startNode = node;
+                                startOffset = mentionStart - nodeStart;
+                            }
+
+                            if (!endNode && nodeEnd >= mentionEnd) {
+                                endNode = node;
+                                endOffset = mentionEnd - nodeStart;
+                                break;
+                            }
+
+                            totalLength = nodeEnd;
+                        }
+
+                        if (startNode && endNode) {
+                            const selectRange = document.createRange();
+                            selectRange.setStart(startNode, startOffset);
+                            selectRange.setEnd(endNode, endOffset);
+
+                            selection.removeAllRanges();
+                            selection.addRange(selectRange);
+
+                            // 替换为@username
+                            const mentionText = document.createTextNode('@' + username + ' ');
+                            selectRange.deleteContents();
+                            selectRange.insertNode(mentionText);
+
+                            // 设置光标位置
+                            const newRange = document.createRange();
+                            newRange.setStartAfter(mentionText);
+                            newRange.collapse(true);
+                            selection.removeAllRanges();
+                            selection.addRange(newRange);
+                        }
+                    } catch (e) {
+                        console.error('Error handling mention selection:', e);
+                        // 回退方案：直接插入文本
+                        const mentionText = '@' + username + ' ';
+                        range.insertNode(document.createTextNode(mentionText));
+                    }
+                }
+            }
+        } else {
+            // 普通textarea处理
+            const text = $textarea.val();
+            const cursorPos = $textarea[0].selectionStart;
+            const textBeforeCursor = text.substring(0, cursorPos);
+
+            // 替换@user部分
+            const newText = textBeforeCursor.replace(/@\w*$/, '@' + username + ' ') + text.substring(cursorPos);
+
+            $textarea.val(newText);
+
+            // 设置光标位置
+            const newCursorPos = textBeforeCursor.replace(/@\w*$/, '@' + username + ' ').length;
+            $textarea[0].setSelectionRange(newCursorPos, newCursorPos);
+        }
 
         this.hideMentionSuggestions();
         $textarea.focus();
@@ -992,6 +1169,228 @@ class CommentSystem {
         setTimeout(() => {
             notification.alert('close');
         }, 10000);
+    }
+
+    /**
+     * 执行编辑器命令
+     */
+    execCommand(command) {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            document.execCommand(command, false, null);
+            this.updateHiddenTextarea(document.activeElement);
+        }
+    }
+
+    /**
+     * 切换表情符号选择器
+     */
+    toggleEmojiPicker($button) {
+        const $emojiPicker = $('#emoji-picker');
+
+        if ($emojiPicker.is(':visible')) {
+            this.hideEmojiPicker();
+        } else {
+            this.showEmojiPicker($button);
+        }
+    }
+
+    /**
+     * 显示表情符号选择器
+     */
+    showEmojiPicker($button) {
+        const $emojiPicker = $('#emoji-picker');
+        const buttonRect = $button[0].getBoundingClientRect();
+
+        // 如果是第一次显示，加载表情符号数据
+        if ($emojiPicker.find('.emoji-grid').is(':empty')) {
+            this.loadEmojiData();
+        }
+
+        $emojiPicker.css({
+            top: buttonRect.bottom + window.scrollY,
+            left: Math.max(buttonRect.left + window.scrollX - 150, 10) // 确保不超出屏幕左边界
+        }).show();
+
+        // 默认显示第一个标签页
+        $emojiPicker.find('.emoji-tab').first().click();
+    }
+
+    /**
+     * 隐藏表情符号选择器
+     */
+    hideEmojiPicker() {
+        $('#emoji-picker').hide();
+    }
+
+    /**
+     * 加载表情符号数据
+     */
+    loadEmojiData() {
+        const emojiData = {
+            smileys: ['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤩', '🤔', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🤑', '😲', '☹️', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😰', '😱', '🥵', '🥶', '😳', '🥺', '😵', '😡', '😠', '🤬', '😷', '🤒', '🤕', '🤢', '🤮', '🥴', '🤧', '😇', '🤠', '🥳', '🥸'],
+            people: ['👶', '👧', '🧒', '👦', '👩', '🧑', '👨', '👱', '👱‍♀️', '👱‍♂️', '🧓', '👴', '👵', '🙍', '🙍‍♀️', '🙍‍♂️', '🙎', '🙎‍♀️', '🙎‍♂️', '🙏', '🙏‍♀️', '🙏‍♂️', '💪', '💪‍♀️', '💪‍♂️', '👋', '👋🏻', '👋🏼', '👋🏽', '👋🏾', '👋🏿', '🤚', '🤚🏻', '🤚🏼', '🤚🏽', '🤚🏾', '🤚🏿', '🖐️', '🖐🏻', '🖐🏼', '🖐🏽', '🖐🏾', '🖐🏿', '✋', '✋🏻', '✋🏼', '✋🏽', '✋🏾', '✋🏿', '🖖', '🖖🏻', '🖖🏼', '🖖🏽', '🖖🏾', '🖖🏿', '👌', '👌🏻', '👌🏼', '👌🏽', '👌🏾', '👌🏿', '🤌', '🤌🏻', '🤌🏼', '🤌🏽', '🤌🏾', '🤌🏿', '🤏', '🤏🏻', '🤏🏼', '🤏🏽', '🤏🏾', '🤏🏿', '✌️', '✌🏻', '✌🏼', '✌🏽', '✌🏾', '✌🏿', '🤞', '🤞🏻', '🤞🏼', '🤞🏽', '🤞🏾', '🤞🏿', '🤟', '🤟🏻', '🤟🏼', '🤟🏽', '🤟🏾', '🤟🏿', '🤘', '🤘🏻', '🤘🏼', '🤘🏽', '🤘🏾', '🤘🏿', '🤙', '🤙🏻', '🤙🏼', '🤙🏽', '🤙🏾', '🤙🏿'],
+            animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐈', '🐓', '🦃', '🦚', '🦜', '🦢', '🦩', '🕊️', '🐇', '🦝', '🦨', '🦡', '🦦', '🦥', '🐁', '🐀', '🦔'],
+            food: ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🌽', '🥕', '🥔', '🍠', '🥐', '🍞', '🥖', '🥨', '🧀', '🥚', '🍳', '🥞', '🥓', '🥩', '🍗', '🍖', '🌭', '🍔', '🍟', '🍕', '🥪', '🥙', '🌮', '🌯', '🥗', '🥘', '🥫', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧', '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '🥜', '🍯', '🥛', '🍼', '☕', '🍵', '🥤', '🍶', '🍺', '🍻', '🥂', '🍷', '🥃', '🍸', '🍹', '🍾', '🥃', '🥃'],
+            activities: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🥅', '⛳', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛷', '⛸️', '🥌', '🎿', '⛷️', '🏂', '🏋️', '🏋️‍♀️', '🏋️‍♂️', '🤼', '🤼‍♀️', '🤼‍♂️', '🤸', '🤸‍♀️', '🤸‍♂️', '⛹️', '⛹️‍♀️', '⛹️‍♂️', '🤺', '🤾', '🤾‍♀️', '🤾‍♂️', '🏌️', '🏌️‍♀️', '🏌️‍♂️', '🏇', '🧘', '🧘‍♀️', '🧘‍♂️', '🏄', '🏄‍♀️', '🏄‍♂️', '🏊', '🏊‍♀️', '🏊‍♂️', '🤽', '🤽‍♀️', '🤽‍♂️', '🚣', '🚣‍♀️', '🚣‍♂️', '🧗', '🧗‍♀️', '🧗‍♂️', '🚵', '🚵‍♀️', '🚵‍♂️', '🚴', '🚴‍♀️', '🚴‍♂️', '🏆', '🥇', '🥈', '🥉', '🏅', '🎖️', '🏵️', '🎗️', '🎫', '🎟️', '🎪', '🤹', '🤹‍♀️', '🤹‍♂️', '🎭', '🩰', '🎨', '🎬', '🎤', '🎧', '🎼', '🎹', '🥁', '🎷', '🎺', '🎸', '🪕', '🎻', '🎲', '♟️', '🎯', '🎳', '🎮', '🎰', '🧩'],
+            travel: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🏍️', '🛵', '🚲', '🛴', '🛹', '🛼', '🚁', '🛸', '🚀', '✈️', '🛩️', '🛫', '🛬', '⛵', '🚤', '🛥️', '🚢', '⚓', '⛽', '🚧', '🚦', '🚥', '🚏', '🗺️', '🗿', '🗽', '🗼', '🏰', '🏯', '🏟️', '🎡', '🎢', '🎠', '⛲', '⛱️', '🏖️', '🏝️', '🏜️', '🌋', '⛰️', '🏔️', '🗻', '🏕️', '⛺', '🏠', '🏡', '🏘️', '🏚️', '🏗️', '🏭', '🏢', '🏬', '🏣', '🏤', '🏥', '🏦', '🏨', '🏪', '🏫', '🏩', '💒', '🏛️', '⛪', '🕌', '🛕', '🕍', '⛩️', '🛤️', '🛣️', '🗾', '🎑', '🏞️', '🌅', '🌄', '🌠', '🎇', '🎆', '🌇', '🌆', '🏙️', '🌃', '🌌', '🌉', '🌁'],
+            objects: ['⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '⏳', '⌛', '📡', '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸', '💵', '💴', '💶', '💷', '💰', '💳', '💎', '⚖️', '🧰', '🔧', '🔨', '⚒️', '🛠️', '⛏️', '🔩', '⚙️', '🧱', '⛓️', '🧲', '🔫', '💣', '🧨', '🪓', '🔪', '🗡️', '⚔️', '🛡️', '🚬', '⚰️', '⚱️', '🏺', '🔮', '📿', '🧿', '💈', '⚗️', '🔭', '🔬', '🕳️', '🩹', '🩺', '💊', '💉', '🩸', '🧬', '🦠', '🧫', '🧪', '🌡️', '🧹', '🧺', '🧻', '🚽', '🚰', '🚿', '🛁', '🛀', '🧼', '🪒', '🧽', '🧴', '🛎️', '🔑', '🗝️', '🚪', '🪑', '🛋️', '🛏️', '🛌', '🧸', '🖼️', '🛍️', '🎁', '🎈', '🎏', '🎀', '🎊', '🎉', '🎎', '🏮', '🎐', '🧧', '✉️', '📩', '📨', '📧', '💌', '📥', '📤', '📦', '🏷️', '📪', '📫', '📬', '📭', '📮', '📯', '📜', '📃', '📄', '📑', '🧾', '📊', '📈', '📉', '🗒️', '🗓️', '📆', '📅', '🗑️', '📇', '🗃️', '🗳️', '🗄️', '📋', '📁', '📂', '🗂️', '🗞️', '📰', '📓', '📔', '📒', '📕', '📗', '📘', '📙', '📚', '📖', '🔖', '🧷', '🔗', '📎', '🖇️', '📐', '📏', '🧮', '📌', '📍', '✂️', '🖊️', '🖋️', '✒️', '🖌️', '🖍️', '📝', '✏️', '🔍', '🔎', '🔏', '🔐', '🔒', '🔓'],
+            symbols: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '👍', '👍🏻', '👍🏼', '👍🏽', '👍🏾', '👍🏿', '👎', '👎🏻', '👎🏼', '👎🏽', '👎🏾', '👎🏿', '👌', '👌🏻', '👌🏼', '👌🏽', '👌🏾', '👌🏿', '✌️', '✌🏻', '✌🏼', '✌🏽', '✌🏾', '✌🏿', '🤞', '🤞🏻', '🤞🏼', '🤞🏽', '🤞🏾', '🤞🏿', '🤟', '🤟🏻', '🤟🏼', '🤟🏽', '🤟🏾', '🤟🏿', '🤘', '🤘🏻', '🤘🏼', '🤘🏽', '🤘🏾', '🤘🏿', '🤙', '🤙🏻', '🤙🏼', '🤙🏽', '🤙🏾', '🤙🏿', '👈', '👈🏻', '👈🏼', '👈🏽', '👈🏾', '👈🏿', '👉', '👉🏻', '👉🏼', '👉🏽', '👉🏾', '👉🏿', '👆', '👆🏻', '👆🏼', '👆🏽', '👆🏾', '👆🏿', '👇', '👇🏻', '👇🏼', '👇🏽', '👇🏾', '👇🏿', '☝️', '☝🏻', '☝🏼', '☝🏽', '☝🏾', '☝🏿', '✋', '✋🏻', '✋🏼', '✋🏽', '✋🏾', '✋🏿', '🤚', '🤚🏻', '🤚🏼', '🤚🏽', '🤚🏾', '🤚🏿', '🖐️', '🖐🏻', '🖐🏼', '🖐🏽', '🖐🏾', '🖐🏿', '🖖', '🖖🏻', '🖖🏼', '🖖🏽', '🖖🏾', '🖖🏿', '👋', '👋🏻', '👋🏼', '👋🏽', '👋🏾', '👋🏿', '🤝', '🙏', '🙏🏻', '🙏🏼', '🙏🏽', '🙏🏾', '🙏🏿', '💪', '💪🏻', '💪🏼', '💪🏽', '💪🏾', '💪🏿', '✍️', '✍🏻', '✍🏼', '✍🏽', '✍🏾', '✍🏿', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️', '👅', '👄', '👶', '🧒', '👦', '👧', '🧑', '👱', '👨', '🧔', '👩', '🧓', '👴', '👵', '🙍', '🙍🏻', '🙍🏼', '🙍🏽', '🙍🏾', '🙍🏿', '🙎', '🙎🏻', '🙎🏼', '🙎🏽', '🙎🏾', '🙎🏿', '🙅', '🙅🏻', '🙅🏼', '🙅🏽', '🙅🏾', '🙅🏿', '🙆', '🙆🏻', '🙆🏼', '🙆🏽', '🙆🏾', '🙆🏿', '💁', '💁🏻', '💁🏼', '💁🏽', '💁🏾', '💁🏿', '🙋', '🙋🏻', '🙋🏼', '🙋🏽', '🙋🏾', '🙋🏿', '🧏', '🧏🏻', '🧏🏼', '🧏🏽', '🧏🏾', '🧏🏿', '🙇', '🙇🏻', '🙇🏼', '🙇🏽', '🙇🏾', '🙇🏿', '🤦', '🤦🏻', '🤦🏼', '🤦🏽', '🤦🏾', '🤦🏿', '🤷', '🤷🏻', '🤷🏼', '🤷🏽', '🤷🏾', '🤷🏿', '👨‍⚕️', '👩‍⚕️', '👨‍🎓', '👩‍🎓', '👨‍🏫', '👩‍🏫', '👨‍⚖️', '👩‍⚖️', '👨‍🌾', '👩‍🌾', '👨‍🍳', '👩‍🍳', '👨‍🔧', '👩‍🔧', '👨‍🏭', '👩‍🏭', '👨‍💼', '👩‍💼', '👨‍🔬', '👩‍🔬', '👨‍💻', '👩‍💻', '👨‍🎤', '👩‍🎤', '👨‍🎨', '👩‍🎨', '👨‍✈️', '👩‍✈️', '👨‍🚀', '👩‍🚀', '👨‍🚒', '👩‍🚒', '👮', '👮🏻', '👮🏼', '👮🏽', '👮🏾', '👮🏿', '🕵️', '🕵️‍♀️', '🕵️‍♂️', '💂', '💂🏻', '💂🏼', '💂🏽', '💂🏾', '💂🏿', '👷', '👷🏻', '👷🏼', '👷🏽', '👷🏾', '👷🏿', '🤴', '🤴🏻', '🤴🏼', '🤴🏽', '🤴🏾', '🤴🏿', '👸', '👸🏻', '👸🏼', '👸🏽', '👸🏾', '👸🏿', '👳', '👳🏻', '👳🏼', '👳🏽', '👳🏾', '👳🏿', '👲', '🧕', '🧕🏻', '🧕🏼', '🧕🏽', '🧕🏾', '🧕🏿', '🤵', '🤵🏻', '🤵🏼', '🤵🏽', '🤵🏾', '🤵🏿', '👰', '👰🏻', '👰🏼', '👰🏽', '👰🏾', '👰🏿', '🤰', '🤰🏻', '🤰🏼', '🤰🏽', '🤰🏾', '🤰🏿', '🤱', '🤱🏻', '🤱🏼', '🤱🏽', '🤱🏾', '🤱🏿', '👼', '👼🏻', '👼🏼', '👼🏽', '👼🏾', '👼🏿', '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿', '🤶', '🤶🏻', '🤶🏼', '🤶🏽', '🤶🏾', '🤶🏿', '🦸', '🦸🏻', '🦸🏼', '🦸🏽', '🦸🏾', '🦸🏿', '🦸‍♀️', '🦸‍♀️🏻', '🦸‍♀️🏼', '🦸‍♀️🏽', '🦸‍♀️🏾', '🦸‍♀️🏿', '🦸‍♂️', '🦸‍♂️🏻', '🦸‍♂️🏼', '🦸‍♂️🏽', '🦸‍♂️🏾', '🦸‍♂️🏿', '🦹', '🦹🏻', '🦹🏼', '🦹🏽', '🦹🏾', '🦹🏿', '🦹‍♀️', '🦹‍♀️🏻', '🦹‍♀️🏼', '🦹‍♀️🏽', '🦹‍♀️🏾', '🦹‍♀️🏿', '🦹‍♂️', '🦹‍♂️🏻', '🦹‍♂️🏼', '🦹‍♂️🏽', '🦹‍♂️🏾', '🦹‍♂️🏿', '🧙', '🧙🏻', '🧙🏼', '🧙🏽', '🧙🏾', '🧙🏿', '🧙‍♀️', '🧙‍♀️🏻', '🧙‍♀️🏼', '🧙‍♀️🏽', '🧙‍♀️🏾', '🧙‍♀️🏿', '🧙‍♂️', '🧙‍♂️🏻', '🧙‍♂️🏼', '🧙‍♂️🏽', '🧙‍♂️🏾', '🧙‍♂️🏿', '🧚', '🧚🏻', '🧚🏼', '🧚🏽', '🧚🏾', '🧚🏿', '🧚‍♀️', '🧚‍♀️🏻', '🧚‍♀️🏼', '🧚‍♀️🏽', '🧚‍♀️🏾', '🧚‍♀️🏿', '🧚‍♂️', '🧚‍♂️🏻', '🧚‍♂️🏼', '🧚‍♂️🏽', '🧚‍♂️🏾', '🧚‍♂️🏿', '🧛', '🧛🏻', '🧛🏼', '🧛🏽', '🧛🏾', '🧛🏿', '🧛‍♀️', '🧛‍♀️🏻', '🧛‍♀️🏼', '🧛‍♀️🏽', '🧛‍♀️🏾', '🧛‍♀️🏿', '🧛‍♂️', '🧛‍♂️🏻', '🧛‍♂️🏼', '🧛‍♂️🏽', '🧛‍♂️🏾', '🧛‍♂️🏿', '🧜', '🧜🏻', '🧜🏼', '🧜🏽', '🧜🏾', '🧜🏿', '🧜‍♀️', '🧜‍♀️🏻', '🧜‍♀️🏼', '🧜‍♀️🏽', '🧜‍♀️🏾', '🧜‍♀️🏿', '🧜‍♂️', '🧜‍♂️🏻', '🧜‍♂️🏼', '🧜‍♂️🏽', '🧜‍♂️🏾', '🧜‍♂️🏿', '🧝', '🧝🏻', '🧝🏼', '🧝🏽', '🧝🏾', '🧝🏿', '🧝‍♀️', '🧝‍♀️🏻', '🧝‍♀️🏼', '🧝‍♀️🏽', '🧝‍♀️🏾', '🧝‍♀️🏿', '🧝‍♂️', '🧝‍♂️🏻', '🧝‍♂️🏼', '🧝‍♂️🏽', '🧝‍♂️🏾', '🧝‍♂️🏿', '🧞', '🧞🏻', '🧞🏼', '🧞🏽', '🧞🏾', '🧞🏿', '🧞‍♀️', '🧞‍♀️🏻', '🧞‍♀️🏼', '🧞‍♀️🏽', '🧞‍♀️🏾', '🧞‍♀️🏿', '🧞‍♂️', '🧞‍♂️🏻', '🧞‍♂️🏼', '🧞‍♂️🏽', '🧞‍♂️🏾', '🧞‍♂️🏿', '🧟', '🧟🏻', '🧟🏼', '🧟🏽', '🧟🏾', '🧟🏿', '🧟‍♀️', '🧟‍♀️🏻', '🧟‍♀️🏼', '🧟‍♀️🏽', '🧟‍♀️🏾', '🧟‍♀️🏿', '🧟‍♂️', '🧟‍♂️🏻', '🧟‍♂️🏼', '🧟‍♂️🏽', '🧟‍♂️🏾', '🧟‍♂️🏿', '💀', '👻', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'],
+            flags: ['🏁', '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈', '🏳️‍⚧️', '🏴‍☠️', '🇦🇨', '🇦🇩', '🇦🇪', '🇦🇫', '🇦🇬', '🇦🇮', '🇦🇱', '🇦🇲', '🇦🇴', '🇦🇶', '🇦🇷', '🇦🇸', '🇦🇹', '🇦🇺', '🇦🇼', '🇦🇽', '🇦🇿', '🇧🇦', '🇧🇧', '🇧🇩', '🇧🇪', '🇧🇫', '🇧🇬', '🇧🇭', '🇧🇮', '🇧🇯', '🇧🇱', '🇧🇲', '🇧🇳', '🇧🇴', '🇧🇶', '🇧🇷', '🇧🇸', '🇧🇹', '🇧🇻', '🇧🇼', '🇧🇾', '🇧🇿', '🇨🇦', '🇨🇨', '🇨🇩', '🇨🇫', '🇨🇬', '🇨🇭', '🇨🇮', '🇨🇰', '🇨🇱', '🇨🇲', '🇨🇳', '🇨🇴', '🇨🇵', '🇨🇷', '🇨🇺', '🇨🇻', '🇨🇼', '🇨🇽', '🇨🇾', '🇨🇿', '🇩🇪', '🇩🇬', '🇩🇯', '🇩🇰', '🇩🇲', '🇩🇴', '🇩🇿', '🇪🇦', '🇪🇨', '🇪🇪', '🇪🇬', '🇪🇭', '🇪🇷', '🇪🇸', '🇪🇹', '🇪🇺', '🇫🇮', '🇫🇯', '🇫🇰', '🇫🇲', '🇫🇴', '🇫🇷', '🇬🇦', '🇬🇧', '🇬🇩', '🇬🇪', '🇬🇫', '🇬🇬', '🇬🇭', '🇬🇮', '🇬🇱', '🇬🇲', '🇬🇳', '🇬🇵', '🇬🇶', '🇬🇷', '🇬🇸', '🇬🇹', '🇬🇺', '🇬🇼', '🇬🇾', '🇭🇰', '🇭🇲', '🇭🇳', '🇭🇷', '🇭🇹', '🇭🇺', '🇮🇨', '🇮🇩', '🇮🇪', '🇮🇱', '🇮🇲', '🇮🇳', '🇮🇴', '🇮🇶', '🇮🇷', '🇮🇸', '🇮🇹', '🇯🇪', '🇯🇲', '🇯🇴', '🇯🇵', '🇰🇪', '🇰🇬', '🇰🇭', '🇰🇮', '🇰🇲', '🇰🇳', '🇰🇵', '🇰🇷', '🇰🇼', '🇰🇾', '🇰🇿', '🇱🇦', '🇱🇧', '🇱🇨', '🇱🇮', '🇱🇰', '🇱🇷', '🇱🇸', '🇱🇹', '🇱🇺', '🇱🇻', '🇱🇾', '🇲🇦', '🇲🇨', '🇲🇩', '🇲🇪', '🇲🇫', '🇲🇬', '🇲🇭', '🇲🇰', '🇲🇱', '🇲🇲', '🇲🇳', '🇲🇴', '🇲🇵', '🇲🇶', '🇲🇷', '🇲🇸', '🇲🇹', '🇲🇺', '🇲🇻', '🇲🇼', '🇲🇽', '🇲🇾', '🇲🇿', '🇳🇦', '🇳🇨', '🇳🇪', '🇳🇫', '🇳🇬', '🇳🇮', '🇳🇱', '🇳🇴', '🇳🇵', '🇳🇷', '🇳🇺', '🇳🇿', '🇴🇲', '🇵🇦', '🇵🇪', '🇵🇫', '🇵🇬', '🇵🇭', '🇵🇰', '🇵🇱', '🇵🇲', '🇵🇳', '🇵🇷', '🇵🇸', '🇵🇹', '🇵🇼', '🇵🇾', '🇶🇦', '🇷🇪', '🇷🇴', '🇷🇸', '🇷🇺', '🇷🇼', '🇸🇦', '🇸🇧', '🇸🇨', '🇸🇩', '🇸🇪', '🇸🇬', '🇸🇭', '🇸🇮', '🇸🇯', '🇸🇰', '🇸🇱', '🇸🇲', '🇸🇳', '🇸🇴', '🇸🇷', '🇸🇸', '🇸🇹', '🇸🇻', '🇸🇽', '🇸🇾', '🇸🇿', '🇹🇦', '🇹🇨', '🇹🇩', '🇹🇫', '🇹🇬', '🇹🇭', '🇹🇯', '🇹🇰', '🇹🇱', '🇹🇲', '🇹🇳', '🇹🇴', '🇹🇷', '🇹🇹', '🇹🇻', '🇹🇼', '🇹🇿', '🇺🇦', '🇺🇬', '🇺🇲', '🇺🇸', '🇺🇾', '🇺🇿', '🇻🇦', '🇻🇨', '🇻🇪', '🇻🇬', '🇻🇮', '🇻🇳', '🇻🇺', '🇼🇫', '🇪🇭', '🇪🇺', '🇫🇷', '🇬🇧', '🇬🇬', '🇮🇹', '🇯🇵', '🇰🇷', '🇨🇳', '🇷🇺', '🇺🇸']
+        };
+
+        let firstCategory = true;
+        for (const [category, emojis] of Object.entries(emojiData)) {
+            const $tab = $(`.emoji-tab[data-category="${category}"]`);
+            const $grid = $(`<div class="emoji-grid" data-category="${category}" style="display: ${firstCategory ? 'grid' : 'none'};"></div>`);
+
+            emojis.forEach(emoji => {
+                $grid.append(`<div class="emoji-item">${emoji}</div>`);
+            });
+
+            $('#emoji-picker .emoji-picker-content').append($grid);
+            firstCategory = false;
+        }
+    }
+
+    /**
+     * 切换表情符号标签页
+     */
+    switchEmojiTab($tab) {
+        const category = $tab.data('category');
+
+        // 更新标签页状态
+        $('#emoji-picker .emoji-tab').removeClass('active');
+        $tab.addClass('active');
+
+        // 显示对应的表情符号网格
+        $('#emoji-picker .emoji-grid').hide();
+        $(`#emoji-picker .emoji-grid[data-category="${category}"]`).show();
+    }
+
+    /**
+     * 插入表情符号
+     */
+    insertEmoji(emoji) {
+        const $activeEditor = $('.comment-editor:focus');
+        if ($activeEditor.length === 0) return;
+
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const textNode = document.createTextNode(emoji);
+            range.insertNode(textNode);
+            range.setStartAfter(textNode);
+            range.setEndAfter(textNode);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } else {
+            $activeEditor.append(emoji);
+        }
+
+        this.updateHiddenTextarea($activeEditor[0]);
+        $activeEditor.focus();
+    }
+
+    /**
+     * 切换Markdown模式
+     */
+    toggleMarkdownMode($button) {
+        $button.toggleClass('active');
+        const isMarkdown = $button.hasClass('active');
+
+        // 这里可以添加Markdown模式的逻辑
+        if (isMarkdown) {
+            this.showSuccess('Markdown mode enabled');
+        } else {
+            this.showSuccess('Rich text mode enabled');
+        }
+    }
+
+    /**
+     * 切换预览
+     */
+    togglePreview($button) {
+        const $preview = $('#main-comment-preview');
+        const $editor = $('#main-comment-editor');
+        const $textarea = $('#main-comment-textarea');
+
+        if ($preview.is(':visible')) {
+            $preview.hide();
+            $editor.show();
+            $button.html('<i class="fas fa-eye me-1"></i>Preview');
+        } else {
+            const content = $editor.html() || $textarea.val();
+            const previewContent = this.markdownToHtml(content);
+            $('#main-comment-preview-content').html(previewContent);
+            $preview.show();
+            $editor.hide();
+            $button.html('<i class="fas fa-edit me-1"></i>Edit');
+        }
+    }
+
+    /**
+     * 处理富文本编辑器输入
+     */
+    handleEditorInput(editor) {
+        // 处理@提及
+        this.handleTextareaInput(editor);
+
+        // 检查空状态
+        const content = editor.innerHTML.trim();
+        if (content === '' || content === '<br>') {
+            editor.setAttribute('data-placeholder', editor.getAttribute('data-placeholder'));
+        } else {
+            editor.removeAttribute('data-placeholder');
+        }
+    }
+
+    /**
+     * 更新隐藏的textarea
+     */
+    updateHiddenTextarea(editor) {
+        const $editor = $(editor);
+        const $textarea = $editor.closest('.comment-form').find('.comment-textarea');
+        if ($textarea.length > 0) {
+            $textarea.val(this.htmlToText($editor.html()));
+        }
+    }
+
+    /**
+     * HTML转纯文本
+     */
+    htmlToText(html) {
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        return temp.textContent || temp.innerText || '';
+    }
+
+    /**
+     * Markdown转HTML
+     */
+    markdownToHtml(markdown) {
+        if (!markdown) return '';
+
+        return markdown
+            // 粗体
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            // 斜体
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            // 代码块
+            .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+            // 行内代码
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            // 链接
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+            // 标题
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            // 列表
+            .replace(/^\* (.+)$/gim, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+            // 换行
+            .replace(/\n/g, '<br>');
     }
 }
 

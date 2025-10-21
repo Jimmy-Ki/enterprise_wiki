@@ -83,15 +83,46 @@ class Comment(db.Model):
                 ).first()
 
                 if not existing_mention:
+                    # 创建提及记录（只有在comment已经有ID时才创建）
+                    if comment.id:
+                        mention = CommentMention(
+                            comment_id=comment.id,
+                            mentioned_user_id=user.id,
+                            mentioned_username=username
+                        )
+                        db.session.add(mention)
+
+        return content
+
+    def create_mentions_after_save(self, content):
+        """在保存后创建提及记录"""
+        import re
+        from app.models.user import User
+
+        # 匹配@username格式
+        mention_pattern = r'@(\w+)'
+        mentions = re.findall(mention_pattern, content)
+
+        for username in mentions:
+            # 查找用户
+            user = User.query.filter_by(username=username).first()
+            if user and user.id != self.author_id:
+                # 检查是否已经提及过
+                existing_mention = CommentMention.query.filter_by(
+                    comment_id=self.id,
+                    mentioned_user_id=user.id
+                ).first()
+
+                if not existing_mention:
                     # 创建提及记录
                     mention = CommentMention(
-                        comment_id=comment.id,
+                        comment_id=self.id,
                         mentioned_user_id=user.id,
                         mentioned_username=username
                     )
                     db.session.add(mention)
 
-        return content
+        db.session.commit()
 
     def get_mentions(self):
         """获取所有被提及的用户"""
@@ -109,7 +140,7 @@ class Comment(db.Model):
                 'id': self.author.id,
                 'username': self.author.username,
                 'name': self.author.name,
-                'avatar': self.author.avatar or '/static/img/default-avatar.png'
+                'avatar': self.author.gravatar(size=40) or '/static/img/default-avatar.png'
             },
             'parent_id': self.parent_id,
             'is_edited': self.is_edited,

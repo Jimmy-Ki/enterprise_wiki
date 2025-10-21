@@ -1,119 +1,98 @@
-{% extends "base.html" %}
+{% extends "base_confluence.html" %}
 
 {% block title %}Confirm Your Account - Enterprise Wiki{% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/confluence.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow">
-            <div class="card-header text-center bg-warning text-dark">
-                <h4 class="mb-0">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Account Confirmation Required
-                </h4>
+<div class="confluence-container">
+    <div class="confluence-content">
+        <div class="unconfirmed-container">
+            <div class="unconfirmed-header">
+                <div class="unconfirmed-icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <div class="unconfirmed-title">
+                    <h1>Account Confirmation Required</h1>
+                    <p>Please confirm your email address to activate your account</p>
+                </div>
             </div>
-            <div class="card-body text-center">
-                <div class="mb-4">
-                    <i class="fas fa-envelope fa-3x text-warning mb-3"></i>
-                    <h5>Check Your Email</h5>
-                    <p class="text-muted">
-                        We've sent a confirmation email to <strong>{{ current_user.email }}</strong>.
-                        Please check your inbox and click the confirmation link to activate your account.
-                    </p>
+
+            <div class="unconfirmed-message">
+                <div class="message-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="message-content">
+                    <h3>Check Your Email</h3>
+                    <p>We've sent a confirmation email to <strong data-email>{{ current_user.email }}</strong>.</p>
+                    <p>Please check your inbox and click the confirmation link to activate your account.</p>
+                </div>
+            </div>
+
+            <div class="unconfirmed-help">
+                <h3><i class="fas fa-question-circle me-2"></i>Didn't receive the email?</h3>
+                <ul>
+                    <li>Check your spam or junk folder</li>
+                    <li>Make sure the email address is correct</li>
+                    <li>Wait a few minutes for delivery</li>
+                </ul>
+            </div>
+
+            <div class="unconfirmed-actions">
+                <form method="POST" action="{{ url_for('auth.resend_confirmation') }}" class="resend-form">
+                    {{ form.hidden_tag() }}
+                    <button type="submit" class="confluence-btn confluence-btn-primary resend-btn" name="{{ form.submit.name }}" value="{{ form.submit.label.text }}">
+                        <i class="fas fa-redo"></i>
+                        {{ form.submit.label.text }}
+                    </button>
+                </form>
+
+                <a href="{{ url_for('auth.logout') }}" class="confluence-btn confluence-btn-outline">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            </div>
+
+            <div class="unconfirmed-status">
+                <div class="status-item">
+                    <div class="status-label">
+                        <i class="fas fa-user"></i>
+                        <span>Username:</span>
+                    </div>
+                    <div class="status-value">{{ current_user.username }}</div>
                 </div>
 
-                <div class="alert alert-info" role="alert">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Didn't receive the email?</strong>
-                    <ul class="mb-0 mt-2 text-start">
-                        <li>Check your spam or junk folder</li>
-                        <li>Make sure the email address is correct</li>
-                        <li>Wait a few minutes for delivery</li>
-                    </ul>
+                <div class="status-item">
+                    <div class="status-label">
+                        <i class="fas fa-envelope"></i>
+                        <span>Email:</span>
+                    </div>
+                    <div class="status-value" data-email>{{ current_user.email }}</div>
                 </div>
 
-                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                    <form method="POST" action="{{ url_for('auth.resend_confirmation') }}" class="d-inline">
-                        {{ csrf_token() }}
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-redo me-2"></i>Resend Confirmation Email
-                        </button>
-                    </form>
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-sign-out-alt me-2"></i>Logout
-                    </a>
+                <div class="status-item">
+                    <div class="status-label">
+                        <i class="fas fa-calendar"></i>
+                        <span>Member Since:</span>
+                    </div>
+                    <div class="status-value">{{ current_user.member_since.strftime('%Y-%m-%d') }}</div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Account Status -->
-        <div class="card mt-3">
-            <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-user me-2"></i>Account Information
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-6">
-                        <strong>Username:</strong><br>
-                        {{ current_user.username }}
+                <div class="status-item">
+                    <div class="status-label">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Account Status:</span>
                     </div>
-                    <div class="col-6">
-                        <strong>Email:</strong><br>
-                        {{ current_user.email }}
-                    </div>
-                </div>
-                <hr>
-                <div class="row">
-                    <div class="col-6">
-                        <strong>Member Since:</strong><br>
-                        {{ current_user.member_since.strftime('%Y-%m-%d') }}
-                    </div>
-                    <div class="col-6">
-                        <strong>Account Status:</strong><br>
-                        <span class="badge bg-warning">Pending Confirmation</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Confirmation Instructions -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-question-circle me-2"></i>Why Confirmation is Required
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <i class="fas fa-shield-alt fa-2x text-primary mb-2"></i>
-                            <h6>Security</h6>
-                            <p class="text-muted">Email verification ensures that only legitimate users can create accounts.</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <i class="fas fa-envelope fa-2x text-success mb-2"></i>
-                            <h6>Communication</h6>
-                            <p class="text-muted">Verified email addresses allow us to send important notifications.</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <i class="fas fa-user-check fa-2x text-info mb-2"></i>
-                            <h6>Account Recovery</h6>
-                            <p class="text-muted">A confirmed email is essential for password recovery and account support.</p>
-                        </div>
+                    <div class="status-value">
+                        <span class="status-badge status-pending">Pending Confirmation</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script src="{{ url_for('static', filename='js/unconfirmed.js') }}"></script>
 {% endblock %}
