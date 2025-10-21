@@ -76,6 +76,15 @@ def create_app(config_name='default'):
     from app.views.api import api as api_blueprint
     app.register_blueprint(api_blueprint, url_prefix='/api')
 
+    from app.views.watch import watch as watch_blueprint
+    app.register_blueprint(watch_blueprint)
+
+    from app.views.comment import comment as comment_blueprint
+    app.register_blueprint(comment_blueprint)
+
+    from app.views.user import user as user_blueprint
+    app.register_blueprint(user_blueprint)
+
     # CSRF exemptions for API endpoints
     @csrf.exempt
     def csrf_exempt_register():
@@ -83,6 +92,7 @@ def create_app(config_name='default'):
 
     # Exempt specific API routes from CSRF
     csrf.exempt(api_blueprint)
+    csrf.exempt(comment_blueprint)
 
     # Error handlers
     @app.errorhandler(403)
@@ -108,5 +118,17 @@ def create_app(config_name='default'):
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         return response
+
+    # Process watch events after each request
+    @app.teardown_request
+    def process_watch_events(exception):
+        """在每个请求处理完成后处理watch事件"""
+        try:
+            from app.services.watch_service import process_pending_watch_events
+            notifications_count = process_pending_watch_events()
+            if notifications_count > 0:
+                print(f"Processed {notifications_count} watch notifications")
+        except Exception as e:
+            print(f"Error in teardown watch event processing: {e}")
 
     return app

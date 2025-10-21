@@ -1,98 +1,96 @@
-{% extends "base.html" %}
+{% extends "admin/admin_base_confluence.html" %}
 
 {% block title %}User Management - Admin Dashboard{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="fas fa-users me-2"></i>User Management
-            </h2>
-            <div>
-                <a href="{{ url_for('admin.users') }}?export=true" class="btn btn-outline-success me-2">
-                    <i class="fas fa-download me-2"></i>Export
-                </a>
-                <a href="{{ url_for('auth.register') }}" class="btn btn-primary">
-                    <i class="fas fa-user-plus me-2"></i>Add User
-                </a>
-            </div>
-        </div>
+{% set show_nav = true %}
+{% set subtitle = "Manage user accounts, roles, and permissions" %}
+
+<!-- Actions Bar -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="admin-actions">
+        <a href="{{ url_for('admin.users') }}?export=true" class="admin-btn" style="background: #28a745; color: white; border-color: #28a745;">
+            <i class="fas fa-download me-2"></i>Export
+        </a>
+        <a href="{{ url_for('admin.create_user') }}" class="admin-btn primary">
+            <i class="fas fa-user-plus me-2"></i>Add User
+        </a>
     </div>
 </div>
 
 <!-- Filters -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <form method="GET" class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Role</label>
-                        <select name="role" class="form-select">
-                            <option value="">All Roles</option>
-                            {% for role in roles %}
-                            <option value="{{ role.name }}" {% if role_filter == role.name %}selected{% endif %}>
-                                {{ role.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Status</label>
-                        <select name="status" class="form-select">
-                            <option value="">All Status</option>
-                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
-                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
-                            <option value="unconfirmed" {% if status_filter == 'unconfirmed' %}selected{% endif %}>Unconfirmed</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Search</label>
-                        <input type="text" name="search" class="form-control" placeholder="Search users..." value="{{ request.args.get('search', '') }}">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">&nbsp;</label>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-filter me-2"></i>Filter
-                            </button>
-                        </div>
-                    </div>
-                </form>
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-filter"></i>
+            Filters
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="admin-form-label">Role</label>
+                <select name="role" class="admin-form-select">
+                    <option value="">All Roles</option>
+                    {% for role in roles %}
+                    <option value="{{ role.name }}" {% if role_filter == role.name %}selected{% endif %}>
+                        {{ role.name }}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
-        </div>
+            <div class="col-md-3">
+                <label class="admin-form-label">Status</label>
+                <select name="status" class="admin-form-select">
+                    <option value="">All Status</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                    <option value="unconfirmed" {% if status_filter == 'unconfirmed' %}selected{% endif %}>Unconfirmed</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="admin-form-label">Search</label>
+                <input type="text" name="search" class="admin-form-control" placeholder="Search users..." value="{{ request.args.get('search', '') }}">
+            </div>
+            <div class="col-md-2">
+                <label class="admin-form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="admin-btn primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filter
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
 <!-- Users Table -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-list me-2"></i>Users
-                        <span class="badge bg-secondary ms-2">{{ users.total }} total</span>
-                    </h5>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="bulkAction('activate')">
-                            <i class="fas fa-check me-1"></i>Activate Selected
-                        </button>
-                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="bulkAction('deactivate')">
-                            <i class="fas fa-ban me-1"></i>Deactivate Selected
-                        </button>
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="bulkAction('delete')">
-                            <i class="fas fa-trash me-1"></i>Delete Selected
-                        </button>
-                    </div>
-                </div>
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="admin-card-title">
+                <i class="fas fa-list"></i>
+                Users
+                <span class="badge bg-secondary ms-2">{{ users.total }} total</span>
+            </h5>
+            <div class="admin-actions">
+                <button type="button" class="admin-btn" onclick="bulkAction('activate')" style="background: #28a745; color: white; border-color: #28a745;">
+                    <i class="fas fa-check me-1"></i>Activate Selected
+                </button>
+                <button type="button" class="admin-btn" onclick="bulkAction('deactivate')" style="background: #ffc107; color: #212529; border-color: #ffc107;">
+                    <i class="fas fa-ban me-1"></i>Deactivate Selected
+                </button>
+                <button type="button" class="admin-btn danger" onclick="bulkAction('delete')">
+                    <i class="fas fa-trash me-1"></i>Delete Selected
+                </button>
             </div>
-            <div class="card-body">
+        </div>
+    </div>
+    <div class="admin-card-body">
                 {% if users.items %}
                 <form id="bulkActionForm">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="admin-table">
                             <thead>
                                 <tr>
                                     <th>
@@ -123,22 +121,28 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ 'danger' if user.role.name == 'Administrator' else 'primary' if user.role.name == 'Moderator' else 'info' }}">
-                                            {{ user.role.name if user.role else 'None' }}
-                                        </span>
+                                        {% if user.role.name == 'Administrator' %}
+                                            <span class="admin-badge danger">{{ user.role.name }}</span>
+                                        {% elif user.role.name == 'Moderator' %}
+                                            <span class="admin-badge warning">{{ user.role.name }}</span>
+                                        {% elif user.role %}
+                                            <span class="admin-badge info">{{ user.role.name }}</span>
+                                        {% else %}
+                                            <span class="admin-badge">None</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if user.is_active %}
                                             {% if user.confirmed %}
-                                            <span class="badge bg-success">Active</span>
+                                            <span class="admin-badge success">Active</span>
                                             {% else %}
-                                            <span class="badge bg-warning">Unconfirmed</span>
+                                            <span class="admin-badge warning">Unconfirmed</span>
                                             {% endif %}
                                         {% else %}
-                                        <span class="badge bg-danger">Inactive</span>
+                                        <span class="admin-badge danger">Inactive</span>
                                         {% endif %}
                                         {% if user.is_locked() %}
-                                        <span class="badge bg-dark">Locked</span>
+                                        <span class="admin-badge" style="background: #343a40; color: white;">Locked</span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -148,27 +152,27 @@
                                         <small>{{ user.last_seen.strftime('%Y-%m-%d %H:%M') if user.last_seen else 'Never' }}</small>
                                     </td>
                                     <td>
-                                        <span class="badge bg-secondary">{{ user.authored_pages|length }}</span>
+                                        <span class="admin-badge" style="background: #6c757d; color: white;">{{ user.authored_pages|length }}</span>
                                     </td>
                                     <td>
-                                        <div class="btn-group" role="group">
-                                            <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="btn btn-outline-primary btn-sm" title="View Details">
+                                        <div class="admin-actions">
+                                            <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="admin-btn primary" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                            <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="admin-btn" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             {% if user.is_active %}
                                             <form method="POST" action="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Deactivate" onclick="return confirm('Deactivate this user?')">
+                                                <button type="submit" class="admin-btn" style="background: #ffc107; color: #212529; border-color: #ffc107;" title="Deactivate" onclick="return confirm('Deactivate this user?')">
                                                     <i class="fas fa-ban"></i>
                                                 </button>
                                             </form>
                                             {% else %}
                                             <form method="POST" action="{{ url_for('admin.toggle_user_status', user_id=user.id) }}" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-outline-success btn-sm" title="Activate">
+                                                <button type="submit" class="admin-btn" style="background: #28a745; color: white; border-color: #28a745;" title="Activate">
                                                     <i class="fas fa-check"></i>
                                                 </button>
                                             </form>
@@ -176,7 +180,7 @@
                                             {% if user.id != current_user.id %}
                                             <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete" onclick="return confirm('Delete this user? This cannot be undone!')">
+                                                <button type="submit" class="admin-btn danger" title="Delete" onclick="return confirm('Delete this user? This cannot be undone!')">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -238,7 +242,7 @@
                     <p class="text-muted">
                         No users match the current filters.
                     </p>
-                    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary">
+                    <a href="{{ url_for('admin.users') }}" class="admin-btn primary">
                         <i class="fas fa-times me-2"></i>Clear Filters
                     </a>
                 </div>
@@ -249,37 +253,29 @@
 </div>
 
 <!-- Statistics -->
-<div class="row mt-4">
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-primary">{{ users.total }}</h3>
-                <p class="card-text">Total Users</p>
-            </div>
+<div class="admin-stats-grid mt-4">
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ users.total }}</div>
+        <div class="admin-stat-label">
+            <i class="fas fa-users me-2"></i>Total Users
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-success">{{ users.items | selectattr('is_active') | list | length }}</h3>
-                <p class="card-text">Active Users</p>
-            </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ users.items | selectattr('is_active') | list | length }}</div>
+        <div class="admin-stat-label">
+            <i class="fas fa-user-check me-2"></i>Active Users
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-warning">{{ users.items | selectattr('confirmed') | list | length }}</h3>
-                <p class="card-text">Confirmed</p>
-            </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ users.items | selectattr('confirmed') | list | length }}</div>
+        <div class="admin-stat-label">
+            <i class="fas fa-envelope-check me-2"></i>Confirmed
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-info">{{ users.items | selectattr('is_locked') | list | length }}</h3>
-                <p class="card-text">Locked</p>
-            </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ users.items | selectattr('is_locked') | list | length }}</div>
+        <div class="admin-stat-label">
+            <i class="fas fa-lock me-2"></i>Locked
         </div>
     </div>
 </div>

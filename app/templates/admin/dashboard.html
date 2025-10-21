@@ -1,217 +1,139 @@
-{% extends "base.html" %}
+{% extends "admin/admin_base_confluence.html" %}
 
 {% block title %}Admin Dashboard - Enterprise Wiki{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
-            </h2>
-            <div class="btn-group">
-                <button type="button" class="btn btn-outline-primary" onclick="refreshStats()">
-                    <i class="fas fa-sync-alt me-2"></i>Refresh
-                </button>
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                        <i class="fas fa-cog me-2"></i>Actions
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('admin.backup') }}">
-                            <i class="fas fa-download me-2"></i>Create Backup
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="clearCache()">
-                            <i class="fas fa-trash me-2"></i>Clear Cache
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">
-                            <i class="fas fa-wrench me-2"></i>Settings
-                        </a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% set show_nav = true %}
+{% set subtitle = "System overview and management dashboard" %}
 
 <!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="card-title">{{ stats.total_users }}</h4>
-                        <p class="card-text">Total Users</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-users fa-2x opacity-75"></i>
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <small>
-                        <i class="fas fa-arrow-up"></i>
-                        {{ stats.active_users }} active
-                    </small>
-                </div>
-            </div>
+<div class="admin-stats-grid">
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_users }}</div>
+        <div class="admin-stat-label">
+            <i class="fas fa-users me-2"></i>Total Users
         </div>
+        <small class="text-muted">
+            <i class="fas fa-arrow-up text-success me-1"></i>
+            {{ stats.active_users }} active
+        </small>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="card-title">{{ stats.total_pages }}</h4>
-                        <p class="card-text">Total Pages</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-file-alt fa-2x opacity-75"></i>
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <small>
-                        <i class="fas fa-check-circle"></i>
-                        {{ stats.published_pages }} published
-                    </small>
-                </div>
-            </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_pages }}</div>
+        <div class="admin-stat-label">
+            <i class="fas fa-file-alt me-2"></i>Total Pages
         </div>
+        <small class="text-muted">
+            <i class="fas fa-check-circle text-success me-1"></i>
+            {{ stats.published_pages }} published
+        </small>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="card-title">{{ stats.total_categories }}</h4>
-                        <p class="card-text">Categories</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-folder fa-2x opacity-75"></i>
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <small>
-                        <i class="fas fa-layer-group"></i>
-                        Organized content
-                    </small>
-                </div>
-            </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_categories }}</div>
+        <div class="admin-stat-label">
+            <i class="fas fa-folder me-2"></i>Categories
         </div>
+        <small class="text-muted">
+            <i class="fas fa-layer-group text-info me-1"></i>
+            Organized content
+        </small>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-dark">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="card-title">{{ stats.total_attachments }}</h4>
-                        <p class="card-text">Attachments</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-paperclip fa-2x opacity-75"></i>
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <small>
-                        <i class="fas fa-database"></i>
-                        File storage
-                    </small>
-                </div>
-            </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_attachments }}</div>
+        <div class="admin-stat-label">
+            <i class="fas fa-paperclip me-2"></i>Attachments
         </div>
+        <small class="text-muted">
+            <i class="fas fa-database text-warning me-1"></i>
+            File storage
+        </small>
     </div>
 </div>
 
 <!-- Recent Activity -->
-<div class="row mb-4">
+<div class="row">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-clock me-2"></i>Recent Pages
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-clock"></i>
+                    Recent Pages
                 </h5>
             </div>
-            <div class="card-body">
+            <div class="admin-card-body">
                 {% if recent_pages %}
-                <div class="list-group list-group-flush">
-                    {% for page in recent_pages %}
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-1">
-                                    <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="text-decoration-none">
-                                        {{ page.title }}
-                                    </a>
-                                </h6>
-                                <small class="text-muted">
-                                    by {{ page.author.username if page.author else 'Unknown' }}
-                                    • {{ page.updated_at.strftime('%Y-%m-%d %H:%M') }}
-                                </small>
-                            </div>
-                            <div>
-                                {% if page.is_published %}
-                                <span class="badge bg-success me-1">Published</span>
-                                {% else %}
-                                <span class="badge bg-secondary me-1">Draft</span>
-                                {% endif %}
-                            </div>
-                        </div>
+                {% for page in recent_pages %}
+                <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">
+                            <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="text-decoration-none">
+                                {{ page.title }}
+                            </a>
+                        </h6>
+                        <small class="text-muted">
+                            <i class="fas fa-user me-1"></i>{{ page.author.username if page.author else 'Unknown' }}
+                            <i class="fas fa-calendar ms-2 me-1"></i>{{ page.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                        </small>
                     </div>
-                    {% endfor %}
+                    <div class="ms-3">
+                        {% if page.is_published %}
+                        <span class="admin-badge success">Published</span>
+                        {% else %}
+                        <span class="admin-badge info">Draft</span>
+                        {% endif %}
+                    </div>
                 </div>
+                {% endfor %}
                 {% else %}
-                <p class="text-muted text-center">No recent pages found.</p>
+                <p class="text-muted text-center py-4">No recent pages found.</p>
                 {% endif %}
-                <div class="text-center mt-2">
-                    <a href="{{ url_for('admin.pages') }}" class="btn btn-outline-primary btn-sm">
-                        View All Pages
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('admin.pages') }}" class="admin-btn primary">
+                        <i class="fas fa-eye me-2"></i>View All Pages
                     </a>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-user-plus me-2"></i>New Users
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-user-plus"></i>
+                    New Users
                 </h5>
             </div>
-            <div class="card-body">
+            <div class="admin-card-body">
                 {% if recent_users %}
-                <div class="list-group list-group-flush">
-                    {% for user in recent_users %}
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <img src="{{ user.gravatar(32) }}" alt="Avatar" class="rounded-circle me-2">
-                                <div>
-                                    <h6 class="mb-1">{{ user.username }}</h6>
-                                    <small class="text-muted">{{ user.email }}</small>
-                                </div>
-                            </div>
-                            <div>
-                                {% if user.is_active %}
-                                <span class="badge bg-success">Active</span>
-                                {% else %}
-                                <span class="badge bg-danger">Inactive</span>
-                                {% endif %}
-                            </div>
+                {% for user in recent_users %}
+                <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ user.gravatar(32) }}" alt="Avatar" class="rounded-circle me-3">
+                        <div>
+                            <h6 class="mb-1">{{ user.username }}</h6>
+                            <small class="text-muted">{{ user.email }}</small>
                         </div>
-                        <small class="text-muted">
-                            Joined {{ user.member_since.strftime('%Y-%m-%d') }}
-                            • Role: {{ user.role.name if user.role else 'None' }}
-                        </small>
                     </div>
-                    {% endfor %}
+                    <div class="text-end">
+                        {% if user.is_active %}
+                        <span class="admin-badge success">Active</span>
+                        {% else %}
+                        <span class="admin-badge danger">Inactive</span>
+                        {% endif %}
+                        <div class="mt-1">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>{{ user.member_since.strftime('%Y-%m-%d') }}
+                            </small>
+                        </div>
+                    </div>
                 </div>
+                {% endfor %}
                 {% else %}
-                <p class="text-muted text-center">No recent users found.</p>
+                <p class="text-muted text-center py-4">No recent users found.</p>
                 {% endif %}
-                <div class="text-center mt-2">
-                    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary btn-sm">
-                        View All Users
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('admin.users') }}" class="admin-btn primary">
+                        <i class="fas fa-eye me-2"></i>View All Users
                     </a>
                 </div>
             </div>
@@ -220,27 +142,29 @@
 </div>
 
 <!-- Charts -->
-<div class="row mb-4">
+<div class="row mt-4">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-chart-line me-2"></i>User Growth (Last 30 Days)
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-line"></i>
+                    User Growth (Last 30 Days)
                 </h5>
             </div>
-            <div class="card-body">
+            <div class="admin-card-body">
                 <canvas id="userGrowthChart" height="200"></canvas>
             </div>
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-chart-bar me-2"></i>Page Creation Trends
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Page Creation Trends
                 </h5>
             </div>
-            <div class="card-body">
+            <div class="admin-card-body">
                 <canvas id="pageGrowthChart" height="200"></canvas>
             </div>
         </div>
@@ -248,42 +172,43 @@
 </div>
 
 <!-- System Status -->
-<div class="row mb-4">
+<div class="row mt-4">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-heartbeat me-2"></i>System Status
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-heartbeat"></i>
+                    System Status
                 </h5>
             </div>
-            <div class="card-body">
+            <div class="admin-card-body">
                 <div class="row">
                     <div class="col-md-3">
-                        <div class="text-center">
+                        <div class="text-center p-3">
                             <div class="fas fa-database fa-2x text-success mb-2"></div>
                             <h6>Database</h6>
-                            <span class="badge bg-success">Healthy</span>
+                            <span class="admin-badge success">Healthy</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="text-center">
+                        <div class="text-center p-3">
                             <div class="fas fa-memory fa-2x text-info mb-2"></div>
                             <h6>Memory</h6>
-                            <span class="badge bg-info">Normal</span>
+                            <span class="admin-badge info">Normal</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="text-center">
+                        <div class="text-center p-3">
                             <div class="fas fa-hdd fa-2x text-warning mb-2"></div>
                             <h6>Disk Space</h6>
-                            <span class="badge bg-warning">78% Used</span>
+                            <span class="admin-badge warning">78% Used</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="text-center">
+                        <div class="text-center p-3">
                             <div class="fas fa-network-wired fa-2x text-success mb-2"></div>
                             <h6>Network</h6>
-                            <span class="badge bg-success">Good</span>
+                            <span class="admin-badge success">Good</span>
                         </div>
                     </div>
                 </div>
@@ -293,60 +218,61 @@
 </div>
 
 <!-- Quick Actions -->
-<div class="row">
+<div class="row mt-4">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-bolt me-2"></i>Quick Actions
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-bolt"></i>
+                    Quick Actions
                 </h5>
             </div>
-            <div class="card-body">
+            <div class="admin-card-body">
                 <div class="row">
                     <div class="col-md-2 col-sm-4 col-6 mb-3">
                         <div class="text-center">
-                            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary d-block">
-                                <i class="fas fa-users fa-2x mb-2"></i>
+                            <a href="{{ url_for('admin.users') }}" class="admin-btn primary d-block py-3">
+                                <i class="fas fa-users fa-2x mb-2 d-block"></i>
                                 <div>Manage Users</div>
                             </a>
                         </div>
                     </div>
                     <div class="col-md-2 col-sm-4 col-6 mb-3">
                         <div class="text-center">
-                            <a href="{{ url_for('admin.roles') }}" class="btn btn-outline-success d-block">
-                                <i class="fas fa-user-tag fa-2x mb-2"></i>
+                            <a href="{{ url_for('admin.roles') }}" class="admin-btn d-block py-3" style="background: #28a745; color: white; border-color: #28a745;">
+                                <i class="fas fa-user-tag fa-2x mb-2 d-block"></i>
                                 <div>Roles & Permissions</div>
                             </a>
                         </div>
                     </div>
                     <div class="col-md-2 col-sm-4 col-6 mb-3">
                         <div class="text-center">
-                            <a href="{{ url_for('admin.pages') }}" class="btn btn-outline-info d-block">
-                                <i class="fas fa-file-alt fa-2x mb-2"></i>
+                            <a href="{{ url_for('admin.pages') }}" class="admin-btn d-block py-3" style="background: #17a2b8; color: white; border-color: #17a2b8;">
+                                <i class="fas fa-file-alt fa-2x mb-2 d-block"></i>
                                 <div>Content Management</div>
                             </a>
                         </div>
                     </div>
                     <div class="col-md-2 col-sm-4 col-6 mb-3">
                         <div class="text-center">
-                            <a href="{{ url_for('admin.categories') }}" class="btn btn-outline-warning d-block">
-                                <i class="fas fa-folder fa-2x mb-2"></i>
+                            <a href="{{ url_for('admin.categories') }}" class="admin-btn d-block py-3" style="background: #ffc107; color: #212529; border-color: #ffc107;">
+                                <i class="fas fa-folder fa-2x mb-2 d-block"></i>
                                 <div>Categories</div>
                             </a>
                         </div>
                     </div>
                     <div class="col-md-2 col-sm-4 col-6 mb-3">
                         <div class="text-center">
-                            <a href="{{ url_for('admin.sessions') }}" class="btn btn-outline-secondary d-block">
-                                <i class="fas fa-desktop fa-2x mb-2"></i>
+                            <a href="{{ url_for('admin.sessions') }}" class="admin-btn d-block py-3" style="background: #6c757d; color: white; border-color: #6c757d;">
+                                <i class="fas fa-desktop fa-2x mb-2 d-block"></i>
                                 <div>Active Sessions</div>
                             </a>
                         </div>
                     </div>
                     <div class="col-md-2 col-sm-4 col-6 mb-3">
                         <div class="text-center">
-                            <a href="{{ url_for('admin.settings') }}" class="btn btn-outline-danger d-block">
-                                <i class="fas fa-cog fa-2x mb-2"></i>
+                            <a href="{{ url_for('admin.settings') }}" class="admin-btn danger d-block py-3">
+                                <i class="fas fa-cog fa-2x mb-2 d-block"></i>
                                 <div>Settings</div>
                             </a>
                         </div>

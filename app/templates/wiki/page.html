@@ -2,6 +2,9 @@
 
 {% block title %}{{ page.title }} - Enterprise Wiki{% endblock %}
 
+{% set target_type = 'page' %}
+{% set target_id = page.id %}
+
 {% block content %}
 <div class="row">
     <!-- Breadcrumb -->
@@ -188,6 +191,9 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- Comments Section -->
+        {% include 'components/comments.html' with context %}
     </div>
 
     <!-- Sidebar -->
@@ -298,6 +304,10 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Include comment system CSS and JS -->
+<link rel="stylesheet" href="/static/css/comment.css">
+<script src="/static/js/comment.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Generate table of contents

@@ -250,6 +250,8 @@ def api_update_page(page_id):
         page.title = data['title']
     if 'content' in data:
         page.content = data['content']
+        # 标记内容已更改，用于触发watch事件
+        page._watch_content_changed = True
     if 'summary' in data:
         page.summary = data['summary']
     if 'category_id' in data:
@@ -423,6 +425,8 @@ def api_patch_page(page_id):
 
     if 'content' in data:
         page.content = data['content']
+        # 标记内容已更改，用于触发watch事件
+        page._watch_content_changed = True
 
     if 'summary' in data:
         page.summary = data['summary']

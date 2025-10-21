@@ -54,6 +54,15 @@
             <i class="fas fa-edit me-2"></i>Edit
         </button>
 
+        {% if current_user.is_authenticated %}
+        <button class="btn-wiki watch-btn"
+                data-target-type="page"
+                data-target-id="{{ page.id }}"
+                title="关注此页面">
+            <i class="fas fa-eye"></i> 关注
+        </button>
+        {% endif %}
+
         <div class="dropdown">
             <button class="btn-wiki dropdown-toggle" data-bs-toggle="dropdown">
                 <i class="fas fa-ellipsis-v"></i>
