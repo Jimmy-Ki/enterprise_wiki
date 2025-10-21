@@ -201,11 +201,169 @@
 
         .tree-children {
             margin-left: 20px;
+            border-left: 1px solid var(--border-color);
+            padding-left: 8px;
+        }
+
+        /* Remove bullets from all tree navigation items */
+        .tree-nav, .tree-nav ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .tree-item {
+            list-style: none;
+        }
+
+        .tree-toggle.collapsed {
+            transform: rotate(0deg);
+            transition: transform 0.2s ease;
+        }
+
+        .tree-toggle.expanded {
+            transform: rotate(90deg);
+            transition: transform 0.2s ease;
+        }
+
+        /* Highlight current page in sidebar */
+        .tree-link.active {
+            background: #e3f2fd !important;
+            color: var(--primary-color) !important;
+            font-weight: 500;
+        }
+
+        /* Ensure hover and active states work properly */
+        .tree-link:hover {
+            background: var(--sidebar-hover) !important;
+        }
+
+        .tree-link.active:hover {
+            background: #e3f2fd !important;
+            color: var(--primary-color) !important;
+        }
+
+        /* User avatar styling */
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        /* Primary button styling */
+        .btn-wiki.btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border: 1px solid var(--primary-color);
+        }
+
+        .btn-wiki.btn-primary:hover {
+            background: #0b5ab8;
+            border-color: #0b5ab8;
+            color: white;
+        }
+
+        /* Authentication Page Styles */
+        .auth-container {
+            display: flex;
+            min-height: calc(100vh - var(--header-height));
+            padding: 40px 20px;
+            background: var(--sidebar-bg);
+        }
+
+        .auth-card {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+
+        .auth-header {
+            margin-bottom: 32px;
+        }
+
+        .auth-logo {
+            margin-bottom: 16px;
+        }
+
+        .auth-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .auth-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+
+        .auth-form {
+            margin-bottom: 24px;
+        }
+
+        .auth-form .form-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .auth-form .input-group {
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .auth-form .input-group-text {
+            background: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .auth-form .form-control {
+            border: 1px solid var(--border-color);
+            border-left: none;
+        }
+
+        .auth-form .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(12, 102, 228, 0.25);
+        }
+
+        .auth-links {
+            margin-top: 24px;
+        }
+
+        .auth-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+
+        .auth-demo {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 auto;
+            padding-left: 40px;
+        }
+
+        /* Hide sidebar on auth pages */
+        body.auth-page .wiki-sidebar {
             display: none;
         }
 
-        .tree-children.expanded {
-            display: block;
+        body.auth-page .wiki-main {
+            margin-left: 0;
+            max-width: 100%;
         }
 
         /* Main Content */
@@ -565,11 +723,14 @@
                 <i class="fas fa-plus"></i>
                 Create
             </button>
-            {% endif %}
 
             <div class="dropdown">
                 <button class="btn-wiki dropdown-toggle" data-bs-toggle="dropdown">
+                    {% if current_user.avatar %}
+                    <img src="{{ current_user.avatar }}" alt="{{ current_user.username }}" class="user-avatar">
+                    {% else %}
                     <i class="fas fa-user-circle"></i>
+                    {% endif %}
                     {{ current_user.username }}
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -588,6 +749,16 @@
                     </a></li>
                 </ul>
             </div>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-wiki">
+                <i class="fas fa-sign-in-alt me-1"></i>
+                Login
+            </a>
+            <a href="{{ url_for('auth.register') }}" class="btn-wiki btn-primary">
+                <i class="fas fa-user-plus me-1"></i>
+                Register
+            </a>
+            {% endif %}
         </div>
     </header>
 
@@ -610,52 +781,7 @@
                 <div class="sidebar-section">
                     <div class="sidebar-title">Categories</div>
                     <ul class="tree-nav" id="categoriesTree">
-                        {% if category_tree is defined %}
-                            {% macro render_category_tree(items, level=0) %}
-                                {% for item in items %}
-                                    <li class="tree-item">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <a href="{{ url_for('wiki.category_view', category_id=item.category.id) }}"
-                                               class="tree-link">
-                                                {% if item.children %}
-                                                    <i class="fas fa-folder-open tree-icon text-primary"></i>
-                                                {% else %}
-                                                    <i class="fas fa-folder tree-icon text-primary"></i>
-                                                {% endif %}
-                                                <span{% if level > 0 %} class="small"{% endif %}>{{ item.category.name }}</span>
-                                            </a>
-                                            <span class="badge bg-secondary" style="font-size: 0.6em;">{{ item.pages|length }}</span>
-                                        </div>
-
-                                        <!-- Pages in this category -->
-                                        {% if item.pages %}
-                                            <ul class="tree-nav">
-                                                {% for page in item.pages %}
-                                                    <li class="tree-item">
-                                                        <a href="{{ url_for('wiki.view_page', slug=page.slug) }}"
-                                                           class="tree-link small">
-                                                            <i class="fas fa-file-alt tree-icon text-muted" style="font-size: 0.8em;"></i>
-                                                            <span class="text-muted">{{ page.title }}</span>
-                                                        </a>
-                                                    </li>
-                                                {% endfor %}
-                                            </ul>
-                                        {% endif %}
-
-                                        <!-- Child categories -->
-                                        {% if item.children %}
-                                            <ul class="tree-nav">
-                                                {{ render_category_tree(item.children, level + 1) }}
-                                            </ul>
-                                        {% endif %}
-                                    </li>
-                                {% endfor %}
-                            {% endmacro %}
-
-                            {{ render_category_tree(category_tree) }}
-                        {% else %}
-                            <!-- Categories will be loaded here via JavaScript -->
-                        {% endif %}
+                        <!-- Categories will be loaded here via JavaScript -->
                     </ul>
                 </div>
 
@@ -744,6 +870,13 @@
                     const categoriesTree = document.getElementById('categoriesTree');
                     if (categoriesTree) {
                         categoriesTree.innerHTML = buildCategoryTree(data.categories);
+
+                        // Restore collapsed state from localStorage
+                        restoreCollapsedState();
+
+                        // Auto-expand categories containing the current page
+                        autoExpandCurrentPage(data.categories);
+
                         console.log('Categories loaded successfully');
                     } else {
                         console.error('categoriesTree element not found');
@@ -754,29 +887,97 @@
                 });
         }
 
+        function autoExpandCurrentPage(categories) {
+            const currentUrl = getCurrentPageUrl();
+
+            function findAndExpandCategory(items, url) {
+                for (let item of items) {
+                    // Check if any page in this category matches the current URL
+                    if (item.pages && item.pages.some(page => page.url === url)) {
+                        const categoryId = `category-${item.id}`;
+                        const categoryElement = document.getElementById(categoryId);
+                        const toggleElement = document.querySelector(`[onclick*="${categoryId}"]`);
+
+                        if (categoryElement && toggleElement) {
+                            // Expand the category and override saved state
+                            toggleElement.classList.remove('collapsed');
+                            toggleElement.classList.add('expanded');
+                            categoryElement.classList.add('show');
+
+                            // Update localStorage to reflect this expansion
+                            saveCollapsedState(categoryId, false);
+                        }
+                        return true;
+                    }
+
+                    // Check child categories
+                    if (item.children && findAndExpandCategory(item.children, url)) {
+                        // Also expand parent categories to show the hierarchy
+                        const categoryId = `category-${item.id}`;
+                        const categoryElement = document.getElementById(categoryId);
+                        const toggleElement = document.querySelector(`[onclick*="${categoryId}"]`);
+
+                        if (categoryElement && toggleElement) {
+                            toggleElement.classList.remove('collapsed');
+                            toggleElement.classList.add('expanded');
+                            categoryElement.classList.add('show');
+
+                            // Update localStorage to reflect this expansion
+                            saveCollapsedState(categoryId, false);
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            findAndExpandCategory(categories, currentUrl);
+        }
+
         function buildCategoryTree(categories, level = 0) {
             let html = '';
             categories.forEach(category => {
                 const hasChildren = category.children && category.children.length > 0;
-                const isExpanded = false; // We'll implement expansion logic differently
+                const hasPages = category.pages && category.pages.length > 0;
+                const hasContent = hasChildren || hasPages;
+                const categoryId = `category-${category.id}`;
 
                 html += `
                     <li class="tree-item">
-                        <div style="display: flex; align-items: center;">
-                            ${hasChildren ? `
-                                <i class="fas fa-chevron-right tree-toggle ${isExpanded ? 'expanded' : ''}"
-                                   onclick="toggleTreeItem(this, ${category.id})"></i>
-                            ` : '<span style="width: 20px;"></span>'}
-                            <a href="/category/${category.id}" class="tree-link">
-                                <i class="fas fa-folder tree-icon"></i>
-                                ${category.name}
-                            </a>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center;">
+                                ${hasContent ? `
+                                    <i class="fas fa-chevron-right tree-toggle collapsed"
+                                       onclick="toggleTreeItem(this, '${categoryId}')"
+                                       style="cursor: pointer; margin-right: 4px; width: 16px; text-align: center;"></i>
+                                ` : '<span style="width: 20px; margin-right: 4px;"></span>'}
+                                <a href="/category/${category.id}" class="tree-link">
+                                    <i class="fas fa-folder tree-icon text-primary"></i>
+                                    <span${level > 0 ? ' class="small text-muted"' : ''}>${category.name}</span>
+                                </a>
+                            </div>
+                            ${hasPages ? `<span class="badge bg-secondary" style="font-size: 0.7em;">${category.pages.length}</span>` : ''}
                         </div>
-                        ${hasChildren ? `
-                            <ul class="tree-children ${isExpanded ? 'expanded' : ''}" id="category-${category.id}">
-                                ${buildCategoryTree(category.children, level + 1)}
-                            </ul>
-                        ` : ''}
+
+                        <ul class="tree-children collapse" id="${categoryId}">
+                            <!-- Pages in this category -->
+                            ${hasPages ? `
+                                ${category.pages.map(page => `
+                                    <li class="tree-item">
+                                        <div style="display: flex; align-items: center;">
+                                            <span style="width: 20px; margin-right: 4px;"></span>
+                                            <a href="${page.url}" class="tree-link small ${getCurrentPageUrl() === page.url ? 'active' : ''}">
+                                                <i class="fas fa-file-alt tree-icon text-muted" style="font-size: 0.8em;"></i>
+                                                <span class="text-muted">${page.title}</span>
+                                            </a>
+                                        </div>
+                                    </li>
+                                `).join('')}
+                            ` : ''}
+
+                            <!-- Child categories -->
+                            ${hasChildren ? buildCategoryTree(category.children, level + 1) : ''}
+                        </ul>
                     </li>
                 `;
             });
@@ -813,11 +1014,55 @@
         }
 
         function toggleTreeItem(element, categoryId) {
+            // Toggle the chevron icon
+            element.classList.toggle('collapsed');
             element.classList.toggle('expanded');
-            const childrenContainer = document.getElementById(`category-${categoryId}`);
+
+            // Toggle the children container
+            const childrenContainer = document.getElementById(categoryId);
             if (childrenContainer) {
-                childrenContainer.classList.toggle('expanded');
+                // Use Bootstrap collapse functionality
+                const collapse = new bootstrap.Collapse(childrenContainer, {
+                    toggle: true
+                });
+
+                // Save collapsed state to localStorage
+                saveCollapsedState(categoryId, element.classList.contains('collapsed'));
             }
+        }
+
+        function saveCollapsedState(categoryId, isCollapsed) {
+            const collapsedCategories = JSON.parse(localStorage.getItem('wikiCollapsedCategories') || '{}');
+            collapsedCategories[categoryId] = isCollapsed;
+            localStorage.setItem('wikiCollapsedCategories', JSON.stringify(collapsedCategories));
+        }
+
+        function restoreCollapsedState() {
+            const collapsedCategories = JSON.parse(localStorage.getItem('wikiCollapsedCategories') || '{}');
+
+            Object.keys(collapsedCategories).forEach(categoryId => {
+                const isCollapsed = collapsedCategories[categoryId];
+                const toggleElement = document.querySelector(`[onclick*="${categoryId}"]`);
+                const childrenContainer = document.getElementById(categoryId);
+
+                if (toggleElement && childrenContainer) {
+                    if (isCollapsed) {
+                        toggleElement.classList.add('collapsed');
+                        toggleElement.classList.remove('expanded');
+                        childrenContainer.classList.remove('show');
+                    } else {
+                        toggleElement.classList.remove('collapsed');
+                        toggleElement.classList.add('expanded');
+                        childrenContainer.classList.add('show');
+                    }
+                }
+            });
+        }
+
+        function getCurrentPageUrl() {
+            const path = window.location.pathname;
+            // Remove query parameters and ensure consistent format
+            return path.split('?')[0];
         }
 
         function initializeMobileSidebar() {

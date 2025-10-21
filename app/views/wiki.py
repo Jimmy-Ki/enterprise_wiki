@@ -155,7 +155,7 @@ def search():
 
     # Get filter data
     categories = Category.query.all()
-    authors = db.session.query(Page.author_id, User.username).join(User).filter(Page.is_published == True).distinct().all()
+    authors = db.session.query(Page.author_id, User.username).join(User, Page.author_id == User.id).filter(Page.is_published == True).distinct().all()
 
     return render_template('wiki/search_confluence.html', form=form, pages=accessible_pages,
                          query=query, pagination=pages, category_tree=category_tree,
@@ -547,7 +547,33 @@ def view_version(version_id):
     temp_page.slug = version.page.slug  # Add slug from the original page
     temp_page.id = version.page.id  # Add ID from the original page
 
-    return render_template('wiki/version.html', page=temp_page, version=version)
+    # Build category tree with pages for sidebar
+    def build_category_tree_with_pages(categories, parent_id=None):
+        tree = []
+        for category in categories:
+            if category.parent_id == parent_id:
+                # Get pages in this category
+                category_pages = Page.query.filter_by(category_id=category.id, is_published=True)\
+                                       .order_by(Page.title).all()
+                accessible_category_pages = [page for page in category_pages if page.can_view(current_user)]
+                children = build_category_tree_with_pages(categories, category.id)
+                tree.append({
+                    'category': category,
+                    'pages': accessible_category_pages,
+                    'children': children
+                })
+        return tree
+
+    # Get data for sidebar
+    all_categories = Category.query.all()
+    category_tree = build_category_tree_with_pages(all_categories)
+
+    recent_pages = Page.query.filter_by(is_published=True)\
+                           .order_by(Page.updated_at.desc()).limit(10).all()
+    accessible_recent_pages = [page for page in recent_pages if page.can_view(current_user)]
+
+    return render_template('wiki/version_confluence.html', page=temp_page, version=version,
+                         category_tree=category_tree, recent_pages=accessible_recent_pages)
 
 @wiki.route('/restore/<int:page_id>/<int:version_number>', methods=['POST'])
 @login_required

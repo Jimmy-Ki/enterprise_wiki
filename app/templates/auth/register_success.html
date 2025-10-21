@@ -1,0 +1,218 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}Registration Successful - Enterprise Wiki{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <!-- Success Icon and Title -->
+        <div class="auth-header text-center">
+            <div class="auth-logo">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle fa-4x text-success"></i>
+                </div>
+            </div>
+            <h1 class="auth-title">Registration Successful!</h1>
+            <p class="auth-subtitle">
+                {% if current_app.debug or not email_sent %}
+                    Your account has been created and is ready to use.
+                {% else %}
+                    Your account has been created! Please check your email to confirm your account.
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Success Message -->
+        <div class="auth-form">
+            <div class="alert alert-success" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-check-circle me-3 fa-2x"></i>
+                    <div>
+                        <h6 class="alert-heading mb-1">Welcome to Enterprise Wiki!</h6>
+                        <p class="mb-0">
+                            Your account <strong>{{ user_email }}</strong> has been successfully created.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {% if email_sent and not current_app.debug %}
+            <!-- Email Confirmation Notice -->
+            <div class="alert alert-info" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-envelope me-3 fa-2x"></i>
+                    <div>
+                        <h6 class="alert-heading mb-1">Check Your Email</h6>
+                        <p class="mb-1">
+                            We've sent a confirmation email to <strong>{{ user_email }}</strong>.
+                        </p>
+                        <small class="text-muted">
+                            Please click the confirmation link in the email to activate your account.
+                            If you don't see the email, check your spam folder.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="success-actions">
+                {% if current_app.debug or not email_sent %}
+                    <!-- Ready to Login Button -->
+                    <a href="{{ url_for('auth.login') }}" class="btn-wiki btn-primary w-100 mb-3">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Go to Login
+                    </a>
+                {% else %}
+                    <!-- Email Instructions and Login Link -->
+                    <div class="text-center mb-3">
+                        <p class="text-muted mb-3">
+                            After confirming your email, you can log in to your account.
+                        </p>
+                        <a href="{{ url_for('auth.login') }}" class="btn-wiki btn-primary">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            Go to Login Page
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Additional Links -->
+            <div class="auth-links">
+                <div class="text-center">
+                    <a href="{{ url_for('wiki.index') }}" class="auth-link">
+                        <i class="fas fa-home me-1"></i>
+                        Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Next Steps Guide -->
+    <div class="auth-demo">
+        <div class="card border-0 bg-light">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-rocket me-2 text-primary"></i>
+                    What's Next?
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted d-block mb-2">
+                            <strong>{% if current_app.debug or not email_sent %}Step 1{% else %}Step 2{% endif %}:</strong>
+                            <i class="fas fa-sign-in-alt text-primary ms-1"></i>
+                            Log in to your account
+                        </small>
+                        <small class="text-muted d-block mb-2">
+                            <strong>Step 2{% if current_app.debug or not email_sent %}{% else %}3{% endif %}:</strong>
+                            <i class="fas fa-user-edit text-info ms-1"></i>
+                            Complete your profile
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block mb-2">
+                            <strong>Step 3{% if current_app.debug or not email_sent %}{% else %}4{% endif %}:</strong>
+                            <i class="fas fa-file-alt text-success ms-1"></i>
+                            Create your first page
+                        </small>
+                        <small class="text-muted d-block mb-2">
+                            <strong>Step 4{% if current_app.debug or not email_sent %}{% else %}5{% endif %}:</strong>
+                            <i class="fas fa-users text-warning ms-1"></i>
+                            Invite team members
+                        </small>
+                    </div>
+                </div>
+
+                {% if email_sent and not current_app.debug %}
+                <div class="mt-3 p-2 bg-info bg-opacity-10 rounded">
+                    <small class="text-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Step 1:</strong> Check your email and click the confirmation link
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set auth page body class
+    document.body.classList.add('auth-page');
+
+    // Add some celebration animation
+    const successIcon = document.querySelector('.success-icon');
+    if (successIcon) {
+        successIcon.style.animation = 'pulse 1s infinite';
+    }
+
+    // Auto-redirect to login after 10 seconds (for development)
+    {% if current_app.debug or not email_sent %}
+        let countdown = 10;
+        const loginBtn = document.querySelector('.btn-wiki.btn-primary');
+
+        if (loginBtn) {
+            const originalText = loginBtn.innerHTML;
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    loginBtn.innerHTML = originalText.replace('Go to Login', `Go to Login (${countdown}s)`);
+                } else {
+                    clearInterval(countdownInterval);
+                    loginBtn.innerHTML = originalText;
+                }
+            }, 1000);
+        }
+    {% endif %}
+
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .success-icon {
+            transition: all 0.3s ease;
+        }
+
+        .success-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .success-actions .btn-wiki {
+            transition: all 0.3s ease;
+            transform: translateY(0);
+        }
+
+        .success-actions .btn-wiki:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .alert {
+            border-left: 4px solid;
+            animation: slideInRight 0.5s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+{% endblock %}

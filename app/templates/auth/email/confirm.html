@@ -145,7 +145,7 @@
                 <h4>📋 Your Account Details:</h4>
                 <p><strong>Username:</strong> {{ user.username }}</p>
                 <p><strong>Email:</strong> {{ user.email }}</p>
-                <p><strong>Registration Date:</strong> {{ moment(user.member_since).format('MMMM Do, YYYY') }}</p>
+                <p><strong>Registration Date:</strong> {{ user.member_since.strftime('%B %d, %Y') if user.member_since else 'N/A' }}</p>
             </div>
 
             <div class="steps">

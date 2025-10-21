@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Successful - Enterprise Wiki</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .success-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            animation: slideUp 0.6s ease;
+        }
+
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            animation: pulse 2s infinite;
+        }
+
+        .success-icon i {
+            font-size: 50px;
+            color: white;
+        }
+
+        .success-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .success-subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .success-email {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 30px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #5a67d8, #667eea);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            padding: 15px 40px;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary:hover {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .next-steps {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 40px;
+            text-align: left;
+        }
+
+        .next-steps h4 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .countdown {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+
+        @media (max-width: 768px) {
+            .success-container {
+                padding: 40px 20px;
+                margin: 10px;
+            }
+
+            .success-title {
+                font-size: 24px;
+            }
+
+            .btn-primary, .btn-secondary {
+                display: block;
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <!-- Success Icon -->
+        <div class="success-icon">
+            <i class="fas fa-check"></i>
+        </div>
+
+        <!-- Title and Subtitle -->
+        <h1 class="success-title">Registration Successful!</h1>
+        <p class="success-subtitle">
+            {% if current_app.debug or not email_sent %}
+                Your account has been created and is ready to use.
+            {% else %}
+                Your account has been created! Please check your email to confirm your account.
+            {% endif %}
+        </p>
+
+        <!-- Email Information -->
+        <div class="success-email">
+            <strong>Account Email:</strong><br>
+            <span style="font-size: 16px; color: #28a745;">{{ user_email }}</span>
+        </div>
+
+        {% if email_sent and not current_app.debug %}
+        <!-- Email Confirmation Notice -->
+        <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 10px; padding: 15px; margin: 20px 0; color: #0c5460;">
+            <i class="fas fa-envelope me-2"></i>
+            <strong>Check Your Email</strong><br>
+            <small>We've sent a confirmation email to {{ user_email }}. Please click the confirmation link to activate your account.</small>
+        </div>
+        {% endif %}
+
+        <!-- Countdown Timer -->
+        {% if current_app.debug or not email_sent %}
+        <div class="countdown" id="countdown">
+            <i class="fas fa-clock me-2"></i>
+            Redirecting to login in <span id="timer">10</span> seconds...
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div style="margin-top: 30px;">
+            {% if current_app.debug or not email_sent %}
+                <a href="{{ url_for('auth.login') }}" class="btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    Go to Login
+                </a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn-primary">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    Go to Login
+                </a>
+            {% endif %}
+
+            <a href="{{ url_for('wiki.index') }}" class="btn-secondary">
+                <i class="fas fa-home me-2"></i>
+                Back to Home
+            </a>
+        </div>
+
+        <!-- Next Steps -->
+        <div class="next-steps">
+            <h4><i class="fas fa-rocket me-2"></i>What's Next?</h4>
+
+            {% if email_sent and not current_app.debug %}
+            <div class="step-item" style="background: #e7f3ff; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                <div class="step-number">1</div>
+                <div>
+                    <strong>Check your email</strong><br>
+                    <small>Click the confirmation link in your email</small>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="step-item">
+                <div class="step-number">{% if email_sent and not current_app.debug %}2{% else %}1{% endif %}</div>
+                <div>
+                    <strong>Log in to your account</strong><br>
+                    <small>Use your email and password to sign in</small>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-number">{% if email_sent and not current_app.debug %}3{% else %}2{% endif %}</div>
+                <div>
+                    <strong>Complete your profile</strong><br>
+                    <small>Add your personal information</small>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-number">{% if email_sent and not current_app.debug %}4{% else %}3{% endif %}</div>
+                <div>
+                    <strong>Create your first page</strong><br>
+                    <small>Start collaborating with your team</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        {% if current_app.debug or not email_sent %}
+        // Countdown timer
+        let seconds = 10;
+        const timerElement = document.getElementById('timer');
+        const countdownElement = document.getElementById('countdown');
+        const loginBtn = document.getElementById('loginBtn');
+
+        const countdown = setInterval(() => {
+            seconds--;
+            timerElement.textContent = seconds;
+
+            if (loginBtn) {
+                loginBtn.innerHTML = `<i class="fas fa-sign-in-alt me-2"></i>Go to Login (${seconds}s)`;
+            }
+
+            if (seconds <= 0) {
+                clearInterval(countdown);
+                countdownElement.style.display = 'none';
+                window.location.href = '{{ url_for("auth.login") }}';
+            }
+        }, 1000);
+
+        // Pause countdown on hover
+        if (countdownElement) {
+            countdownElement.addEventListener('mouseenter', () => {
+                clearInterval(countdown);
+            });
+
+            countdownElement.addEventListener('mouseleave', () => {
+                if (seconds > 0) {
+                    countdown();
+                }
+            });
+        }
+        {% endif %}
+
+        // Add some visual feedback
+        document.addEventListener('DOMContentLoaded', function() {
+            const successIcon = document.querySelector('.success-icon');
+            if (successIcon) {
+                successIcon.addEventListener('click', function() {
+                    this.style.transform = 'scale(1.2) rotate(360deg)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1) rotate(0deg)';
+                    }, 600);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
