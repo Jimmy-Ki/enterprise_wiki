@@ -58,3 +58,6 @@ class ChangeEmailForm(FlaskForm):
     def validate_email(self, field):
         if User.query.filter_by(email=field.data).first():
             raise ValidationError('Email already registered.')
+
+class ResendConfirmationForm(FlaskForm):
+    submit = SubmitField('Resend Confirmation Email', render_kw={'class': 'confluence-btn confluence-btn-primary resend-btn'})

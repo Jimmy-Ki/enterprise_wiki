@@ -11,24 +11,98 @@
     {% if current_user.is_authenticated %}
     <div class="comment-form">
         <form id="main-comment-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="d-flex align-items-start mb-3">
-                <img src="{{ current_user.avatar or '/static/img/default-avatar.png' }}"
+                <img src="{{ current_user.gravatar(size=40) or '/static/img/default-avatar.png' }}"
                      alt="{{ current_user.name or current_user.username }}"
                      class="comment-avatar me-3">
                 <div class="flex-grow-1">
+                    <!-- 富文本编辑器工具栏 -->
+                    <div class="comment-editor-toolbar">
+                        <div class="btn-group me-2" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="bold" title="Bold (Ctrl+B)">
+                                <i class="fas fa-bold"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="italic" title="Italic (Ctrl+I)">
+                                <i class="fas fa-italic"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="underline" title="Underline">
+                                <i class="fas fa-underline"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="strikeThrough" title="Strikethrough">
+                                <i class="fas fa-strikethrough"></i>
+                            </button>
+                        </div>
+
+                        <div class="btn-group me-2" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="insertUnorderedList" title="Bullet List">
+                                <i class="fas fa-list-ul"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="insertOrderedList" title="Numbered List">
+                                <i class="fas fa-list-ol"></i>
+                            </button>
+                        </div>
+
+                        <div class="btn-group me-2" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="createLink" title="Insert Link">
+                                <i class="fas fa-link"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="insertImage" title="Insert Image">
+                                <i class="fas fa-image"></i>
+                            </button>
+                        </div>
+
+                        <div class="btn-group me-2" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="blockquote" title="Blockquote">
+                                <i class="fas fa-quote-left"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="code" title="Code">
+                                <i class="fas fa-code"></i>
+                            </button>
+                        </div>
+
+                        <!-- 表情符号按钮 -->
+                        <div class="btn-group me-2" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn emoji-picker-btn" title="Insert Emoji">
+                                <i class="fas fa-smile"></i>
+                            </button>
+                        </div>
+
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="undo" title="Undo">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="redo" title="Redo">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 富文本编辑器 -->
+                    <div class="comment-editor" id="main-comment-editor" contenteditable="true"
+                         data-placeholder="Share your thoughts... Use @username to mention users">
+                    </div>
+
+                    <!-- 隐藏的textarea用于表单提交 -->
                     <textarea class="form-control comment-textarea"
                               id="main-comment-textarea"
-                              placeholder="Share your thoughts..."
-                              rows="4"
+                              style="display: none;"
                               required></textarea>
-                    <small class="form-text text-muted">
-                        You can use <code>@username</code> to mention other users.
-                    </small>
+
+                    <div class="comment-meta">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <code>@username</code> to mention users • Supports Markdown
+                        </small>
+                    </div>
                 </div>
             </div>
             <div class="comment-actions">
                 <button type="button" class="btn btn-outline-secondary btn-sm comment-preview-toggle">
                     <i class="fas fa-eye me-1"></i>Preview
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm comment-markdown-toggle">
+                    <i class="fas fa-code me-1"></i>Markdown
                 </button>
                 <button type="submit" class="btn btn-primary" id="main-comment-submit">
                     <i class="fas fa-paper-plane me-2"></i>Post Comment
@@ -40,6 +114,28 @@
         <div class="comment-preview" id="main-comment-preview" style="display: none;">
             <h6>Preview:</h6>
             <div id="main-comment-preview-content"></div>
+        </div>
+
+        <!-- 表情符号选择器 -->
+        <div class="emoji-picker" id="emoji-picker" style="display: none;">
+            <div class="emoji-picker-header">
+                <span class="emoji-picker-title">Select Emoji</span>
+                <button type="button" class="btn-close emoji-picker-close">&times;</button>
+            </div>
+            <div class="emoji-picker-tabs">
+                <button class="emoji-tab active" data-category="smileys">😀</button>
+                <button class="emoji-tab" data-category="people">👥</button>
+                <button class="emoji-tab" data-category="animals">🐶</button>
+                <button class="emoji-tab" data-category="food">🍔</button>
+                <button class="emoji-tab" data-category="activities">⚽</button>
+                <button class="emoji-tab" data-category="travel">🚗</button>
+                <button class="emoji-tab" data-category="objects">💡</button>
+                <button class="emoji-tab" data-category="symbols">⚡</button>
+                <button class="emoji-tab" data-category="flags">🚩</button>
+            </div>
+            <div class="emoji-picker-content">
+                <!-- 表情符号将动态加载 -->
+            </div>
         </div>
     </div>
     {% else %}
@@ -75,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 id: {{ current_user.id }},
                 username: '{{ current_user.username }}',
                 name: '{{ current_user.name or current_user.username }}',
-                avatar: '{{ current_user.avatar or '/static/img/default-avatar.png' }}'
+                avatar: '{{ current_user.gravatar(size=40) or '/static/img/default-avatar.png' }}'
             }{% else %}null{% endif %},
             apiBaseUrl: '',
             enableMentions: true,

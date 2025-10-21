@@ -51,6 +51,9 @@ class CommentService:
             db.session.add(comment)
             db.session.commit()
 
+            # 在保存后创建提及记录
+            comment.create_mentions_after_save(content)
+
             # 处理@提及通知
             CommentService.process_mention_notifications(comment)
 
@@ -95,9 +98,13 @@ class CommentService:
 
             db.session.commit()
 
-            # 重新处理@提及通知
+            # 重新处理@提及
             # 删除旧的提及记录
             CommentMention.query.filter_by(comment_id=comment_id).delete()
+            db.session.commit()
+
+            # 创建新的提及记录
+            comment.create_mentions_after_save(content)
 
             # 处理新的提及通知
             CommentService.process_mention_notifications(comment)
@@ -249,14 +256,21 @@ class CommentService:
     def create_mention_notification(comment, mention):
         """创建@提及的站内通知"""
         try:
-            from app.models import WatchNotification, WatchEventType
+            from app.models import WatchNotification, WatchEventType, WatchTargetType
             from app.services.watch_service import WatchService
+
+            # 转换CommentTargetType到WatchTargetType
+            target_type = None
+            if comment.target_type.value == 'page':
+                target_type = WatchTargetType.PAGE
+            elif comment.target_type.value == 'attachment':
+                target_type = WatchTargetType.PAGE  # 附件通知也归类为页面
 
             # 创建watch通知
             notification = WatchNotification(
                 user_id=mention.mentioned_user_id,
                 event_type=WatchEventType.COMMENT_MENTION,
-                target_type=comment.target_type,
+                target_type=target_type,
                 target_id=comment.id,
                 actor_id=comment.author_id
             )
@@ -271,7 +285,7 @@ class CommentService:
             WatchService.create_notification(
                 watch=None,  # 没有关联的watch记录
                 event_type=WatchEventType.COMMENT_MENTION,
-                target_type=comment.target_type,
+                target_type=target_type,
                 target_id=comment.id,
                 actor_id=comment.author_id
             )

@@ -4,7 +4,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User, Role, UserSession, Permission
 from app.forms.auth import LoginForm, RegistrationForm, ChangePasswordForm, \
-    PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm
+    PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm, ResendConfirmationForm
 from app.decorators import permission_required, admin_required
 from app.email import send_email
 import secrets
@@ -26,7 +26,8 @@ def before_request():
 def unconfirmed():
     if current_user.is_anonymous or current_user.confirmed:
         return redirect(url_for('wiki.index'))
-    return render_template('auth/unconfirmed.html')
+    form = ResendConfirmationForm()
+    return render_template('auth/unconfirmed.html', form=form)
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -168,14 +169,26 @@ def moment_filter(date):
         return ''
     return date.strftime('%Y-%m-%d %H:%M:%S')
 
-@auth.route('/confirm')
+@auth.route('/confirm', methods=['GET', 'POST'])
 @login_required
 def resend_confirmation():
-    token = current_user.generate_confirmation_token()
-    send_email(current_user.email, 'Confirm Your Account',
-               'auth/email/confirm', user=current_user, token=token)
-    flash('A new confirmation email has been sent to you by email.', 'info')
-    return redirect(url_for('wiki.index'))
+    if current_user.confirmed:
+        return redirect(url_for('wiki.index'))
+
+    form = ResendConfirmationForm()
+    if form.validate_on_submit():
+        try:
+            token = current_user.generate_confirmation_token()
+            send_email(current_user.email, 'Confirm Your Account',
+                       'auth/email/confirm', user=current_user, token=token)
+            flash('A new confirmation email has been sent to your email address.', 'success')
+        except Exception as e:
+            current_app.logger.error(f'Failed to resend confirmation email: {e}')
+            flash('We encountered an issue sending the confirmation email. Please try again later.', 'danger')
+
+        return redirect(url_for('auth.unconfirmed'))
+
+    return render_template('auth/unconfirmed.html', form=form)
 
 @auth.route('/change-password', methods=['GET', 'POST'])
 @login_required
