@@ -118,8 +118,28 @@ class Page(db.Model):
     def generate_slug(self):
         import re
         from unidecode import unidecode
-        self.slug = re.sub(r'[^\w]+', '-', unidecode(self.title)).strip('-')
-        self.slug = self.slug.lower()
+
+        # Generate base slug from title
+        base_slug = re.sub(r'[^\w]+', '-', unidecode(self.title)).strip('-')
+        base_slug = base_slug.lower()
+
+        # If base_slug is empty, use a default
+        if not base_slug:
+            base_slug = 'untitled'
+
+        # Check if slug already exists and add number suffix if needed
+        slug = base_slug
+        counter = 1
+        while True:
+            # Check if slug exists (exclude current page if it has an id)
+            existing_page = Page.query.filter_by(slug=slug).first()
+            if existing_page is None or (self.id and existing_page.id == self.id):
+                self.slug = slug
+                break
+
+            # Try next slug with number
+            slug = f"{base_slug}-{counter}"
+            counter += 1
 
     def generate_summary(self):
         if self.content:
@@ -133,7 +153,7 @@ class Page(db.Model):
     def can_view(self, user):
         if self.is_public:
             return True
-        if user is None:
+        if user is None or not hasattr(user, 'id') or not hasattr(user, 'is_administrator'):
             return False
         if user.is_administrator():
             return True
@@ -148,7 +168,7 @@ class Page(db.Model):
         return False
 
     def can_edit(self, user):
-        if user is None:
+        if user is None or not hasattr(user, 'id') or not hasattr(user, 'is_administrator'):
             return False
         if user.is_administrator():
             return True
@@ -292,7 +312,7 @@ class Attachment(db.Model):
     def can_view(self, user):
         if self.is_public:
             return True
-        if user is None:
+        if user is None or not hasattr(user, 'id') or not hasattr(user, 'is_administrator'):
             return False
         if user.is_administrator():
             return True

@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, jsonify, request, abort, current_app, url_for
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from app import db
@@ -34,6 +34,150 @@ def api_stats():
         'total_users': User.query.filter_by(is_active=True).count(),
         'total_attachments': Attachment.query.filter_by(is_public=True).count()
     })
+
+@api.route('/register', methods=['POST'])
+def api_register():
+    """Register new user via API"""
+    try:
+        # For registration, we'll accept requests without CSRF token for API access
+        # but validate through other means
+
+        data = request.get_json()
+        if not data:
+            return api_error('No JSON data provided', 400)
+
+        # Validate required fields
+        required_fields = ['email', 'username', 'password', 'name']
+        for field in required_fields:
+            if not data.get(field):
+                return api_error(f'Missing required field: {field}', 400)
+
+        # Validate data
+        email = data['email'].strip()
+        username = data['username'].strip()
+        password = data['password']
+        name = data['name'].strip()
+
+        # Basic validation
+        if len(password) < 8:
+            return api_error('Password must be at least 8 characters long', 400)
+
+        # Email format validation
+        import re
+        email_regex = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+        if not email_regex.match(email):
+            return api_error('Invalid email format', 400)
+
+        # Check if user already exists
+        if User.query.filter_by(email=email).first():
+            return api_error('Email already registered', 409)
+        if User.query.filter_by(username=username).first():
+            return api_error('Username already taken', 409)
+
+        # Create new user
+        user = User(
+            email=email,
+            username=username,
+            password=password,
+            name=name
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        # Handle email confirmation
+        email_sent = False
+        try:
+            token = user.generate_confirmation_token()
+            from app.email import send_email
+            send_email(user.email, 'Confirm Your Account',
+                       'auth/email/confirm', user=user, token=token)
+            email_sent = True
+        except Exception as e:
+            # In development, continue without email confirmation
+            if current_app.debug:
+                current_app.logger.warning(f'Failed to send confirmation email: {e}')
+                # Auto-confirm user in development
+                user.confirmed = True
+                db.session.commit()
+            else:
+                current_app.logger.error(f'Failed to send confirmation email: {e}')
+
+        return jsonify({
+            'success': True,
+            'message': 'Registration successful!',
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'name': user.name
+            },
+            'email_sent': email_sent,
+            'confirmed': user.confirmed,
+            'redirect_url': url_for('auth.login', _external=True)
+        })
+
+    except Exception as e:
+        current_app.logger.error(f'Registration error: {str(e)}')
+        return api_error('Registration failed. Please try again.', 500)
+
+@api.route('/password-reset', methods=['POST'])
+def api_password_reset():
+    """Request password reset via API"""
+    try:
+        data = request.get_json()
+        if not data:
+            return api_error('No JSON data provided', 400)
+
+        email = data.get('email', '').strip()
+        if not email:
+            return api_error('Email is required', 400)
+
+        # Basic email validation
+        import re
+        email_regex = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+        if not email_regex.match(email):
+            return api_error('Invalid email format', 400)
+
+        # Check if user exists (but don't reveal if it doesn't exist for security)
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            try:
+                # Generate reset token
+                token = user.generate_reset_token()
+
+                # Send reset email
+                from app.email import send_email
+                send_email(user.email, 'Reset Your Password',
+                           'auth/email/reset_password',
+                           user=user, token=token)
+
+                current_app.logger.info(f'Password reset email sent to: {email}')
+
+                return jsonify({
+                    'success': True,
+                    'message': 'Password reset instructions have been sent to your email.',
+                    'redirect_url': url_for('auth.login', _external=True)
+                })
+
+            except Exception as e:
+                current_app.logger.error(f'Failed to send password reset email to {email}: {str(e)}')
+                return api_error('Failed to send reset email. Please try again.', 500)
+        else:
+            # For security reasons, don't reveal that the email doesn't exist
+            # But log it for monitoring
+            current_app.logger.info(f'Password reset requested for non-existent email: {email}')
+
+            # Still return success message to prevent email enumeration
+            return jsonify({
+                'success': True,
+                'message': 'If your email address is in our system, you will receive password reset instructions shortly.',
+                'redirect_url': url_for('auth.login', _external=True)
+            })
+
+    except Exception as e:
+        current_app.logger.error(f'Password reset error: {str(e)}')
+        return api_error('Password reset failed. Please try again.', 500)
 
 @api.route('/pages')
 def api_pages():
@@ -173,7 +317,7 @@ def api_delete_page(page_id):
 
 @api.route('/categories')
 def api_categories():
-    """Get categories with hierarchical structure"""
+    """Get categories with hierarchical structure including pages"""
     try:
         categories = Category.query.all()
 
@@ -181,15 +325,42 @@ def api_categories():
             tree = []
             for cat in cats:
                 if cat.parent_id == parent_id:
+                    # Get pages in this category
+                    pages = Page.query.filter_by(
+                        category_id=cat.id,
+                        is_published=True
+                    ).order_by(Page.title).all()
+
+                    # Filter pages based on permissions
+                    accessible_pages = []
+                    for page in pages:
+                        if page.can_view(current_user):
+                            accessible_pages.append({
+                                'id': page.id,
+                                'title': page.title,
+                                'slug': page.slug,
+                                'type': 'page',
+                                'url': f'/page/{page.slug}',
+                                'updated_at': page.updated_at.strftime('%Y-%m-%d') if page.updated_at else ''
+                            })
+
                     children = build_category_tree(cats, cat.id)
-                    tree.append({
+
+                    # Combine subcategories and pages
+                    category_item = {
                         'id': cat.id,
                         'name': cat.name,
                         'description': cat.description or '',
                         'parent_id': cat.parent_id,
                         'path': cat.get_path() if hasattr(cat, 'get_path') else '',
-                        'children': children
-                    })
+                        'type': 'category',
+                        'children': children,
+                        'pages': accessible_pages
+                    }
+
+                    # Only add category if it has children, pages, or is a top-level category
+                    if parent_id is None or children or accessible_pages:
+                        tree.append(category_item)
             return tree
 
         return jsonify({
@@ -375,21 +546,25 @@ def api_upload():
 
     from werkzeug.utils import secure_filename
     import os
+    import uuid
 
     if file and allowed_file(file.filename):
+        original_filename = file.filename
         filename = secure_filename(file.filename)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        unique_filename = f"{timestamp}_{filename}"
 
-        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
+        # Generate UUID for storage while preserving extension
+        file_extension = os.path.splitext(filename)[1]
+        uuid_filename = f"{uuid.uuid4().hex}{file_extension}"
+
+        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], uuid_filename)
         os.makedirs(os.path.dirname(upload_path), exist_ok=True)
         file.save(upload_path)
 
         # Create attachment record
         page_id = request.form.get('page_id', type=int)
         attachment = Attachment(
-            filename=unique_filename,
-            original_filename=filename,
+            filename=uuid_filename,
+            original_filename=original_filename,
             file_path=upload_path,
             file_size=os.path.getsize(upload_path),
             mime_type=file.mimetype,
@@ -403,14 +578,52 @@ def api_upload():
 
         return jsonify({
             'id': attachment.id,
-            'filename': unique_filename,
-            'original_filename': filename,
-            'url': url_for('static', filename=f'uploads/{unique_filename}'),
+            'filename': uuid_filename,
+            'original_filename': original_filename,
+            'url': url_for('api.download_attachment', attachment_id=attachment.id),
+            'download_url': url_for('api.download_attachment', attachment_id=attachment.id, download=1),
             'size': attachment.get_size_display(),
             'mime_type': attachment.mime_type
         }), 201
 
     return api_error('File type not allowed', 400)
+
+@api.route('/download/<int:attachment_id>')
+def download_attachment(attachment_id):
+    """Download attachment file"""
+    attachment = Attachment.query.get_or_404(attachment_id)
+
+    # Check permissions
+    if not attachment.can_view(current_user):
+        return api_error('Permission denied', 403)
+
+    import os
+    from flask import send_file
+
+    # Convert relative path to absolute path
+    file_path = attachment.file_path
+    if not os.path.isabs(file_path):
+        # Remove leading 'app/' if present to avoid double path issue
+        if file_path.startswith('app/'):
+            file_path = file_path[4:]
+        file_path = os.path.join(current_app.root_path, file_path)
+
+    if not os.path.exists(file_path):
+        return api_error('File not found', 404)
+
+    # Get download parameter
+    force_download = request.args.get('download', '0') == '1'
+
+    try:
+        return send_file(
+            file_path,
+            as_attachment=force_download,
+            download_name=attachment.original_filename,
+            mimetype=attachment.mime_type
+        )
+    except Exception as e:
+        current_app.logger.error(f"Download error: {str(e)}")
+        return api_error(f'Error downloading file: {str(e)}', 500)
 
 def allowed_file(filename):
     """Check if file extension is allowed"""

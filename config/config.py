@@ -48,6 +48,15 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///enterprise_wiki_dev.db'
     SESSION_COOKIE_SECURE = False
 
+    # QQ Mail SMTP settings for development
+    MAIL_SERVER = 'smtp.qq.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = 'jimmyki@qq.com'
+    MAIL_PASSWORD = 'kurzssokwrixeahb'  # QQ邮箱授权码
+    MAIL_SUBJECT_PREFIX = '[Enterprise Wiki]'
+    MAIL_SENDER = 'Enterprise Wiki <jimmyki@qq.com>'
+
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'

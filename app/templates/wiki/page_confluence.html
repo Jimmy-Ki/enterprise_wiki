@@ -200,6 +200,32 @@
     </div>
 </div>
 
+<!-- File Upload Section (shown during editing) -->
+<div id="fileUploadSection" class="card mt-4" style="display: none; border: 1px solid var(--border-color);">
+    <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
+        <h6 class="mb-0">
+            <i class="fas fa-paperclip me-2"></i>Upload Files
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="file-upload-area" id="inlineFileUploadArea">
+            <div class="upload-zone" id="inlineUploadZone">
+                <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                <h6 class="text-muted">Drop files here or click to browse</h6>
+                <p class="text-muted small">Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, PNG, JPG, GIF</p>
+                <input type="file" id="inlineFileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif" style="display: none;">
+                <button type="button" class="btn-wiki small" id="inlineBrowseFilesBtn">
+                    <i class="fas fa-folder-open me-1"></i>Browse Files
+                </button>
+            </div>
+            <div id="inlineFileList" class="file-list mt-3" style="display: none;">
+                <h6 class="mb-3">Uploaded Files:</h6>
+                <div class="list-group" id="inlineFileListContainer"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Attachments Section -->
 {% if attachments %}
 <div class="card mt-4" style="border: 1px solid var(--border-color);">
@@ -217,7 +243,7 @@
                         <div class="d-flex align-items-center">
                             <div class="me-3">
                                 {% if attachment.is_image() %}
-                                <img src="{{ url_for('static', filename='uploads/' + attachment.filename) }}"
+                                <img src="{{ url_for('api.download_attachment', attachment_id=attachment.id) }}"
                                      alt="{{ attachment.original_filename }}"
                                      class="img-thumbnail" style="max-width: 60px; max-height: 60px;">
                                 {% else %}
@@ -232,8 +258,8 @@
                                 </small>
                             </div>
                             <div>
-                                <a href="{{ url_for('static', filename='uploads/' + attachment.filename) }}"
-                                   class="btn-wiki" download>
+                                <a href="{{ url_for('api.download_attachment', attachment_id=attachment.id, download=1) }}"
+                                   class="btn-wiki" title="Download {{ attachment.original_filename }}">
                                     <i class="fas fa-download"></i>
                                 </a>
                             </div>
@@ -263,10 +289,17 @@
 <script>
 let editor = null;
 let isPreviewMode = false;
+let uploadedInlineFiles = [];
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Set current page ID for editing functionality
+    window.wikiState.currentPageId = {{ page.id }};
+
     // Enable click-to-edit functionality
     enableClickToEdit();
+
+    // Initialize inline file upload functionality
+    initializeInlineFileUpload();
 
     // Initialize CodeMirror if we have the markdown input
     const markdownInput = document.getElementById('markdownInput');
@@ -319,6 +352,7 @@ function enableEditMode() {
     document.getElementById('contentDisplay').style.display = 'none';
     document.getElementById('contentEditor').style.display = 'block';
     document.getElementById('editorActions').style.display = 'block';
+    document.getElementById('fileUploadSection').style.display = 'block';
 
     // Update button
     const editBtn = document.getElementById('editBtn');
@@ -352,6 +386,7 @@ function cancelEdit() {
     document.getElementById('contentDisplay').style.display = 'block';
     document.getElementById('contentEditor').style.display = 'none';
     document.getElementById('editorActions').style.display = 'none';
+    document.getElementById('fileUploadSection').style.display = 'none';
 
     // Update button
     const editBtn = document.getElementById('editBtn');
@@ -391,6 +426,7 @@ function savePage() {
             document.getElementById('contentDisplay').style.display = 'block';
             document.getElementById('contentEditor').style.display = 'none';
             document.getElementById('editorActions').style.display = 'none';
+            document.getElementById('fileUploadSection').style.display = 'none';
 
             // Update button
             const editBtn = document.getElementById('editBtn');
@@ -534,6 +570,201 @@ function autoSave() {
     showToast('Draft auto-saved', 'info');
 }
 
+function initializeInlineFileUpload() {
+    const fileInput = document.getElementById('inlineFileInput');
+    const uploadZone = document.getElementById('inlineUploadZone');
+    const browseFilesBtn = document.getElementById('inlineBrowseFilesBtn');
+    const fileList = document.getElementById('inlineFileList');
+    const fileListContainer = document.getElementById('inlineFileListContainer');
+
+    if (!fileInput || !uploadZone) return;
+
+    // Click to browse files
+    browseFilesBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        fileInput.click();
+    });
+
+    uploadZone.addEventListener('click', function(e) {
+        if (e.target !== browseFilesBtn) {
+            fileInput.click();
+        }
+    });
+
+    // Handle file selection
+    fileInput.addEventListener('change', function(e) {
+        handleInlineFiles(e.target.files);
+    });
+
+    // Drag and drop functionality
+    uploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        handleInlineFiles(e.dataTransfer.files);
+    });
+}
+
+function handleInlineFiles(files) {
+    Array.from(files).forEach(file => {
+        if (validateInlineFile(file)) {
+            uploadInlineFile(file);
+        }
+    });
+}
+
+function validateInlineFile(file) {
+    const allowedTypes = [
+        'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain', 'image/png', 'image/jpeg', 'image/gif'
+    ];
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    if (!allowedTypes.includes(file.type)) {
+        showToast('File type not supported: ' + file.name, 'error');
+        return false;
+    }
+
+    if (file.size > maxSize) {
+        showToast('File too large (max 10MB): ' + file.name, 'error');
+        return false;
+    }
+
+    return true;
+}
+
+function uploadInlineFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('page_id', '{{ page.id }}');
+
+    // Create file item in UI
+    const fileId = 'inline_file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const fileItem = createInlineFileItem(fileId, file);
+
+    const fileListContainer = document.getElementById('inlineFileListContainer');
+    fileListContainer.appendChild(fileItem);
+    document.getElementById('inlineFileList').style.display = 'block';
+
+    // Upload file
+    fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            // Update file item with server data
+            uploadedInlineFiles.push({
+                id: data.id,
+                filename: data.filename,
+                original_filename: data.original_filename,
+                url: data.url,
+                download_url: data.download_url
+            });
+            updateInlineFileItem(fileId, file, data);
+            showToast('File uploaded successfully: ' + file.name, 'success');
+        } else {
+            throw new Error(data.error || 'Upload failed');
+        }
+    })
+    .catch(error => {
+        console.error('Upload error:', error);
+        removeInlineFileItem(fileId);
+        showToast('Failed to upload file: ' + file.name, 'error');
+    });
+}
+
+function createInlineFileItem(fileId, file) {
+    const fileItem = document.createElement('div');
+    fileItem.className = 'list-group-item';
+    fileItem.id = fileId;
+
+    const fileIcon = getInlineFileIcon(file.type);
+    const fileSize = formatInlineFileSize(file.size);
+
+    fileItem.innerHTML = `
+        <div class="file-info">
+            <i class="file-icon ${fileIcon}"></i>
+            <div class="file-details">
+                <div class="file-name">${file.name}</div>
+                <div class="file-size">${fileSize}</div>
+            </div>
+        </div>
+        <div class="file-actions">
+            <div class="upload-progress">
+                <div class="upload-progress-bar"></div>
+            </div>
+            <button type="button" class="btn-remove-file" onclick="removeInlineFileItem('${fileId}')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+
+    return fileItem;
+}
+
+function updateInlineFileItem(fileId, file, data) {
+    const fileItem = document.getElementById(fileId);
+    if (fileItem) {
+        const progressBar = fileItem.querySelector('.upload-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = '100%';
+            setTimeout(() => {
+                progressBar.parentElement.style.display = 'none';
+            }, 500);
+        }
+    }
+}
+
+function removeInlineFileItem(fileId) {
+    const fileItem = document.getElementById(fileId);
+    if (fileItem) {
+        // Remove from uploaded files array
+        uploadedInlineFiles = uploadedInlineFiles.filter(f => f.id !== fileId.replace('inline_file_', ''));
+        fileItem.remove();
+
+        // Hide file list if empty
+        const fileListContainer = document.getElementById('inlineFileListContainer');
+        if (fileListContainer.children.length === 0) {
+            document.getElementById('inlineFileList').style.display = 'none';
+        }
+    }
+}
+
+function getInlineFileIcon(fileType) {
+    if (fileType.includes('pdf')) return 'fas fa-file-pdf';
+    if (fileType.includes('word') || fileType.includes('document')) return 'fas fa-file-word';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fas fa-file-excel';
+    if (fileType.includes('powerpoint') || fileType.includes('presentation')) return 'fas fa-file-powerpoint';
+    if (fileType.includes('text')) return 'fas fa-file-alt';
+    if (fileType.includes('image')) return 'fas fa-file-image';
+    return 'fas fa-file';
+}
+
+function formatInlineFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 function deletePage(pageId) {
     if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
         const form = document.createElement('form');
@@ -618,6 +849,102 @@ document.addEventListener('DOMContentLoaded', function() {
 .editing-mode .page-title:hover {
     background-color: #fffbe6;
     cursor: text;
+}
+
+/* File Upload Styles for Inline Edit */
+.upload-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 30px 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: var(--sidebar-bg);
+}
+
+.upload-zone:hover {
+    border-color: var(--primary-color);
+    background: #f8f9fa;
+}
+
+.upload-zone.dragover {
+    border-color: var(--primary-color);
+    background: #e3f2fd;
+}
+
+.upload-zone h6 {
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+.file-list .list-group-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 6px;
+    border-radius: 6px;
+    font-size: 0.9em;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.file-icon {
+    margin-right: 10px;
+    font-size: 1.1em;
+    color: var(--primary-color);
+}
+
+.file-details .file-name {
+    font-weight: 500;
+    margin-bottom: 1px;
+    font-size: 0.85em;
+}
+
+.file-details .file-size {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+}
+
+.file-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-remove-file {
+    background: none;
+    border: none;
+    color: var(--danger-color);
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+    font-size: 0.8em;
+}
+
+.btn-remove-file:hover {
+    background-color: #ffebee;
+}
+
+.upload-progress {
+    width: 100%;
+    height: 3px;
+    background: var(--border-color);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.upload-progress-bar {
+    height: 100%;
+    background: var(--primary-color);
+    width: 0%;
+    transition: width 0.3s ease;
 }
 
 /* Print styles */

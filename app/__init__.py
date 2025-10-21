@@ -76,6 +76,14 @@ def create_app(config_name='default'):
     from app.views.api import api as api_blueprint
     app.register_blueprint(api_blueprint, url_prefix='/api')
 
+    # CSRF exemptions for API endpoints
+    @csrf.exempt
+    def csrf_exempt_register():
+        pass
+
+    # Exempt specific API routes from CSRF
+    csrf.exempt(api_blueprint)
+
     # Error handlers
     @app.errorhandler(403)
     def forbidden(error):

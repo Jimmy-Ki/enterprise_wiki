@@ -184,6 +184,32 @@
             </div>
         </div>
 
+        <!-- File Attachments Card -->
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-paperclip me-2"></i>File Attachments
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="file-upload-area" id="fileUploadArea">
+                    <div class="upload-zone" id="uploadZone">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">Drop files here or click to browse</h6>
+                        <p class="text-muted small">Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, PNG, JPG, GIF</p>
+                        <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif" style="display: none;">
+                        <button type="button" class="btn-wiki small" id="browseFilesBtn">
+                            <i class="fas fa-folder-open me-1"></i>Browse Files
+                        </button>
+                    </div>
+                    <div id="fileList" class="file-list mt-3" style="display: none;">
+                        <h6 class="mb-3">Attached Files:</h6>
+                        <div class="list-group" id="fileListContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="content-card">
             <div class="card-body">
@@ -273,6 +299,98 @@
     font-size: 14px;
     line-height: 1.6;
     color: var(--text-primary);
+}
+
+/* File Upload Styles */
+.upload-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: var(--sidebar-bg);
+}
+
+.upload-zone:hover {
+    border-color: var(--primary-color);
+    background: #f8f9fa;
+}
+
+.upload-zone.dragover {
+    border-color: var(--primary-color);
+    background: #e3f2fd;
+}
+
+.upload-zone h6 {
+    margin-bottom: 8px;
+}
+
+.file-list .list-group-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 8px;
+    border-radius: 6px;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.file-icon {
+    margin-right: 12px;
+    font-size: 1.2em;
+    color: var(--primary-color);
+}
+
+.file-details .file-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.file-details .file-size {
+    font-size: 0.875em;
+    color: var(--text-secondary);
+}
+
+.file-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-remove-file {
+    background: none;
+    border: none;
+    color: var(--danger-color);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.btn-remove-file:hover {
+    background-color: #ffebee;
+}
+
+.upload-progress {
+    width: 100%;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.upload-progress-bar {
+    height: 100%;
+    background: var(--primary-color);
+    width: 0%;
+    transition: width 0.3s ease;
 }
 
 .preview-content h1, .preview-content h2, .preview-content h3,
@@ -528,6 +646,194 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // File upload functionality
+    const fileInput = document.getElementById('fileInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const browseFilesBtn = document.getElementById('browseFilesBtn');
+    const fileList = document.getElementById('fileList');
+    const fileListContainer = document.getElementById('fileListContainer');
+    let uploadedFiles = [];
+
+    // Click to browse files
+    browseFilesBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        fileInput.click();
+    });
+
+    uploadZone.addEventListener('click', function(e) {
+        if (e.target !== browseFilesBtn) {
+            fileInput.click();
+        }
+    });
+
+    // Handle file selection
+    fileInput.addEventListener('change', function(e) {
+        handleFiles(e.target.files);
+    });
+
+    // Drag and drop functionality
+    uploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+
+    function handleFiles(files) {
+        Array.from(files).forEach(file => {
+            if (validateFile(file)) {
+                uploadFile(file);
+            }
+        });
+    }
+
+    function validateFile(file) {
+        const allowedTypes = [
+            'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'text/plain', 'image/png', 'image/jpeg', 'image/gif'
+        ];
+
+        const maxSize = 10 * 1024 * 1024; // 10MB
+
+        if (!allowedTypes.includes(file.type)) {
+            showToast('File type not supported: ' + file.name, 'error');
+            return false;
+        }
+
+        if (file.size > maxSize) {
+            showToast('File too large (max 10MB): ' + file.name, 'error');
+            return false;
+        }
+
+        return true;
+    }
+
+    function uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Create file item in UI
+        const fileId = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const fileItem = createFileItem(fileId, file);
+        fileListContainer.appendChild(fileItem);
+        fileList.style.display = 'block';
+
+        // Upload file
+        fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                // Update file item with server data
+                uploadedFiles.push({
+                    id: data.id,
+                    filename: data.filename,
+                    original_filename: data.original_filename,
+                    url: data.url
+                });
+                updateFileItem(fileId, file, data);
+                showToast('File uploaded successfully: ' + file.name, 'success');
+            } else {
+                throw new Error(data.error || 'Upload failed');
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            removeFileItem(fileId);
+            showToast('Failed to upload file: ' + file.name, 'error');
+        });
+    }
+
+    function createFileItem(fileId, file) {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'list-group-item';
+        fileItem.id = fileId;
+
+        const fileIcon = getFileIcon(file.type);
+        const fileSize = formatFileSize(file.size);
+
+        fileItem.innerHTML = `
+            <div class="file-info">
+                <i class="file-icon ${fileIcon}"></i>
+                <div class="file-details">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${fileSize}</div>
+                </div>
+            </div>
+            <div class="file-actions">
+                <div class="upload-progress">
+                    <div class="upload-progress-bar"></div>
+                </div>
+                <button type="button" class="btn-remove-file" onclick="removeFileItem('${fileId}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        return fileItem;
+    }
+
+    function updateFileItem(fileId, file, data) {
+        const fileItem = document.getElementById(fileId);
+        if (fileItem) {
+            const progressBar = fileItem.querySelector('.upload-progress-bar');
+            if (progressBar) {
+                progressBar.style.width = '100%';
+                setTimeout(() => {
+                    progressBar.parentElement.style.display = 'none';
+                }, 500);
+            }
+        }
+    }
+
+    function removeFileItem(fileId) {
+        const fileItem = document.getElementById(fileId);
+        if (fileItem) {
+            // Remove from uploaded files array
+            uploadedFiles = uploadedFiles.filter(f => f.id !== fileId.replace('file_', ''));
+            fileItem.remove();
+
+            // Hide file list if empty
+            if (fileListContainer.children.length === 0) {
+                fileList.style.display = 'none';
+            }
+        }
+    }
+
+    function getFileIcon(fileType) {
+        if (fileType.includes('pdf')) return 'fas fa-file-pdf';
+        if (fileType.includes('word') || fileType.includes('document')) return 'fas fa-file-word';
+        if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fas fa-file-excel';
+        if (fileType.includes('powerpoint') || fileType.includes('presentation')) return 'fas fa-file-powerpoint';
+        if (fileType.includes('text')) return 'fas fa-file-alt';
+        if (fileType.includes('image')) return 'fas fa-file-image';
+        return 'fas fa-file';
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
 
     // Toast notification function (reuse from base template)
     function showToast(message, type = 'info') {

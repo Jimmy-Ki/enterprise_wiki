@@ -115,15 +115,38 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        # Send confirmation email
-        token = user.generate_confirmation_token()
-        send_email(user.email, 'Confirm Your Account',
-                   'auth/email/confirm', user=user, token=token)
+        # Send confirmation email (with error handling)
+        email_sent = False
+        try:
+            token = user.generate_confirmation_token()
+            send_email(user.email, 'Confirm Your Account',
+                       'auth/email/confirm', user=user, token=token)
+            email_sent = True
+        except Exception as e:
+            # For testing confirmation emails, don't auto-confirm
+            current_app.logger.error(f'Failed to send confirmation email: {e}')
 
-        flash('A confirmation email has been sent to you by email.', 'info')
-        return redirect(url_for('auth.login'))
+        # Show success page with login link
+        return render_template('auth/register_success_simple.html',
+                             user_email=user.email,
+                             email_sent=email_sent)
 
     return render_template('auth/register.html', form=form)
+
+@auth.route('/register-success')
+def register_success():
+    """Show registration success page for AJAX registrations"""
+    email = request.args.get('email', '')
+    email_sent = request.args.get('email_sent', 'false').lower() == 'true'
+    confirmed = request.args.get('confirmed', 'false').lower() == 'true'
+
+    if not email:
+        return redirect(url_for('auth.register'))
+
+    return render_template('auth/register_success_simple.html',
+                         user_email=email,
+                         email_sent=email_sent,
+                         confirmed=confirmed)
 
 @auth.route('/confirm/<token>')
 @login_required
@@ -176,14 +199,24 @@ def password_reset_request():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
-            token = user.generate_reset_token()
-            send_email(user.email, 'Reset Your Password',
-                       'auth/email/reset_password',
-                       user=user, token=token)
-        flash('An email with instructions to reset your password has been '
-              'sent to you.', 'info')
+            try:
+                token = user.generate_reset_token()
+                send_email(user.email, 'Reset Your Password',
+                           'auth/email/reset_password',
+                           user=user, token=token)
+                flash('An email with instructions to reset your password has been '
+                      'sent to you.', 'info')
+            except Exception as e:
+                current_app.logger.error(f'Failed to send password reset email: {e}')
+                flash('We encountered an issue sending the reset email. Please try again later.', 'warning')
+        else:
+            # Don't reveal that the email doesn't exist for security reasons
+            # But log it for monitoring
+            current_app.logger.info(f'Password reset requested for non-existent email: {form.email.data}')
+            flash('An email with instructions to reset your password has been '
+                  'sent to you.', 'info')
         return redirect(url_for('auth.login'))
-    return render_template('auth/reset_password.html', form=form)
+    return render_template('auth/reset_password_ajax.html', form=form)
 
 @auth.route('/reset/<token>', methods=['GET', 'POST'])
 def password_reset(token):
@@ -191,12 +224,23 @@ def password_reset(token):
         return redirect(url_for('wiki.index'))
     form = PasswordResetForm()
     if form.validate_on_submit():
-        if User.reset_password(token, form.password.data):
-            db.session.commit()
-            flash('Your password has been reset.', 'success')
+        # Find user by token
+        from itsdangerous import URLSafeTimedSerializer as Serializer
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token, salt='reset', max_age=3600)
+            user_id = data.get('reset')
+            user = User.query.get(user_id)
+            if user and user.reset_password(token, form.password.data):
+                db.session.commit()
+                flash('Your password has been reset.', 'success')
+                return redirect(url_for('auth.login'))
+            else:
+                flash('The password reset link is invalid or has expired.', 'danger')
+                return redirect(url_for('auth.login'))
+        except:
+            flash('The password reset link is invalid or has expired.', 'danger')
             return redirect(url_for('auth.login'))
-        else:
-            return redirect(url_for('wiki.index'))
     return render_template('auth/reset_password.html', form=form)
 
 @auth.route('/change_email', methods=['GET', 'POST'])
