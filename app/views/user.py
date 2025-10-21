@@ -148,11 +148,27 @@ def get_user_stats(user_id):
         # 活跃度统计
         from datetime import datetime, timedelta
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        recent_comments = Comment.query.filter(
+
+        # 处理可能的字符串日期格式
+        recent_comments_query = Comment.query.filter(
             Comment.author_id == user_id,
-            Comment.is_deleted == False,
-            Comment.created_at >= thirty_days_ago
-        ).count()
+            Comment.is_deleted == False
+        )
+
+        recent_comments = 0
+        for comment in recent_comments_query.all():
+            try:
+                # 尝试解析日期字符串
+                if isinstance(comment.created_at, str):
+                    comment_date = datetime.fromisoformat(comment.created_at.replace('Z', '+00:00'))
+                else:
+                    comment_date = comment.created_at
+
+                if comment_date >= thirty_days_ago:
+                    recent_comments += 1
+            except (ValueError, AttributeError):
+                # 如果日期解析失败，跳过此评论
+                continue
 
         return {
             'total_comments': total_comments,

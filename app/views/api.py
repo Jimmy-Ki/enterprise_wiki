@@ -371,6 +371,57 @@ def api_categories():
     except Exception as e:
         return api_error(f'Error loading categories: {str(e)}', 500)
 
+@api.route('/categories', methods=['POST'])
+@login_required
+@permission_required(Permission.WRITE)
+def api_create_category():
+    """Create new category via API"""
+    try:
+        data = request.get_json()
+        if not data:
+            return api_error('No data provided')
+
+        # Required fields
+        name = data.get('name', '').strip()
+        if not name:
+            return api_error('Category name is required')
+
+        # Check if category with same name already exists under same parent
+        parent_id = data.get('parent_id')
+        existing_category = Category.query.filter_by(
+            name=name,
+            parent_id=parent_id
+        ).first()
+
+        if existing_category:
+            return api_error('A category with this name already exists in this location', 409)
+
+        # Create new category
+        category = Category(
+            name=name,
+            description=data.get('description', '').strip() or None,
+            parent_id=parent_id
+        )
+
+        db.session.add(category)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Category created successfully',
+            'category': {
+                'id': category.id,
+                'name': category.name,
+                'description': category.description or '',
+                'parent_id': category.parent_id
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Error creating category: {str(e)}')
+        return api_error(f'Error creating category: {str(e)}', 500)
+
 @api.route('/recent-pages')
 def api_recent_pages():
     """Get recent pages"""

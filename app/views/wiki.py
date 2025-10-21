@@ -294,6 +294,10 @@ def create_page():
         db.session.add(page)
         db.session.commit()
 
+        # Ensure markdown rendering is triggered
+        if page.content and not page.content_html:
+            Page.on_changed_content(page, page.content, None, None)
+
         # Create initial version
         page.create_version(current_user.id, 'Initial version')
         db.session.commit()
@@ -364,6 +368,10 @@ def edit_page(page_id):
         page.is_published = form.is_published.data
         page.is_public = form.is_public.data
         page.last_editor_id = current_user.id
+
+        # Ensure markdown rendering is triggered
+        if page.content and (not page.content_html or old_content != page.content):
+            Page.on_changed_content(page, page.content, old_content, None)
 
         # Determine change summary
         change_summary = []
