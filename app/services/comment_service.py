@@ -245,12 +245,22 @@ class CommentService:
     def process_mention_notifications(comment):
         """处理@提及通知"""
         mentions = comment.mentions.all()
+        print(f"Processing {len(mentions)} mentions for comment {comment.id}")
+
         for mention in mentions:
+            print(f"Processing mention: user {mention.mentioned_user_id} -> {mention.mentioned_username}")
+
             # 创建watch通知
             CommentService.create_mention_notification(comment, mention)
 
             # 发送邮件通知
-            CommentService.send_mention_email(comment, mention)
+            try:
+                CommentService.send_mention_email(comment, mention)
+                print(f"Email sent successfully to {mention.mentioned_user.username}")
+            except Exception as e:
+                print(f"Error sending email: {e}")
+                import traceback
+                traceback.print_exc()
 
     @staticmethod
     def create_mention_notification(comment, mention):

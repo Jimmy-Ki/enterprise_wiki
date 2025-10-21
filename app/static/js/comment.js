@@ -14,6 +14,7 @@ class CommentSystem {
             ...options
         };
 
+        
         this.currentPage = 1;
         this.hasMoreComments = true;
         this.isLoading = false;
@@ -128,12 +129,72 @@ class CommentSystem {
             this.saveDraft(e.target);
         });
 
+        // 富文本编辑器键盘事件，处理@标签的整体操作
+        $(document).on('keydown', '.comment-editor', (e) => {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const startContainer = range.startContainer;
+
+                // 检查光标是否在@标签内部或旁边
+                let parentElement = startContainer.nodeType === Node.TEXT_NODE
+                    ? startContainer.parentElement
+                    : startContainer;
+
+                if (parentElement && parentElement.classList.contains('mention')) {
+                    // 如果光标在@标签内，阻止输入并移动到标签后面
+                    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        const mentionElement = parentElement;
+                        const nextSibling = mentionElement.nextSibling;
+
+                        if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
+                            const newRange = document.createRange();
+                            newRange.selectNodeContents(nextSibling);
+                            newRange.collapse(false);
+                            selection.removeAllRanges();
+                            selection.addRange(newRange);
+                        }
+                    }
+                }
+
+                // 处理退格键删除@标签
+                if (e.key === 'Backspace' && range.collapsed && range.startOffset === 0) {
+                    const previousNode = range.startContainer.previousSibling;
+                    if (previousNode && previousNode.classList && previousNode.classList.contains('mention')) {
+                        e.preventDefault();
+                        previousNode.remove();
+                        // 触发内容更新
+                        $(e.target).trigger('input');
+                    }
+                }
+            }
+        });
+
         // @提及建议点击
         $(document).on('click', '.mention-suggestion', (e) => {
             e.preventDefault();
-            this.selectMention($(e.currentTarget));
+            e.stopPropagation();
+            const $suggestion = $(e.currentTarget);
+            const username = $suggestion.data('username');
+            console.log('Mention clicked:', username);
+            this.selectMention($suggestion);
         });
 
+        // @提及点击跳转用户详情
+        $(document).on('click', '.mention', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const $mention = $(e.currentTarget);
+            const username = $mention.data('mention') || $mention.text().replace('@', '');
+            if (username) {
+                console.log('Mention clicked, navigating to user:', username);
+                // 跳转到用户详情页面
+                window.location.href = `/user/${username}`;
+            }
+        });
+
+        
         // 分页点击
         $(document).on('click', '.comments-pagination a', (e) => {
             e.preventDefault();
@@ -145,7 +206,8 @@ class CommentSystem {
             if (!$(e.target).closest('.emoji-picker, .emoji-picker-btn').length) {
                 this.hideEmojiPicker();
             }
-            if (!$(e.target).closest('.comment-textarea, #mention-suggestions').length) {
+            // 包含富文本编辑器、普通textarea、悬浮窗本身和关闭按钮
+            if (!$(e.target).closest('.comment-editor, .comment-textarea, #mention-suggestions, .mention-suggestions-close').length) {
                 this.hideMentionSuggestions();
             }
         });
@@ -536,15 +598,10 @@ class CommentSystem {
         // 创建@提及建议容器
         $('body').append('<div id="mention-suggestions" class="mention-suggestions" style="display: none;"></div>');
 
-        // 全局点击事件（隐藏建议）
-        $(document).on('click', (e) => {
-            if (!$(e.target).closest('.comment-textarea, #mention-suggestions').length) {
-                this.hideMentionSuggestions();
-            }
-        });
+        // 全局点击事件（隐藏建议）- 已移至bindEvents方法中
 
         // 键盘导航
-        $(document).on('keydown', '.comment-textarea', (e) => {
+        $(document).on('keydown', '.comment-textarea, .comment-editor', (e) => {
             this.handleMentionKeydown(e);
         });
     }
@@ -558,19 +615,25 @@ class CommentSystem {
         const $textarea = $(textarea);
         let text, cursorPos;
 
+        
         // 判断是富文本编辑器还是普通textarea
         if ($textarea.hasClass('comment-editor')) {
-            // 富文本编辑器
+            // 富文本编辑器 - 改进的文本获取逻辑
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
-                const preCaretRange = range.cloneRange();
+
+                // 创建一个新的范围来获取光标前的文本
+                const preCaretRange = document.createRange();
                 preCaretRange.selectNodeContents($textarea[0]);
                 preCaretRange.setEnd(range.endContainer, range.endOffset);
+
+                // 获取纯文本内容
                 text = preCaretRange.toString();
                 cursorPos = text.length;
             } else {
-                text = $textarea.text();
+                // 如果没有选区，获取整个文本内容
+                text = $textarea[0].innerText || $textarea.text() || '';
                 cursorPos = text.length;
             }
         } else {
@@ -584,12 +647,12 @@ class CommentSystem {
 
         if (mentionMatch) {
             const query = mentionMatch[1];
-            if (query.length >= 1) { // 降低触发阈值，让用户更容易看到提示
+            // 立即显示@提及建议，即使没有输入任何字符
+            if (query.length >= 0) {
                 this.showMentionSuggestions(query, $textarea);
-            } else {
-                this.hideMentionSuggestions();
             }
         } else {
+            // 只有在没有@符号时才隐藏，确保用户输入时不会意外关闭
             this.hideMentionSuggestions();
         }
     }
@@ -598,8 +661,15 @@ class CommentSystem {
      * 显示@提及建议
      */
     async showMentionSuggestions(query, $textarea) {
-        // 防抖
+        // 立即显示加载状态
+        if (query.length === 0) {
+            this.renderMentionLoading($textarea);
+        }
+
+        // 防抖，但对于空查询立即执行
         clearTimeout(this.mentionDebounceTimer);
+        const delay = query.length === 0 ? 0 : 150;
+
         this.mentionDebounceTimer = setTimeout(async () => {
             try {
                 // 检查缓存
@@ -624,9 +694,63 @@ class CommentSystem {
 
             } catch (error) {
                 console.error('Error searching users:', error);
-                this.hideMentionSuggestions();
+                this.renderMentionError($textarea);
             }
-        }, 200);
+        }, delay);
+    }
+
+    /**
+     * 渲染@提及加载状态
+     */
+    renderMentionLoading($textarea) {
+        const $suggestions = $('#mention-suggestions');
+
+        const loadingHtml = `
+            <div class="mention-loading">
+                <div class="mention-loading-spinner"></div>
+                <div class="mention-loading-text">输入用户名进行搜索...</div>
+            </div>
+        `;
+
+        $suggestions.html(loadingHtml);
+
+        // 强制显示加载状态
+        $suggestions.css({
+            'display': 'block',
+            'visibility': 'visible',
+            'opacity': '1'
+        });
+
+        this.positionMentionSuggestions($textarea);
+        this.currentMentionTextarea = $textarea;
+
+            }
+
+    /**
+     * 渲染@提及错误状态
+     */
+    renderMentionError($textarea) {
+        const $suggestions = $('#mention-suggestions');
+
+        const errorHtml = `
+            <div class="mention-error">
+                <div class="mention-error-text">搜索失败，请重试</div>
+            </div>
+        `;
+
+        $suggestions.html(errorHtml);
+
+        // 强制显示错误状态
+        $suggestions.css({
+            'display': 'block',
+            'visibility': 'visible',
+            'opacity': '1'
+        });
+
+        this.positionMentionSuggestions($textarea);
+        this.currentMentionTextarea = $textarea;
+
+        console.log('Mention error state rendered');
     }
 
     /**
@@ -640,39 +764,152 @@ class CommentSystem {
             return;
         }
 
-        const html = users.map((user, index) => `
+        const suggestionsHtml = users.map((user, index) => `
             <div class="mention-suggestion ${index === 0 ? 'active' : ''}"
-                 data-username="${user.username}"
-                 data-name="${user.name}"
-                 data-email="${user.email}">
-                <img src="${user.avatar}" alt="${user.name}" class="mention-suggestion-avatar">
-                <div class="mention-suggestion-info">
-                    <div class="mention-suggestion-name">${user.name}</div>
-                    <div class="mention-suggestion-username">@${user.username}</div>
-                    <div class="mention-suggestion-email">${user.email}</div>
-                </div>
+                 data-username="${user.username}">
+                @${user.username}
             </div>
         `).join('');
 
-        $suggestions.html(html).show();
+        // 简化的HTML结构
+        const html = suggestionsHtml;
 
-        // 定位建议框
-        const textareaRect = $textarea[0].getBoundingClientRect();
+        // 先设置内容，然后显示
+        $suggestions.html(html);
+
+        // 显示悬浮窗
         $suggestions.css({
-            top: textareaRect.bottom + window.scrollY,
-            left: textareaRect.left + window.scrollX
+            'display': 'block',
+            'visibility': 'visible',
+            'opacity': '1',
+            'z-index': '9999'
         });
+
+        
+        // 智能定位建议框
+        this.positionMentionSuggestions($textarea);
 
         this.currentMentionIndex = 0;
         this.currentMentionTextarea = $textarea;
+
+        // 调试：在控制台输出信息
+        console.log('Mention suggestions rendered:', users.length, 'users');
+        console.log('Suggestions container:', $suggestions[0]);
     }
+
+    /**
+     * 智能定位@提及建议框
+     */
+    positionMentionSuggestions($textarea) {
+        const $suggestions = $('#mention-suggestions');
+        const textareaRect = $textarea[0].getBoundingClientRect();
+
+        // 获取当前光标位置
+        let cursorPosition = { x: 0, y: 0 };
+
+        if ($textarea.hasClass('comment-editor')) {
+            // 富文本编辑器：使用选区位置
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                if (rect.width > 0 || rect.height > 0) {
+                    cursorPosition = {
+                        x: rect.left,
+                        y: rect.bottom
+                    };
+                } else {
+                    // 如果光标不可见，使用编辑器底部
+                    cursorPosition = {
+                        x: textareaRect.left,
+                        y: textareaRect.bottom
+                    };
+                }
+            } else {
+                cursorPosition = {
+                    x: textareaRect.left,
+                    y: textareaRect.bottom
+                };
+            }
+        } else {
+            // 普通textarea：估算光标位置
+            cursorPosition = {
+                x: textareaRect.left + 10, // 稍微偏移以避免遮挡
+                y: textareaRect.bottom
+            };
+        }
+
+        // 设置建议框的初始位置
+        let top = cursorPosition.y + window.scrollY + 5; // 5px 间隙
+        let left = cursorPosition.x + window.scrollX;
+
+        // 获取建议框尺寸（先设置为可见以获取正确尺寸）
+        $suggestions.css({
+            visibility: 'hidden',
+            display: 'block',
+            top: top,
+            left: left
+        });
+
+        const suggestionsRect = $suggestions[0].getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        const scrollTop = window.scrollY;
+        const scrollLeft = window.scrollX;
+
+        // 检查是否超出底部边界
+        if (top + suggestionsRect.height > scrollTop + viewportHeight) {
+            // 尝试显示在光标上方
+            top = cursorPosition.y + window.scrollY - suggestionsRect.height - 5;
+
+            // 如果上方空间仍然不够，则固定在视口顶部
+            if (top < scrollTop) {
+                top = scrollTop + 10;
+            }
+        }
+
+        // 检查是否超出右边界
+        if (left + suggestionsRect.width > scrollLeft + viewportWidth) {
+            // 尝试左对齐
+            left = cursorPosition.x + window.scrollX - suggestionsRect.width;
+
+            // 如果仍然超出，则右对齐到视口边缘
+            if (left < scrollLeft) {
+                left = scrollLeft + viewportWidth - suggestionsRect.width - 10;
+            }
+        }
+
+        // 检查是否超出左边界
+        if (left < scrollLeft) {
+            left = scrollLeft + 10;
+        }
+
+        // 应用最终位置并显示
+        $suggestions.css({
+            'visibility': 'visible',
+            'display': 'block',
+            'top': top + 'px',
+            'left': left + 'px',
+            'z-index': '9999',
+            'opacity': '1'
+        });
+
+            }
 
     /**
      * 隐藏@提及建议
      */
-    hideMentionSuggestions() {
-        $('#mention-suggestions').hide();
-        this.currentMentionTextarea = null;
+    hideMentionSuggestions(force = false) {
+        const $suggestions = $('#mention-suggestions');
+
+        // 检查鼠标是否在建议框内，如果是则不隐藏（除非强制隐藏）
+        if (!force && $suggestions.length && $suggestions.is(':visible') &&
+            $suggestions.find(':hover').length > 0) {
+            return;
+        }
+
+        $suggestions.hide();
+        // 不清除currentMentionTextarea，这样用户可以继续输入@符号重新触发
         this.currentMentionIndex = 0;
     }
 
@@ -727,35 +964,39 @@ class CommentSystem {
         const username = $suggestion.data('username');
         const $textarea = this.currentMentionTextarea;
 
-        if (!$textarea) return;
+        console.log('selectMention called:', username, 'textarea:', $textarea ? $textarea.attr('id') : 'null');
+
+        if (!$textarea) {
+            console.log('No textarea found');
+            return;
+        }
 
         if ($textarea.hasClass('comment-editor')) {
-            // 富文本编辑器处理
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const preCaretRange = range.cloneRange();
-                preCaretRange.selectNodeContents($textarea[0]);
-                preCaretRange.setEnd(range.endContainer, range.endOffset);
+            // 富文本编辑器处理 - 创建整体标签
+            const currentContent = $textarea.html();
+            console.log('Current editor content:', currentContent);
 
-                const text = preCaretRange.toString();
-                const mentionMatch = text.match(/@(\w*)$/);
+            // 创建一个整体的@username标签，后面不自动加空格
+            const mentionTag = `<span class="mention" contenteditable="false" data-mention="${username}">@${username}</span>`;
+            const newContent = currentContent.replace(/@[\w]*\s*$/, mentionTag + ' ');
+            console.log('New editor content:', newContent);
 
-                if (mentionMatch) {
-                    // 找到@符号的位置
-                    const mentionStart = text.lastIndexOf('@');
-                    const mentionEnd = text.length;
+            $textarea.html(newContent);
 
-                    // 选择@username部分
-                    const startRange = document.createRange();
-                    const endRange = range.cloneRange();
+            // 同步到隐藏的textarea
+            const $hiddenTextarea = $('#' + $textarea.attr('id').replace('-editor', '-textarea'));
+            if ($hiddenTextarea.length) {
+                const textContent = currentContent.replace(/@[\w]*\s*$/, `@${username} `);
+                $hiddenTextarea.val(textContent);
+            }
 
-                    // 设置选择范围
-                    endRange.setEnd(range.endContainer, range.endOffset);
-                    endRange.setStart(range.endContainer, Math.max(0, range.endOffset - mentionMatch[1].length));
-
-                    try {
-                        // 创建一个从@符号开始的范围
+            // 设置光标到@标签后面的空格位置
+            setTimeout(() => {
+                $textarea.focus();
+                try {
+                    const selection = window.getSelection();
+                    if (selection.rangeCount > 0) {
+                        // 找到最后一个文本节点（空格）
                         const walker = document.createTreeWalker(
                             $textarea[0],
                             NodeFilter.SHOW_TEXT,
@@ -763,74 +1004,59 @@ class CommentSystem {
                             false
                         );
 
-                        let node, totalLength = 0;
-                        let startNode = null, startOffset = 0;
-                        let endNode = null, endOffset = 0;
-
-                        while ((node = walker.nextNode())) {
-                            const nodeLength = node.textContent.length;
-                            const nodeStart = totalLength;
-                            const nodeEnd = totalLength + nodeLength;
-
-                            if (!startNode && nodeEnd >= mentionStart) {
-                                startNode = node;
-                                startOffset = mentionStart - nodeStart;
+                        let lastTextNode = null;
+                        let node;
+                        while (node = walker.nextNode()) {
+                            if (node.nodeValue.trim() !== '') {
+                                lastTextNode = node;
                             }
-
-                            if (!endNode && nodeEnd >= mentionEnd) {
-                                endNode = node;
-                                endOffset = mentionEnd - nodeStart;
-                                break;
-                            }
-
-                            totalLength = nodeEnd;
                         }
 
-                        if (startNode && endNode) {
-                            const selectRange = document.createRange();
-                            selectRange.setStart(startNode, startOffset);
-                            selectRange.setEnd(endNode, endOffset);
-
+                        if (lastTextNode) {
+                            const range = document.createRange();
+                            range.selectNodeContents(lastTextNode);
+                            range.collapse(false);
                             selection.removeAllRanges();
-                            selection.addRange(selectRange);
-
-                            // 替换为@username
-                            const mentionText = document.createTextNode('@' + username + ' ');
-                            selectRange.deleteContents();
-                            selectRange.insertNode(mentionText);
-
-                            // 设置光标位置
-                            const newRange = document.createRange();
-                            newRange.setStartAfter(mentionText);
-                            newRange.collapse(true);
+                            selection.addRange(range);
+                        } else {
+                            // 回退方案：设置到编辑器末尾
+                            const range = selection.getRangeAt(0);
+                            range.selectNodeContents($textarea[0]);
+                            range.collapse(false);
                             selection.removeAllRanges();
-                            selection.addRange(newRange);
+                            selection.addRange(range);
                         }
-                    } catch (e) {
-                        console.error('Error handling mention selection:', e);
-                        // 回退方案：直接插入文本
-                        const mentionText = '@' + username + ' ';
-                        range.insertNode(document.createTextNode(mentionText));
                     }
+                } catch (error) {
+                    console.log('Error setting cursor:', error);
+                    // 回退方案：简单的focus
+                    $textarea.focus();
                 }
-            }
+            }, 10);
+
         } else {
-            // 普通textarea处理
+            // 普通textarea处理 - 将@用户名作为整体
             const text = $textarea.val();
             const cursorPos = $textarea[0].selectionStart;
             const textBeforeCursor = text.substring(0, cursorPos);
 
-            // 替换@user部分
-            const newText = textBeforeCursor.replace(/@\w*$/, '@' + username + ' ') + text.substring(cursorPos);
+            console.log('Plain textarea - text before cursor:', textBeforeCursor);
+            console.log('Plain textarea - cursor position:', cursorPos);
 
+            // 替换@符号后面的任何字符序列，作为整体替换
+            const newText = textBeforeCursor.replace(/@[\w]*\s*$/, '@' + username + ' ') + text.substring(cursorPos);
+
+            console.log('Plain textarea - new text:', newText);
             $textarea.val(newText);
 
-            // 设置光标位置
-            const newCursorPos = textBeforeCursor.replace(/@\w*$/, '@' + username + ' ').length;
+            // 设置光标到正确位置（@username 后面的空格末尾）
+            const mentionText = '@' + username + ' ';
+            const newCursorPos = textBeforeCursor.replace(/@[\w]*\s*$/, mentionText).length;
             $textarea[0].setSelectionRange(newCursorPos, newCursorPos);
+            console.log('Plain textarea - new cursor position:', newCursorPos, 'after mention:', mentionText);
         }
 
-        this.hideMentionSuggestions();
+        this.hideMentionSuggestions(true); // 强制隐藏
         $textarea.focus();
     }
 
@@ -1362,6 +1588,16 @@ class CommentSystem {
     htmlToText(html) {
         const temp = document.createElement('div');
         temp.innerHTML = html;
+
+        // 处理@提及标签，将标签转换为纯文本格式
+        const mentionElements = temp.querySelectorAll('.mention[data-mention]');
+        mentionElements.forEach(element => {
+            const username = element.getAttribute('data-mention');
+            if (username) {
+                element.textContent = `@${username}`;
+            }
+        });
+
         return temp.textContent || temp.innerText || '';
     }
 

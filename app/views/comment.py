@@ -134,7 +134,23 @@ def search_users():
         query = request.args.get('q', '').strip()
         limit = request.args.get('limit', 10, type=int)
 
-        if not query or len(query) < 2:
+        # 对于空查询，返回最近活跃的用户
+        if not query:
+            from app.models.user import User
+            users = User.query.order_by(User.last_seen.desc()).limit(limit).all()
+            user_list = []
+            for user in users:
+                user_list.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'name': user.name or user.username,
+                    'email': user.email,
+                    'avatar': user.gravatar(size=40)
+                })
+            return jsonify({'users': user_list})
+
+        # 对于非空查询，需要至少1个字符
+        if len(query) < 1:
             return jsonify({'users': []})
 
         users = CommentService.search_users(query, limit)

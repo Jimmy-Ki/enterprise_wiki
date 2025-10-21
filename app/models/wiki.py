@@ -107,12 +107,26 @@ class Page(db.Model):
 
     @staticmethod
     def on_changed_content(target, value, oldvalue, initiator):
+        # Convert markdown to HTML first
+        import markdown
+        try:
+            # Try with extensions first
+            extensions = ['tables', 'fenced_code']
+            html = markdown.markdown(value, extensions=extensions)
+        except Exception as e:
+            # Fallback to basic markdown
+            html = markdown.markdown(value)
+
+        # Clean and sanitize HTML
         allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code',
                         'em', 'i', 'li', 'ol', 'pre', 'strong', 'ul',
                         'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br',
                         'div', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td']
-        allowed_attrs = {'a': ['href', 'title'], 'abbr': ['title'], 'acronym': ['title']}
-        html = bleach.linkify(bleach.clean(value, tags=allowed_tags, attributes=allowed_attrs, strip=True))
+        allowed_attrs = {'a': ['href', 'title'], 'abbr': ['title'], 'acronym': ['title'],
+                        'pre': ['class'], 'code': ['class'], 'div': ['class']}
+
+        # Clean HTML and make links clickable
+        html = bleach.linkify(bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs, strip=True))
         target.content_html = html
 
     def generate_slug(self):
@@ -183,7 +197,10 @@ class Page(db.Model):
         return False
 
     def increment_view_count(self):
-        self.view_count += 1
+        if self.view_count is None:
+            self.view_count = 1
+        else:
+            self.view_count += 1
         db.session.add(self)
 
     def create_version(self, editor_id=None, change_summary=''):
