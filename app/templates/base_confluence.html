@@ -761,8 +761,8 @@
 
             <div class="dropdown">
                 <button class="btn-wiki dropdown-toggle" data-bs-toggle="dropdown">
-                    {% if current_user.avatar %}
-                    <img src="{{ current_user.avatar }}" alt="{{ current_user.username }}" class="user-avatar">
+                    {% if current_user.get_avatar() %}
+                    <img src="{{ current_user.get_avatar() }}" alt="{{ current_user.username }}" class="user-avatar">
                     {% else %}
                     <i class="fas fa-user-circle"></i>
                     {% endif %}

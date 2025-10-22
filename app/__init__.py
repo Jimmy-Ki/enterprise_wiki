@@ -43,25 +43,47 @@ def create_app(config_name='default'):
         if dt is None:
             return "Never"
 
-        now = datetime.utcnow()
-        diff = now - dt
-
-        if diff.days > 365:
-            years = diff.days // 365
-            return f"{years} year{'s' if years != 1 else ''} ago"
-        elif diff.days > 30:
-            months = diff.days // 30
-            return f"{months} month{'s' if months != 1 else ''} ago"
-        elif diff.days > 0:
-            return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
-        elif diff.seconds > 3600:
-            hours = diff.seconds // 3600
-            return f"{hours} hour{'s' if hours != 1 else ''} ago"
-        elif diff.seconds > 60:
-            minutes = diff.seconds // 60
-            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        # 安全地处理datetime对象
+        if hasattr(dt, 'strftime'):
+            # 如果是datetime对象，直接使用
+            datetime_obj = dt
+        elif isinstance(dt, str):
+            # 如果是字符串，尝试解析
+            try:
+                if dt.endswith('Z'):
+                    dt = dt[:-1] + '+00:00'
+                datetime_obj = datetime.fromisoformat(dt)
+                # 移除时区信息以便比较
+                if datetime_obj.tzinfo:
+                    datetime_obj = datetime_obj.replace(tzinfo=None)
+            except (ValueError, AttributeError):
+                return "Unknown time"
         else:
-            return "Just now"
+            return "Unknown time"
+
+        try:
+            now = datetime.utcnow()
+            diff = now - datetime_obj
+
+            if diff.days > 365:
+                years = diff.days // 365
+                return f"{years} year{'s' if years != 1 else ''} ago"
+            elif diff.days > 30:
+                months = diff.days // 30
+                return f"{months} month{'s' if months != 1 else ''} ago"
+            elif diff.days > 0:
+                return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+            elif diff.seconds > 3600:
+                hours = diff.seconds // 3600
+                return f"{hours} hour{'s' if hours != 1 else ''} ago"
+            elif diff.seconds > 60:
+                minutes = diff.seconds // 60
+                return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+            else:
+                return "Just now"
+        except Exception as e:
+            # 如果时间计算出错，返回默认值
+            return "Some time ago"
 
     # Register blueprints
     from app.views.auth import auth as auth_blueprint
@@ -93,6 +115,9 @@ def create_app(config_name='default'):
     # Exempt specific API routes from CSRF
     csrf.exempt(api_blueprint)
     csrf.exempt(comment_blueprint)
+    # Exempt only specific user API routes from CSRF
+    from app.views import user as user_views
+    csrf.exempt(user_views.update_avatar)  # Exempt only the avatar update endpoint
 
     # Error handlers
     @app.errorhandler(403)

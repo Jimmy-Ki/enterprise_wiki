@@ -476,8 +476,6 @@ def api_patch_page(page_id):
 
     if 'content' in data:
         page.content = data['content']
-        # 标记内容已更改，用于触发watch事件
-        page._watch_content_changed = True
 
     if 'summary' in data:
         page.summary = data['summary']
@@ -494,10 +492,7 @@ def api_patch_page(page_id):
 
     page.last_editor_id = current_user.id
 
-    # Create version
-    page.create_version(current_user.id, change_summary)
-
-    # Render content
+    # Render content first
     import markdown
     import bleach
     if page.content:
@@ -508,6 +503,16 @@ def api_patch_page(page_id):
         allowed_attrs = {'a': ['href', 'title'], 'img': ['src', 'alt', 'title', 'width', 'height']}
         page.content_html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs)
 
+    # 先提交页面更改到数据库，确保数据完全保存
+    db.session.commit()
+
+    # 创建版本记录（这在页面保存后进行，不会触发重复的页面更新事件）
+    page.create_version(current_user.id, change_summary)
+    db.session.commit()
+
+    # 现在标记内容已更改，用于触发watch事件
+    # 这样确保页面内容已经完全保存后才发送通知
+    page._watch_content_changed = True
     db.session.commit()
 
     return jsonify({

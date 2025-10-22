@@ -45,6 +45,32 @@ class Comment(db.Model):
     def __repr__(self):
         return f'<Comment {self.id} by {self.author.username}>'
 
+    def get_safe_datetime(self, field_name):
+        """安全地获取datetime字段，处理可能的字符串类型"""
+        field_value = getattr(self, field_name, None)
+        if field_value is None:
+            return None
+
+        # 如果已经是datetime对象，直接返回
+        if hasattr(field_value, 'strftime'):
+            return field_value
+
+        # 如果是字符串，尝试解析
+        if isinstance(field_value, str):
+            try:
+                # 处理ISO格式字符串
+                if field_value.endswith('Z'):
+                    field_value = field_value[:-1] + '+00:00'
+                dt = datetime.fromisoformat(field_value)
+                # 移除时区信息以便使用
+                if dt.tzinfo:
+                    return dt.replace(tzinfo=None)
+                return dt
+            except (ValueError, AttributeError):
+                return None
+
+        return None
+
     @staticmethod
     def on_changed_content(target, value, oldvalue, initiator):
         """内容变更时处理HTML和@提及"""
@@ -130,6 +156,10 @@ class Comment(db.Model):
 
     def to_dict(self, include_replies=False):
         """转换为字典格式"""
+        # 安全地获取时间戳
+        created_at = self.get_safe_datetime('created_at')
+        updated_at = self.get_safe_datetime('updated_at')
+
         data = {
             'id': self.id,
             'content': self.content,
@@ -140,12 +170,12 @@ class Comment(db.Model):
                 'id': self.author.id,
                 'username': self.author.username,
                 'name': self.author.name,
-                'avatar': self.author.gravatar(size=40) or '/static/img/default-avatar.png'
+                'avatar': self.author.get_avatar(size=40) or '/static/img/default-avatar.png'
             },
             'parent_id': self.parent_id,
             'is_edited': self.is_edited,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': created_at.isoformat() if created_at else None,
+            'updated_at': updated_at.isoformat() if updated_at else None,
             'mentions': [
                 {
                     'id': mention.mentioned_user.id,

@@ -4,109 +4,115 @@
 
 {% block content %}
 <!-- Breadcrumb -->
-<div class="d-flex align-items-center mb-3">
-    <nav aria-label="breadcrumb" style="flex: 1;">
-        <ol class="breadcrumb mb-0" style="background: none; padding: 0;">
+<div class="page-breadcrumb mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{{ url_for('wiki.index') }}" class="text-decoration-none">
-                    <i class="fas fa-home me-1"></i>Home
+                <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
+                    <i class="fas fa-home me-1"></i>
+                    <span>Spaces</span>
                 </a>
             </li>
             {% if page.category %}
             <li class="breadcrumb-item">
-                <a href="{{ url_for('wiki.category_view', category_id=page.category.id) }}" class="text-decoration-none">
-                    <i class="fas fa-folder me-1"></i>{{ page.category.name }}
+                <a href="{{ url_for('wiki.category_view', category_id=page.category.id) }}" class="breadcrumb-link">
+                    <i class="fas fa-folder me-1"></i>
+                    <span>{{ page.category.name }}</span>
                 </a>
             </li>
             {% endif %}
-            <li class="breadcrumb-item active">{{ page.title }}</li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <span class="breadcrumb-current">{{ page.title }}</span>
+            </li>
         </ol>
     </nav>
 </div>
 
 <!-- Page Header -->
 <div class="page-header">
-    <h1 class="page-title" id="pageTitle">{{ page.title }}</h1>
-
-    <div class="page-meta">
-        <span>
-            <i class="fas fa-user me-1"></i>
-            Created by <strong>{{ page.author.username if page.author else 'Unknown' }}</strong>
-            on {{ page.created_at.strftime('%B %d, %Y') }}
-        </span>
-        {% if page.last_editor and page.last_editor.id != page.author.id %}
-        <span>
-            • Last edited by <strong>{{ page.last_editor.username }}</strong>
-            on {{ page.updated_at.strftime('%B %d, %Y at %I:%M %p') }}
-        </span>
-        {% elif page.updated_at != page.created_at %}
-        <span>
-            • Last edited on {{ page.updated_at.strftime('%B %d, %Y at %I:%M %p') }}
-        </span>
-        {% endif %}
-        <span>
-            <i class="fas fa-eye me-1"></i>{{ page.view_count }} views
-        </span>
-    </div>
-
-    <div class="page-actions">
-        <button class="btn-wiki" onclick="enableEditMode()" id="editBtn">
-            <i class="fas fa-edit me-2"></i>Edit
-        </button>
-
-        {% if current_user.is_authenticated %}
-        <button class="btn-wiki watch-btn"
-                data-target-type="page"
-                data-target-id="{{ page.id }}"
-                title="关注此页面">
-            <i class="fas fa-eye"></i> 关注
-        </button>
-        {% endif %}
-
-        <div class="dropdown">
-            <button class="btn-wiki dropdown-toggle" data-bs-toggle="dropdown">
-                <i class="fas fa-ellipsis-v"></i>
-            </button>
-            <ul class="dropdown-menu">
-                {% if current_user.is_authenticated and current_user.is_administrator() %}
-                <li><a class="dropdown-item text-danger" href="#" onclick="deletePage({{ page.id }})">
-                    <i class="fas fa-trash me-2"></i>Delete Page
-                </a></li>
+    <div class="page-header-top">
+        <div class="page-title-section">
+            <h1 class="page-title" id="pageTitle">{{ page.title }}</h1>
+            <div class="page-status-badges">
+                {% if page.is_published %}
+                <span class="status-badge published">Published</span>
+                {% else %}
+                <span class="status-badge draft">Draft</span>
                 {% endif %}
-                <li><a class="dropdown-item" href="{{ url_for('wiki.page_history', page_id=page.id) }}">
-                    <i class="fas fa-history me-2"></i>View History
-                </a></li>
-                <li><a class="dropdown-item" href="#" onclick="copyToClipboard(window.location.href)">
-                    <i class="fas fa-link me-2"></i>Copy Link
-                </a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#" onclick="exportPage()">
-                    <i class="fas fa-download me-2"></i>Export
-                </a></li>
-                <li><a class="dropdown-item" href="#" onclick="printPage()">
-                    <i class="fas fa-print me-2"></i>Print
-                </a></li>
-            </ul>
+                {% if page.is_public %}
+                <span class="status-badge public">Public</span>
+                {% else %}
+                <span class="status-badge private">Private</span>
+                {% endif %}
+                {% if page.category %}
+                <span class="status-badge category">
+                    <i class="fas fa-folder me-1"></i>{{ page.category.name }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="page-actions">
+            <button class="btn-wiki" onclick="enableEditMode()" id="editBtn">
+                <i class="fas fa-edit me-2"></i>Edit
+            </button>
+
+            {% if current_user.is_authenticated %}
+            <button class="btn-wiki watch-btn"
+                    data-target-type="page"
+                    data-target-id="{{ page.id }}"
+                    title="关注此页面">
+                <i class="fas fa-eye me-2"></i>Watch
+            </button>
+            {% endif %}
+
+            <button class="btn-wiki" onclick="window.location.href='{{ url_for('wiki.page_history', page_id=page.id) }}'" title="View History">
+                <i class="fas fa-history me-2"></i>History
+            </button>
+
+            <button class="btn-wiki" onclick="copyToClipboard(window.location.href)" title="Copy Link">
+                <i class="fas fa-link me-2"></i>Copy Link
+            </button>
+
+            <button class="btn-wiki" onclick="exportPage()" title="Export Page">
+                <i class="fas fa-download me-2"></i>Export
+            </button>
+
+            <button class="btn-wiki" onclick="printPage()" title="Print Page">
+                <i class="fas fa-print me-2"></i>Print
+            </button>
+
+            {% if current_user.is_authenticated and current_user.is_administrator() %}
+            <button class="btn-wiki danger" onclick="deletePage({{ page.id }})" title="Delete Page">
+                <i class="fas fa-trash me-2"></i>Delete
+            </button>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Status Badges -->
-    <div style="margin-top: 16px;">
-        {% if page.is_published %}
-        <span class="badge bg-success me-2">Published</span>
-        {% else %}
-        <span class="badge bg-secondary me-2">Draft</span>
+    <div class="page-meta">
+        <div class="meta-item">
+            <i class="fas fa-user me-1"></i>
+            <span>Created by <strong>{{ page.author.username if page.author else 'Unknown' }}</strong></span>
+            <span class="meta-date">{{ page.created_at.strftime('%B %d, %Y') }}</span>
+        </div>
+        {% if page.last_editor and page.last_editor.id != page.author.id %}
+        <div class="meta-item">
+            <i class="fas fa-edit me-1"></i>
+            <span>Last edited by <strong>{{ page.last_editor.username }}</strong></span>
+            <span class="meta-date">{{ page.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</span>
+        </div>
+        {% elif page.updated_at != page.created_at %}
+        <div class="meta-item">
+            <i class="fas fa-edit me-1"></i>
+            <span>Last edited</span>
+            <span class="meta-date">{{ page.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</span>
+        </div>
         {% endif %}
-        {% if page.is_public %}
-        <span class="badge bg-info me-2">Public</span>
-        {% else %}
-        <span class="badge bg-warning me-2">Private</span>
-        {% endif %}
-        {% if page.category %}
-        <span class="badge bg-primary me-2">
-            <i class="fas fa-folder me-1"></i>{{ page.category.name }}
-        </span>
-        {% endif %}
+        <div class="meta-item">
+            <i class="fas fa-eye me-1"></i>
+            <span>{{ page.view_count }} views</span>
+        </div>
     </div>
 </div>
 
@@ -842,6 +848,214 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+/* Breadcrumb Styles */
+.page-breadcrumb {
+    background: #f7f8f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "/";
+    color: #64748b;
+    font-weight: 400;
+    margin: 0 8px;
+}
+
+.breadcrumb-link {
+    color: #64748b;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.breadcrumb-link:hover {
+    color: var(--primary-color);
+    background: #e3f2fd;
+    text-decoration: none;
+}
+
+.breadcrumb-link i {
+    font-size: 12px;
+}
+
+.breadcrumb-current {
+    color: #172b4d;
+    font-weight: 500;
+    padding: 4px 8px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+}
+
+/* Page Header Styles */
+.page-header {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.page-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 24px;
+}
+
+.page-title-section {
+    flex: 1;
+}
+
+.page-title {
+    font-size: 32px;
+    font-weight: 600;
+    color: #172b4d;
+    margin: 0 0 12px 0;
+    line-height: 1.2;
+}
+
+.page-status-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-badge.published {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-badge.draft {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #e9ecef;
+}
+
+.status-badge.public {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.status-badge.private {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-badge.category {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+.page-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.page-meta {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.meta-item i {
+    color: #a0aec0;
+    font-size: 12px;
+}
+
+.meta-date {
+    color: #a0aec0;
+    font-size: 13px;
+}
+
+/* Button Styles */
+.btn-wiki.danger {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+.btn-wiki.danger:hover {
+    background: #c82333;
+    border-color: #c82333;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .page-header-top {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 24px;
+    }
+
+    .page-actions {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .page-meta {
+        gap: 16px;
+    }
+
+    .breadcrumb {
+        flex-wrap: wrap;
+    }
+}
+
 /* Fullscreen editor */
 .content-editor.fullscreen {
     position: fixed;

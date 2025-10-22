@@ -212,25 +212,47 @@ class CommentService:
         :param per_page: 每页数量
         :return: 分页评论列表
         """
-        query = Comment.query.filter_by(
-            author_id=user_id,
-            is_deleted=False
-        ).order_by(Comment.created_at.desc())
+        try:
+            query = Comment.query.filter_by(
+                author_id=user_id,
+                is_deleted=False
+            ).order_by(Comment.created_at.desc())
 
-        pagination = query.paginate(
-            page=page,
-            per_page=per_page,
-            error_out=False
-        )
+            pagination = query.paginate(
+                page=page,
+                per_page=per_page,
+                error_out=False
+            )
 
-        return {
-            'comments': [comment.to_dict() for comment in pagination.items],
-            'total': pagination.total,
-            'pages': pagination.pages,
-            'current_page': page,
-            'has_next': pagination.has_next,
-            'has_prev': pagination.has_prev
-        }
+            # 安全地转换评论为字典
+            comments = []
+            for comment in pagination.items:
+                try:
+                    comments.append(comment.to_dict())
+                except Exception as e:
+                    # 如果单个评论转换失败，记录错误并跳过
+                    print(f"Error converting comment {comment.id} to dict: {e}")
+                    continue
+
+            return {
+                'comments': comments,
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'current_page': page,
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev
+            }
+
+        except Exception as e:
+            print(f"Error getting user comments: {e}")
+            return {
+                'comments': [],
+                'total': 0,
+                'pages': 0,
+                'current_page': page,
+                'has_next': False,
+                'has_prev': False
+            }
 
     @staticmethod
     def get_target(target_type, target_id):
