@@ -1,0 +1,399 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}Notification Settings - {{ current_user.name or current_user.username }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="page-breadcrumb mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
+                    <i class="fas fa-home me-1"></i>
+                    <span>Spaces</span>
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('user.profile', username=current_user.username) }}" class="breadcrumb-link">
+                    <span>Profile</span>
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <span class="breadcrumb-current">Notification Settings</span>
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-top">
+        <div class="page-title-section">
+            <h1 class="page-title">
+                <i class="fas fa-bell me-2"></i>Notification Settings
+            </h1>
+            <div class="page-status-badges">
+                <span class="status-badge category">
+                    <i class="fas fa-cog me-1"></i>Preferences
+                </span>
+            </div>
+        </div>
+
+        <div class="page-actions">
+            <a href="{{ url_for('user.profile', username=current_user.username) }}" class="btn-wiki">
+                <i class="fas fa-arrow-left me-2"></i>Back to Profile
+            </a>
+        </div>
+    </div>
+
+    <div class="page-description">
+        <p>Manage your notification preferences. Control how and when you receive notifications from the Enterprise Wiki system.</p>
+    </div>
+</div>
+
+<!-- Notification Settings Form -->
+<div class="content-card">
+    <div class="card-body">
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+
+            <!-- Email Notifications Section -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <h5 class="mb-4">
+                        <i class="fas fa-envelope me-2"></i>Email Notifications
+                    </h5>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch mb-3">
+                            {{ form.email_notifications(class="form-check-input" + (" is-invalid" if form.email_notifications.errors else ""), id="email_notifications") }}
+                            <label class="form-check-label" for="email_notifications">
+                                <strong>Enable Email Notifications</strong>
+                                <div class="form-text">Receive email notifications for important updates and mentions</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="ms-4">
+                        <div class="form-check form-switch mb-3">
+                            {{ form.watch_notifications(class="form-check-input" + (" is-invalid" if form.watch_notifications.errors else ""), id="watch_notifications") }}
+                            <label class="form-check-label" for="watch_notifications">
+                                <strong>Watch Notifications</strong>
+                                <div class="form-text">Get notified when pages or categories you're watching are updated</div>
+                            </label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            {{ form.mention_notifications(class="form-check-input" + (" is-invalid" if form.mention_notifications.errors else ""), id="mention_notifications") }}
+                            <label class="form-check-label" for="mention_notifications">
+                                <strong>Mention Notifications</strong>
+                                <div class="form-text">Get notified when someone mentions you in comments</div>
+                            </label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            {{ form.comment_notifications(class="form-check-input" + (" is-invalid" if form.comment_notifications.errors else ""), id="comment_notifications") }}
+                            <label class="form-check-label" for="comment_notifications">
+                                <strong>Comment Notifications</strong>
+                                <div class="form-text">Get notified when someone replies to your comments</div>
+                            </label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            {{ form.daily_digest(class="form-check-input" + (" is-invalid" if form.daily_digest.errors else ""), id="daily_digest") }}
+                            <label class="form-check-label" for="daily_digest">
+                                <strong>Daily Digest</strong>
+                                <div class="form-text">Receive a daily summary of all notifications (experimental)</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="content-card bg-light">
+                        <div class="card-body">
+                            <h6 class="mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Notification Info
+                            </h6>
+                            <p class="small text-muted mb-2">
+                                <strong>Watch Notifications:</strong> Sent when pages or categories you follow are updated, edited, or have new comments.
+                            </p>
+                            <p class="small text-muted mb-2">
+                                <strong>Mention Notifications:</strong> Sent when someone uses @username to mention you in a comment.
+                            </p>
+                            <p class="small text-muted mb-0">
+                                <strong>Comment Notifications:</strong> Sent when someone replies to your comments on pages or attachments.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Watched Items -->
+            <div class="mb-4">
+                <h5 class="mb-3">
+                    <i class="fas fa-eye me-2"></i>Currently Watching
+                </h5>
+
+                <div id="watched-items">
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2">Loading your watched items...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <div class="text-muted">
+                    <small>
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Your notification preferences are private and secure
+                    </small>
+                </div>
+                <div>
+                    <a href="{{ url_for('user.profile', username=current_user.username) }}" class="btn-wiki me-2">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn-wiki primary">
+                        <i class="fas fa-save me-2"></i>Save Settings
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.form-label {
+    font-weight: 600;
+    color: #172b4d;
+    margin-bottom: 0.5rem;
+}
+
+.form-check {
+    padding-left: 3rem;
+    margin-bottom: 1rem;
+}
+
+.form-check-input {
+    width: 2.5rem;
+    height: 1.5rem;
+    border-radius: 1rem;
+    background-color: #e2e8f0;
+    border: none;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-check-label {
+    color: #172b4d;
+    font-weight: 500;
+}
+
+.form-check-label strong {
+    color: #172b4d;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    line-height: 1.4;
+}
+
+.border-top {
+    border-top: 1px solid #e2e8f0 !important;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.watch-item {
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    background: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.watch-item:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.watch-item-title {
+    font-weight: 500;
+    color: #172b4d;
+    text-decoration: none;
+}
+
+.watch-item-title:hover {
+    color: var(--primary-color);
+}
+
+.watch-item-type {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    background: #e3f2fd;
+    color: #1565c0;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.watch-item-date {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 主开关控制子选项
+    const emailNotifications = document.getElementById('email_notifications');
+    const subSwitches = document.querySelectorAll('#watch_notifications, #mention_notifications, #comment_notifications, #daily_digest');
+
+    function toggleSubSwitches() {
+        const isEnabled = emailNotifications.checked;
+        subSwitches.forEach(switchEl => {
+            switchEl.disabled = !isEnabled;
+            switchEl.parentElement.style.opacity = isEnabled ? '1' : '0.6';
+        });
+    }
+
+    emailNotifications.addEventListener('change', toggleSubSwitches);
+    toggleSubSwitches(); // 初始化状态
+
+    // 加载用户关注的项目
+    async function loadWatchedItems() {
+        try {
+            const response = await fetch('/api/watches');
+            const data = await response.json();
+
+            const container = document.getElementById('watched-items');
+
+            if (!data.success || data.watches.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-eye fa-2x mb-2"></i>
+                        <p>You're not watching any pages or categories yet.</p>
+                        <small>Visit a page or category and click the "Watch" button to receive notifications.</small>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            data.watches.forEach(watch => {
+                const targetType = watch.target_type === 'page' ? 'Page' : 'Category';
+                const targetInfo = watch.target_info;
+
+                html += `
+                    <div class="watch-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <a href="${targetType === 'Page' ? '/wiki/' + targetInfo.slug : '#'}" class="watch-item-title">
+                                    ${targetType === 'Page' ? targetInfo.title : targetInfo.name}
+                                </a>
+                                <div class="d-flex gap-2 mt-1">
+                                    <span class="watch-item-type">${targetType}</span>
+                                    <small class="text-muted">Watching since ${new Date(watch.created_at).toLocaleDateString()}</small>
+                                </div>
+                            </div>
+                            <button class="btn-wiki small unwatch-btn" data-target-type="${watch.target_type}" data-target-id="${watch.target_id}">
+                                <i class="fas fa-eye-slash me-1"></i>Unwatch
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // 绑定取消关注按钮事件
+            container.querySelectorAll('.unwatch-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const targetType = this.dataset.targetType;
+                    const targetId = this.dataset.targetId;
+
+                    if (confirm('Are you sure you want to stop watching this item?')) {
+                        try {
+                            const response = await fetch(`/api/watch/${targetType}/${targetId}`, {
+                                method: 'DELETE'
+                            });
+
+                            if (response.ok) {
+                                this.closest('.watch-item').remove();
+                                showToast('Stopped watching item', 'success');
+                            } else {
+                                showToast('Failed to unwatch item', 'danger');
+                            }
+                        } catch (error) {
+                            console.error('Error unwatching item:', error);
+                            showToast('An error occurred', 'danger');
+                        }
+                    }
+                });
+            });
+
+        } catch (error) {
+            console.error('Error loading watched items:', error);
+            document.getElementById('watched-items').innerHTML = `
+                <div class="alert alert-danger">
+                    Failed to load watched items. Please refresh the page.
+                </div>
+            `;
+        }
+    }
+
+    loadWatchedItems();
+});
+
+// Toast 消息函数
+function showToast(message, type = 'info') {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+
+    const toastContainer = document.getElementById('toast-container') || (() => {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
+        document.body.appendChild(container);
+        return container;
+    })();
+
+    const toastElement = document.createElement('div');
+    toastElement.innerHTML = toastHtml;
+    const toast = new bootstrap.Toast(toastElement.firstElementChild);
+    toastContainer.appendChild(toastElement.firstElementChild);
+    toast.show();
+
+    setTimeout(() => {
+        toastElement.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

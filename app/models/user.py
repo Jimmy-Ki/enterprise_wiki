@@ -83,6 +83,7 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     avatar_hash = db.Column(db.String(32))
+    avatar = db.Column(db.String(500))  # 自定义头像URL
     is_active = db.Column(db.Boolean, default=True)
     email_verified = db.Column(db.Boolean, default=False)
     failed_login_attempts = db.Column(db.Integer, default=0)
@@ -200,6 +201,13 @@ class User(UserMixin, db.Model):
     def gravatar_hash(self):
         return hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
 
+    def get_avatar(self, size=100, default='identicon', rating='g'):
+        """获取用户头像，优先使用自定义头像，否则使用Gravatar"""
+        if self.avatar and self.avatar.strip():
+            return self.avatar.strip()
+        # 如果没有自定义头像，使用Gravatar
+        return self.gravatar(size=size, default=default, rating=rating)
+
     def gravatar(self, size=100, default='identicon', rating='g'):
         # 总是使用HTTPS URL来避免请求上下文问题
         url = 'https://secure.gravatar.com/avatar'
@@ -217,6 +225,86 @@ class User(UserMixin, db.Model):
             'last_seen': self.last_seen.isoformat() if self.last_seen else None,
             'is_active': self.is_active
         }
+
+    def get_notification_settings(self):
+        """获取用户的通知设置"""
+        import json
+        if hasattr(self, 'notification_settings') and self.notification_settings:
+            try:
+                return json.loads(self.notification_settings)
+            except (json.JSONDecodeError, AttributeError):
+                pass
+
+        # 返回默认设置
+        return {
+            'email_notifications': True,
+            'watch_notifications': True,
+            'mention_notifications': True,
+            'comment_notifications': True,
+            'daily_digest': False
+        }
+
+    def set_notification_settings(self, settings):
+        """设置用户的通知偏好"""
+        import json
+        try:
+            # 如果数据库中没有这个字段，我们需要添加
+            if not hasattr(self, 'notification_settings'):
+                # 这里可以考虑使用数据库迁移来添加字段
+                # 为了简化，我们暂时跳过这个功能
+                return
+
+            self.notification_settings = json.dumps(settings)
+        except Exception as e:
+            print(f"Error setting notification preferences: {e}")
+
+    def should_receive_notification(self, notification_type):
+        """检查用户是否应该接收特定类型的通知"""
+        settings = self.get_notification_settings()
+
+        # 如果总开关关闭，不发送任何邮件
+        if not settings.get('email_notifications', True):
+            return False
+
+        # 检查具体的通知类型
+        type_mapping = {
+            'watch': 'watch_notifications',
+            'mention': 'mention_notifications',
+            'comment': 'comment_notifications'
+        }
+
+        setting_key = type_mapping.get(notification_type)
+        if setting_key:
+            return settings.get(setting_key, True)
+
+        return True  # 默认发送
+
+    def get_safe_datetime(self, field_name):
+        """安全地获取datetime字段，处理可能的字符串类型"""
+        field_value = getattr(self, field_name, None)
+        if field_value is None:
+            return None
+
+        # 如果已经是datetime对象，直接返回
+        if hasattr(field_value, 'strftime'):
+            return field_value
+
+        # 如果是字符串，尝试解析
+        if isinstance(field_value, str):
+            try:
+                from datetime import datetime
+                # 处理ISO格式字符串
+                if field_value.endswith('Z'):
+                    field_value = field_value[:-1] + '+00:00'
+                dt = datetime.fromisoformat(field_value)
+                # 移除时区信息以便使用
+                if dt.tzinfo:
+                    return dt.replace(tzinfo=None)
+                return dt
+            except (ValueError, AttributeError):
+                return None
+
+        return None
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):

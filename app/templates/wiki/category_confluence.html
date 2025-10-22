@@ -3,27 +3,52 @@
 {% block title %}{{ category.name }} - Enterprise Wiki{% endblock %}
 
 {% block content %}
+<!-- Breadcrumb -->
+<div class="page-breadcrumb mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
+                    <i class="fas fa-home me-1"></i>
+                    <span>Spaces</span>
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <span class="breadcrumb-current">{{ category.name }}</span>
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Page Header -->
 <div class="page-header">
-    <div class="page-header-content">
+    <div class="page-header-top">
         <div class="page-title-section">
             <h1 class="page-title">
                 <i class="fas fa-folder me-2"></i>{{ category.name }}
             </h1>
-            <p class="page-breadcrumb">
-                <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
-                    <i class="fas fa-home me-1"></i>Home
-                </a>
-                <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-current">{{ category.name }}</span>
-            </p>
+            <div class="page-status-badges">
+                <span class="status-badge category">
+                    <i class="fas fa-folder me-1"></i>Category
+                </span>
+                <span class="status-badge public">
+                    <i class="fas fa-eye me-1"></i>{{ pages|length }} Pages
+                </span>
+                {% if child_categories %}
+                <span class="status-badge category">
+                    <i class="fas fa-folder-open me-1"></i>{{ child_categories|length }} Subcategories
+                </span>
+                {% endif %}
+            </div>
         </div>
+
         <div class="page-actions">
             {% if current_user.is_authenticated %}
             <button class="btn-wiki watch-btn"
                     data-target-type="category"
                     data-target-id="{{ category.id }}"
                     title="关注此分类">
-                <i class="fas fa-eye"></i> 关注
+                <i class="fas fa-eye me-2"></i>Watch
             </button>
             <a href="{{ url_for('wiki.create_page') }}" class="btn-wiki primary">
                 <i class="fas fa-plus me-2"></i>Create Page
@@ -31,17 +56,36 @@
             {% endif %}
         </div>
     </div>
+
+    {% if category.description %}
+    <div class="page-description">
+        <p>{{ category.description }}</p>
+    </div>
+    {% endif %}
+
+    <div class="page-meta">
+        <div class="meta-item">
+            <i class="fas fa-folder me-1"></i>
+            <span>Category</span>
+        </div>
+        <div class="meta-item">
+            <i class="fas fa-file-alt me-1"></i>
+            <span>{{ pages|length }} pages</span>
+        </div>
+        {% if child_categories %}
+        <div class="meta-item">
+            <i class="fas fa-folder-open me-1"></i>
+            <span>{{ child_categories|length }} subcategories</span>
+        </div>
+        {% endif %}
+        <div class="meta-item">
+            <i class="fas fa-calendar me-1"></i>
+            <span>Created {{ category.created_at.strftime('%B %d, %Y') if category.created_at else 'Unknown date' }}</span>
+        </div>
+    </div>
 </div>
 
 <div class="page-content">
-    <!-- Category Description -->
-    {% if category.description %}
-    <div class="content-card mb-4">
-        <div class="card-body">
-            <p class="mb-0">{{ category.description }}</p>
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Child Categories -->
     {% if child_categories %}
@@ -207,6 +251,192 @@
 
 {% block styles %}
 <style>
+/* 面包屑样式（从page页面继承） */
+.page-breadcrumb {
+    background: #f7f8f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "/";
+    color: #64748b;
+    font-weight: 400;
+    margin: 0 8px;
+}
+
+.breadcrumb-link {
+    color: #64748b;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.breadcrumb-link:hover {
+    color: var(--primary-color);
+    background: #e3f2fd;
+    text-decoration: none;
+}
+
+.breadcrumb-link i {
+    font-size: 12px;
+}
+
+.breadcrumb-current {
+    color: #172b4d;
+    font-weight: 500;
+    padding: 4px 8px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+}
+
+/* Page Header样式（从page页面继承） */
+.page-header {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.page-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 24px;
+}
+
+.page-title-section {
+    flex: 1;
+}
+
+.page-title {
+    font-size: 32px;
+    font-weight: 600;
+    color: #172b4d;
+    margin: 0 0 12px 0;
+    line-height: 1.2;
+}
+
+.page-status-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-badge.published {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-badge.draft {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #e9ecef;
+}
+
+.status-badge.public {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.status-badge.private {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-badge.category {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+.page-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.page-description {
+    margin-bottom: 16px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.page-description p {
+    margin: 0;
+    color: #495057;
+    line-height: 1.6;
+}
+
+.page-meta {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.meta-item i {
+    color: #a0aec0;
+    font-size: 12px;
+}
+
+.meta-date {
+    color: #a0aec0;
+    font-size: 13px;
+}
+
+/* Category页面特有样式 */
 .page-item {
     transition: all 0.3s ease;
 }
@@ -226,6 +456,31 @@
 
 .badge {
     font-size: 0.7em;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .page-header-top {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .page-title {
+        font-size: 24px;
+    }
+
+    .page-actions {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .page-meta {
+        gap: 16px;
+    }
+
+    .breadcrumb {
+        flex-wrap: wrap;
+    }
 }
 </style>
 {% endblock %}

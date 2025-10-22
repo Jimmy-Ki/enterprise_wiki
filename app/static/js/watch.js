@@ -80,13 +80,15 @@ class WatchManager {
             const data = await response.json();
 
             if (data.success) {
-                this.updateWatchButton(button, !isCurrentlyWatching);
-                this.watchStatus.set(`${targetType}-${targetId}`, data.watch);
+                // 使用后端返回的实际状态，而不是简单的切换
+                const isNowWatching = data.watch.is_active;
+                this.updateWatchButton(button, isNowWatching);
+                this.watchStatus.set(`${targetType}-${targetId}`, isNowWatching);
 
                 // 显示提示信息
                 this.showToast(
-                    isCurrentlyWatching ? '已取消关注' : '关注成功',
-                    isCurrentlyWatching ? 'info' : 'success'
+                    isNowWatching ? '关注成功' : '已取消关注',
+                    isNowWatching ? 'success' : 'info'
                 );
             } else {
                 throw new Error(data.error || '操作失败');
@@ -342,9 +344,13 @@ class WatchManager {
 
                 if (data.is_watching) {
                     this.updateWatchButton(button, true);
+                    this.watchStatus.set(`${targetType}-${targetId}`, true);
+                } else {
+                    this.watchStatus.set(`${targetType}-${targetId}`, false);
                 }
             } catch (error) {
                 console.error('Error checking watch status:', error);
+                this.watchStatus.set(`${targetType}-${targetId}`, false);
             }
         }
     }

@@ -108,7 +108,11 @@ class WatchService:
                 watch.is_active = True
                 if events:
                     watch.set_watched_events(events)
+                watch.updated_at = datetime.utcnow()
                 is_new = False
+
+            db.session.add(watch)
+            db.session.commit()
         else:
             # 创建新watch
             watch = WatchService.create_watch(user_id, target_type, target_id, events)
@@ -226,80 +230,16 @@ class WatchService:
             db.session.add(notification)
             db.session.commit()
 
-            # 发送邮件通知
+            # 获取用户信息并异步发送邮件通知
             try:
-                from app import mail
-                from flask_mail import Message
-                from flask import current_app
-
-                # 获取用户信息
+                from threading import Thread
                 user = notification.user
                 if user and user.email:
-                    # 创建邮件内容
-                    site_url = current_app.config.get('SITE_URL', 'http://localhost:5001')
-
-                    # URL部分（如果存在）
-                    url_section = ''
-                    if notification.url:
-                        url_section = f'''
-                        <p style="margin-top: 15px;">
-                            <a href="{site_url}{notification.url}"
-                               style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                                查看详情
-                            </a>
-                        </p>
-                        '''
-
-                    url_section_text = ''
-                    if notification.url:
-                        url_section_text = f'查看详情: {site_url}{notification.url}'
-
-                    email_html = f'''
-                    <h2>Enterprise Wiki 通知</h2>
-                    <p>你好 {user.name or user.username},</p>
-
-                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                        <h3 style="color: #495057; margin-top: 0;">{notification.title}</h3>
-                        <p style="color: #6c757d; line-height: 1.5;">{notification.message}</p>
-                        {url_section}
-                    </div>
-
-                    <p style="color: #6c757d; font-size: 14px;">
-                        此邮件由 Enterprise Wiki 系统自动发送。<br>
-                        如不想接收此类通知，请访问<a href="{site_url}/profile">个人设置</a>管理通知偏好。
-                    </p>
-                    '''
-
-                    email_text = f'''
-                    Enterprise Wiki 通知
-
-                    你好 {user.name or user.username},
-
-                    {notification.title}
-                    {notification.message}
-
-                    {url_section_text}
-
-                    此邮件由 Enterprise Wiki 系统自动发送。
-                    如不想接收此类通知，请访问 {site_url}/profile 管理通知偏好。
-                    '''
-
-                    msg = Message(
-                        subject=f'Enterprise Wiki: {notification.title}',
-                        sender=current_app.config.get('MAIL_SENDER', 'noreply@enterprise-wiki.com'),
-                        recipients=[user.email],
-                        html=email_html,
-                        body=email_text
-                    )
-
-                    mail.send(msg)
-
-                    # 标记邮件已发送
-                    notification.is_sent = True
-                    db.session.commit()
-
+                    # 启动后台线程发送邮件，避免阻塞
+                    Thread(target=WatchService._send_watch_notification_email,
+                          args=(notification.id, user.id)).start()
             except Exception as e:
-                print(f"Error sending watch notification email: {e}")
+                print(f"Error starting watch notification email: {e}")
                 # 不影响通知创建，只记录错误
 
             return notification
@@ -308,6 +248,99 @@ class WatchService:
             db.session.rollback()
             print(f"Error creating notification: {e}")
             return None
+
+    @staticmethod
+    def _send_watch_notification_email(notification_id, user_id):
+        """
+        异步发送watch通知邮件的内部方法
+        :param notification_id: 通知ID
+        :param user_id: 用户ID
+        """
+        try:
+            from app import mail, create_app
+            from flask_mail import Message
+            from app.models import WatchNotification, User
+
+            # 创建新的应用上下文（因为这是在后台线程中运行）
+            app = create_app()
+            with app.app_context():
+                # 重新获取通知和用户信息
+                notification = WatchNotification.query.get(notification_id)
+                user = User.query.get(user_id)
+
+                if not notification or not user or not user.email:
+                    return
+
+                # 检查邮件是否已发送
+                if notification.is_sent:
+                    return
+
+                # 创建邮件内容
+                site_url = app.config.get('SITE_URL', 'http://localhost:5001')
+
+                # URL部分（如果存在）
+                url_section = ''
+                if notification.url:
+                    url_section = f'''
+                    <p style="margin-top: 15px;">
+                        <a href="{site_url}{notification.url}"
+                           style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                            查看详情
+                        </a>
+                    </p>
+                    '''
+
+                url_section_text = ''
+                if notification.url:
+                    url_section_text = f'查看详情: {site_url}{notification.url}'
+
+                email_html = f'''
+                <h2>Enterprise Wiki 通知</h2>
+                <p>你好 {user.name or user.username},</p>
+
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #495057; margin-top: 0;">{notification.title}</h3>
+                    <p style="color: #6c757d; line-height: 1.5;">{notification.message}</p>
+                    {url_section}
+                </div>
+
+                <p style="color: #6c757d; font-size: 14px;">
+                    此邮件由 Enterprise Wiki 系统自动发送。<br>
+                    如不想接收此类通知，请访问<a href="{site_url}/profile">个人设置</a>管理通知偏好。
+                </p>
+                '''
+
+                email_text = f'''
+                Enterprise Wiki 通知
+
+                你好 {user.name or user.username},
+
+                {notification.title}
+                {notification.message}
+
+                {url_section_text}
+
+                此邮件由 Enterprise Wiki 系统自动发送。
+                如不想接收此类通知，请访问 {site_url}/profile 管理通知偏好。
+                '''
+
+                msg = Message(
+                    subject=f'Enterprise Wiki: {notification.title}',
+                    sender=app.config.get('MAIL_SENDER', 'noreply@enterprise-wiki.com'),
+                    recipients=[user.email],
+                    html=email_html,
+                    body=email_text
+                )
+
+                mail.send(msg)
+
+                # 标记邮件已发送
+                notification.is_sent = True
+                db.session.commit()
+
+        except Exception as e:
+            print(f"Error sending watch notification email (notification_id={notification_id}): {e}")
+            # 不影响主流程，只记录错误
 
     @staticmethod
     def trigger_event(event_type, target_type, target_id, actor_id=None):

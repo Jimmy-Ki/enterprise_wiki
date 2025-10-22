@@ -1,0 +1,238 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}Edit Profile - {{ current_user.name or current_user.username }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="page-breadcrumb mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
+                    <i class="fas fa-home me-1"></i>
+                    <span>Spaces</span>
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('user.profile', username=current_user.username) }}" class="breadcrumb-link">
+                    <span>Profile</span>
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <span class="breadcrumb-current">Edit Profile</span>
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-top">
+        <div class="page-title-section">
+            <h1 class="page-title">Edit Profile</h1>
+            <div class="page-status-badges">
+                <span class="status-badge draft">
+                    <i class="fas fa-user-edit me-1"></i>Profile Settings
+                </span>
+            </div>
+        </div>
+
+        <div class="page-actions">
+            <a href="{{ url_for('user.profile', username=current_user.username) }}" class="btn-wiki">
+                <i class="fas fa-arrow-left me-2"></i>Back to Profile
+            </a>
+        </div>
+    </div>
+
+    <div class="page-description">
+        <p>Update your profile information. Changes will be reflected across the system.</p>
+    </div>
+</div>
+
+<!-- Profile Edit Form -->
+<div class="content-card">
+    <div class="card-body">
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+
+            <!-- Basic Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5 class="mb-3">
+                        <i class="fas fa-user me-2"></i>Basic Information
+                    </h5>
+
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.name.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Your display name (optional, max 64 characters)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.email.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Your email address. A confirmation email will be sent if changed.</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <h5 class="mb-3">
+                        <i class="fas fa-info-circle me-2"></i>Current Information
+                    </h5>
+
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" value="{{ current_user.username }}" readonly>
+                        <div class="form-text">Username cannot be changed</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Current Role</label>
+                        <div>
+                            <span class="badge bg-primary">{{ current_user.role.name if current_user.role else 'User' }}</span>
+                        </div>
+                        <div class="form-text">Your current system role</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Member Since</label>
+                        <input type="text" class="form-control"
+                               value="{{ current_user.get_safe_datetime('member_since').strftime('%B %d, %Y') if current_user.get_safe_datetime('member_since') else 'Unknown' }}"
+                               readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <div class="text-muted">
+                    <small>
+                        <i class="fas fa-info-circle me-1"></i>
+                        Email changes require confirmation
+                    </small>
+                </div>
+                <div>
+                    <a href="{{ url_for('user.profile', username=current_user.username) }}" class="btn-wiki me-2">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn-wiki primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="content-card">
+    <div class="card-body">
+        <h5 class="mb-3">
+            <i class="fas fa-tools me-2"></i>Quick Actions
+        </h5>
+
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <a href="{{ url_for('auth.change_password') }}" class="btn-wiki w-100">
+                    <i class="fas fa-key me-2"></i>Change Password
+                </a>
+            </div>
+            <div class="col-md-6 mb-2">
+                <a href="{{ url_for('auth.sessions') }}" class="btn-wiki w-100">
+                    <i class="fas fa-desktop me-2"></i>Manage Sessions
+                </a>
+            </div>
+            <div class="col-md-6 mb-2">
+                <a href="{{ url_for('user.notification_settings') }}" class="btn-wiki w-100">
+                    <i class="fas fa-bell me-2"></i>Notification Settings
+                </a>
+            </div>
+            <div class="col-md-6 mb-2">
+                <button class="btn-wiki w-100" data-bs-toggle="modal" data-bs-target="#avatarModal">
+                    <i class="fas fa-camera me-2"></i>Change Avatar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.form-label {
+    font-weight: 600;
+    color: #172b4d;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-control:read-only {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.is-invalid {
+    border-color: #dc3545;
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.border-top {
+    border-top: 1px solid #e2e8f0 !important;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 表单提交前确认
+    const form = document.querySelector('form');
+    const emailInput = document.getElementById('email');
+    const currentEmail = '{{ current_user.email }}';
+
+    form.addEventListener('submit', function(e) {
+        if (emailInput.value !== currentEmail) {
+            if (!confirm('You are changing your email address. A confirmation email will be sent to the new address. Continue?')) {
+                e.preventDefault();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

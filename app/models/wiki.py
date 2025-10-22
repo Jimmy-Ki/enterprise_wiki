@@ -236,6 +236,32 @@ class Page(db.Model):
         return False
 
   
+    def get_safe_datetime(self, field_name):
+        """安全地获取datetime字段，处理可能的字符串类型"""
+        field_value = getattr(self, field_name, None)
+        if field_value is None:
+            return None
+
+        # 如果已经是datetime对象，直接返回
+        if hasattr(field_value, 'strftime'):
+            return field_value
+
+        # 如果是字符串，尝试解析
+        if isinstance(field_value, str):
+            try:
+                # 处理ISO格式字符串
+                if field_value.endswith('Z'):
+                    field_value = field_value[:-1] + '+00:00'
+                dt = datetime.fromisoformat(field_value)
+                # 移除时区信息以便使用
+                if dt.tzinfo:
+                    return dt.replace(tzinfo=None)
+                return dt
+            except (ValueError, AttributeError):
+                return None
+
+        return None
+
     def to_dict(self, include_content=False):
         data = {
             'id': self.id,
@@ -402,6 +428,9 @@ def on_page_updated(mapper, connection, target):
     """页面更新后触发事件"""
     # 检查是否有实际内容变更（避免版本控制等非内容更新）
     if hasattr(target, '_watch_content_changed') and target._watch_content_changed:
+        # 清除标记，避免重复触发
+        delattr(target, '_watch_content_changed')
+
         # 使用异步方式触发事件，避免数据库会话冲突
         try:
             from flask import current_app
