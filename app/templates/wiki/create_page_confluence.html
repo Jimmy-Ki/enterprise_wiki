@@ -625,6 +625,22 @@ document.addEventListener('DOMContentLoaded', function() {
             contentInput.focus();
             return;
         }
+
+        // Add uploaded files data to form
+        const filesToSubmit = uploadedFiles.map(file => ({
+            id: file.id,
+            filename: file.filename,
+            original_filename: file.original_filename
+        }));
+
+        if (filesToSubmit.length > 0) {
+            // Create hidden input for uploaded files
+            let filesInput = document.createElement('input');
+            filesInput.type = 'hidden';
+            filesInput.name = 'uploaded_files';
+            filesInput.value = JSON.stringify(filesToSubmit);
+            form.appendChild(filesInput);
+        }
     });
 
     // Keyboard shortcuts

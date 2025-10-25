@@ -297,6 +297,15 @@ def api_create_page():
     db.session.add(page)
     db.session.commit()
 
+    # Handle uploaded files - associate them with the page
+    uploaded_files = data.get('uploaded_files', [])
+    if uploaded_files:
+        for file_data in uploaded_files:
+            attachment = Attachment.query.get(file_data['id'])
+            if attachment and attachment.page_id is None:
+                attachment.page_id = page.id
+                print(f"Associated attachment {file_data['id']} with new page {page.id}")
+
     # Create initial version
     page.create_version(current_user.id, 'Created via API')
     db.session.commit()
