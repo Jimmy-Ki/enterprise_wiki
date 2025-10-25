@@ -592,7 +592,7 @@ function addMessage(role, content, quotes = [], error = false) {
 
 async function sendToFastGPT(message) {
     try {
-        const response = await fetch('/api/chat/stream', {
+        const response = await fetch('/chat/api/chat/stream', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
