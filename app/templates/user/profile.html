@@ -971,16 +971,111 @@
                         </div>
 
                         <div class="form-section">
-                            <h6 class="mb-3">Security Settings</h6>
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                Consider enabling two-factor authentication for enhanced security.
+                            <h6 class="mb-3">Two-Factor Authentication</h6>
+
+                            <!-- 2FA Status Display -->
+                            <div class="card mb-3" id="twoFactorStatus">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            {% if current_user.two_factor_enabled %}
+                                                <div class="me-3">
+                                                    <i class="fas fa-shield-check fa-2x text-success"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-1 text-success">2FA Enabled</h6>
+                                                    <p class="mb-0 text-muted small">
+                                                        Your account is protected with two-factor authentication
+                                                        {% if current_user.two_factor_setup_date %}
+                                                        since {{ current_user.two_factor_setup_date.strftime('%B %d, %Y') }}
+                                                        {% endif %}
+                                                    </p>
+                                                </div>
+                                            {% else %}
+                                                <div class="me-3">
+                                                    <i class="fas fa-shield-alt fa-2x text-warning"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-1 text-warning">2FA Disabled</h6>
+                                                    <p class="mb-0 text-muted small">
+                                                        Add an extra layer of security to your account
+                                                    </p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            {% if current_user.two_factor_enabled %}
+                                                <div class="dropdown">
+                                                    <button class="btn btn-outline-success dropdown-toggle" type="button" id="twoFactorDropdown" data-bs-toggle="dropdown">
+                                                        <i class="fas fa-cog me-1"></i>Manage
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="{{ url_for('two_factor.disable') }}">
+                                                            <i class="fas fa-times me-2 text-danger"></i>Disable 2FA
+                                                        </a></li>
+                                                        <li><a class="dropdown-item" href="#" onclick="showBackupCodes()">
+                                                            <i class="fas fa-key me-2 text-info"></i>View Backup Codes
+                                                        </a></li>
+                                                        <li><a class="dropdown-item" href="{{ url_for('two_factor.setup') }}">
+                                                            <i class="fas fa-sync me-2 text-primary"></i>Regenerate Codes
+                                                        </a></li>
+                                                    </ul>
+                                                </div>
+                                            {% else %}
+                                                <a href="{{ url_for('two_factor.setup') }}" class="btn btn-primary">
+                                                    <i class="fas fa-plus me-2"></i>Enable 2FA
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
+                            <!-- 2FA Info Cards -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-mobile-alt me-2 text-primary"></i>Authentication Apps
+                                            </h6>
+                                            <p class="card-text small text-muted">
+                                                Use apps like Microsoft Authenticator, Google Authenticator, or Authy to generate verification codes.
+                                            </p>
+                                            <div class="d-flex gap-2 flex-wrap">
+                                                <span class="badge bg-light text-dark">Microsoft</span>
+                                                <span class="badge bg-light text-dark">Google</span>
+                                                <span class="badge bg-light text-dark">Authy</span>
+                                                <span class="badge bg-light text-dark">1Password</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-key me-2 text-success"></i>Backup Codes
+                                            </h6>
+                                            <p class="card-text small text-muted">
+                                                Save your backup codes securely. They can be used to access your account if you lose your authentication device.
+                                            </p>
+                                            {% if current_user.two_factor_enabled %}
+                                                <button class="btn btn-sm btn-outline-success" onclick="showBackupCodes()">
+                                                    <i class="fas fa-eye me-1"></i>View Codes
+                                                </button>
+                                            {% else %}
+                                                <span class="text-muted small">Enable 2FA to generate backup codes</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section mt-4">
+                            <h6 class="mb-3">Other Security Options</h6>
                             <div class="d-grid gap-2" style="max-width: 400px;">
-                                <button class="btn btn-outline-primary">
-                                    <i class="fas fa-mobile-alt me-2"></i>Enable Two-Factor Authentication
-                                </button>
                                 <a href="{{ url_for('user.profile') }}#sessions" class="btn btn-outline-secondary">
                                     <i class="fas fa-desktop me-2"></i>Manage Active Sessions
                                 </a>
@@ -1687,6 +1782,164 @@ function confirmAccountDeletion() {
     if (confirmation === 'DELETE') {
         showToast('Account deletion is not yet implemented', 'info');
     }
+}
+
+// 显示备用码
+function showBackupCodes() {
+    // 创建模态框显示备用码
+    const modalHtml = `
+        <div class="modal fade" id="backupCodesModal" tabindex="-1" aria-labelledby="backupCodesModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="backupCodesModalLabel">
+                            <i class="fas fa-key me-2 text-warning"></i>Backup Codes
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Important:</strong> Save these backup codes in a secure location. Each code can only be used once.
+                        </div>
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading backup codes...</span>
+                            </div>
+                            <p class="mt-2">Loading your backup codes...</p>
+                        </div>
+                        <div id="backupCodesContainer" style="display: none;">
+                            <div class="row g-3" id="backupCodesList">
+                                <!-- 备用码将在这里显示 -->
+                            </div>
+                            <div class="text-center mt-4">
+                                <button class="btn btn-outline-secondary btn-sm" onclick="downloadBackupCodes()">
+                                    <i class="fas fa-download me-1"></i>Download Codes
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="copyBackupCodes()">
+                                    <i class="fas fa-copy me-1"></i>Copy All
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 移除已存在的模态框
+    const existingModal = document.getElementById('backupCodesModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // 添加模态框到页面
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // 显示模态框
+    const modal = new bootstrap.Modal(document.getElementById('backupCodesModal'));
+    modal.show();
+
+    // 加载备用码
+    loadBackupCodes();
+}
+
+// 加载备用码
+async function loadBackupCodes() {
+    try {
+        const response = await fetch('/api/user/backup-codes');
+        if (response.ok) {
+            const data = await response.json();
+            displayBackupCodes(data.backup_codes);
+        } else {
+            throw new Error('Failed to load backup codes');
+        }
+    } catch (error) {
+        document.querySelector('#backupCodesModal .modal-body').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Failed to load backup codes. Please try again later.
+            </div>
+        `;
+    }
+}
+
+// 显示备用码
+function displayBackupCodes(backupCodes) {
+    const container = document.getElementById('backupCodesContainer');
+    const codesList = document.getElementById('backupCodesList');
+    const spinner = document.querySelector('#backupCodesModal .spinner-border').parentElement;
+
+    // 清空并生成备用码显示
+    codesList.innerHTML = '';
+    backupCodes.forEach(code => {
+        codesList.innerHTML += `
+            <div class="col-6 col-md-3">
+                <div class="backup-code-card text-center p-3 bg-light rounded">
+                    <code class="backup-code text-primary fw-bold">${code}</code>
+                </div>
+            </div>
+        `;
+    });
+
+    // 显示备用码容器，隐藏加载动画
+    spinner.style.display = 'none';
+    container.style.display = 'block';
+}
+
+// 下载备用码
+function downloadBackupCodes() {
+    const codes = Array.from(document.querySelectorAll('.backup-code')).map(el => el.textContent);
+    const content = `双因素认证备用恢复码
+================================
+
+用户: {{ current_user.email }}
+生成时间: ${new Date().toLocaleString()}
+
+请在需要时使用以下任意一个6位恢复码：
+
+${codes.join('\n')}
+
+================================
+重要提示：
+- 每个恢复码只能使用一次
+- 请妥善保存在安全的地方
+- 建议打印出来或保存到密码管理器
+- 如果使用了所有恢复码，请重新设置双因素认证
+`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_codes_${current_user.email}_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showToast('Backup codes downloaded successfully!', 'success');
+}
+
+// 复制所有备用码
+function copyBackupCodes() {
+    const codes = Array.from(document.querySelectorAll('.backup-code')).map(el => el.textContent).join('\n');
+
+    navigator.clipboard.writeText(codes).then(() => {
+        showToast('Backup codes copied to clipboard!', 'success');
+    }).catch(() => {
+        // 降级方案
+        const textArea = document.createElement('textarea');
+        textArea.value = codes;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showToast('Backup codes copied to clipboard!', 'success');
+    });
 }
 {% endif %}
 

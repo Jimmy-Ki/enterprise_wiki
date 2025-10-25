@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify, current_app, flash, redirect, url_for, abort
+import json
 from flask_login import login_required, current_user
 from app import db
 from app.models import User, Comment, CommentTargetType
@@ -469,3 +470,28 @@ def get_user_stats(user_id):
             'content_stats': {'total_chars': 0, 'avg_chars': 0},
             'recently_updated_pages': [], 'recent_activities': []
         }
+
+
+@user.route('/api/user/backup-codes')
+@login_required
+def get_backup_codes():
+    """获取用户的备用恢复码"""
+    if not current_user.two_factor_enabled:
+        return jsonify({
+            'success': False,
+            'message': 'Two-factor authentication is not enabled'
+        }), 400
+
+    try:
+        backup_codes = json.loads(current_user.backup_codes) if current_user.backup_codes else []
+
+        return jsonify({
+            'success': True,
+            'backup_codes': backup_codes
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error getting backup codes: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to retrieve backup codes'
+        }), 500

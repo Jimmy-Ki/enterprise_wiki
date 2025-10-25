@@ -1,0 +1,166 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}备用恢复码 - {{ config.WIKI_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <!-- Logo and Title -->
+        <div class="auth-header text-center">
+            <div class="auth-logo">
+                <i class="fas fa-key fa-3x text-warning mb-3"></i>
+            </div>
+            <h1 class="auth-title">备用恢复码</h1>
+            <p class="auth-subtitle">请妥善保存这些恢复码</p>
+        </div>
+
+        <!-- Warning Alert -->
+        <div class="alert alert-warning" role="alert">
+            <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>重要提醒</h6>
+            <p class="mb-0">
+                这些恢复码是您在无法使用认证器应用时的最后登录方式。请将它们保存在安全的地方，
+                每个恢复码只能使用一次。建议打印出来或保存到密码管理器中。
+            </p>
+        </div>
+
+        <!-- Backup Codes -->
+        <div class="backup-codes-container">
+            <div class="row g-3">
+                {% for code in backup_codes %}
+                <div class="col-6 col-md-3">
+                    <div class="backup-code-card text-center p-3 bg-light rounded">
+                        <code class="backup-code text-primary fw-bold">{{ code }}</code>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Download Button -->
+        <div class="text-center mb-4">
+            <button onclick="downloadBackupCodes()" class="btn-wiki btn-secondary">
+                <i class="fas fa-download me-2"></i>下载恢复码
+            </button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="auth-form">
+            <a href="{{ url_for('user.profile') }}" class="btn-wiki btn-primary w-100">
+                <i class="fas fa-check me-2"></i>我已保存，继续
+            </a>
+        </div>
+
+        <!-- Instructions -->
+        <div class="mt-4">
+            <h6 class="text-center mb-3">如何使用恢复码：</h6>
+            <ol>
+                <li>在双因素认证验证页面点击"使用备用恢复码"</li>
+                <li>输入任意一个未使用的6位恢复码</li>
+                <li>登录后建议重新设置双因素认证</li>
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.backup-codes-container {
+    margin: 2rem 0;
+}
+
+.backup-code-card {
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.backup-code-card:hover {
+    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.backup-code {
+    font-family: 'Courier New', monospace;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function downloadBackupCodes() {
+    const backupCodes = [
+        {% for code in backup_codes %}
+        '{{ code }}',
+        {% endfor %}
+    ];
+
+    const content = `双因素认证备用恢复码
+================================
+
+用户: {{ current_user.email }}
+生成时间: {{ now.strftime('%Y-%m-%d %H:%M:%S') if now else 'Unknown' }}
+
+请在需要时使用以下任意一个6位恢复码：
+
+${backupCodes.join('\n')}
+
+================================
+重要提示：
+- 每个恢复码只能使用一次
+- 请妥善保存在安全的地方
+- 建议打印出来或保存到密码管理器
+- 如果使用了所有恢复码，请重新设置双因素认证
+`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_codes_${current_user.email}_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    // Show success message
+    const btn = event.target;
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check me-2"></i>已下载';
+    btn.classList.remove('btn-secondary');
+    btn.classList.add('btn-success');
+
+    setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-secondary');
+    }, 2000);
+}
+
+// Include moment.js for date formatting
+function moment() {
+    // Simple moment.js replacement for date formatting
+    const now = new Date();
+    return {
+        format: function(pattern) {
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            return pattern
+                .replace('YYYY', year)
+                .replace('MM', month)
+                .replace('DD', day)
+                .replace('HH', hours)
+                .replace('mm', minutes)
+                .replace('ss', seconds);
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -107,6 +107,9 @@ def create_app(config_name='default'):
     from app.views.user import user as user_blueprint
     app.register_blueprint(user_blueprint)
 
+    from app.views.two_factor import two_factor as two_factor_blueprint
+    app.register_blueprint(two_factor_blueprint, url_prefix='/2fa')
+
     from app.views.fastgpt_api import fastgpt_api as fastgpt_blueprint
     app.register_blueprint(fastgpt_blueprint)
 
