@@ -319,6 +319,8 @@ def create_role():
     return render_template('admin/create_role.html', form=form)
 
 @admin.route('/roles/<int:role_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
 def edit_role(role_id):
     """Edit role"""
     role = Role.query.get_or_404(role_id)
@@ -346,8 +348,20 @@ def edit_role(role_id):
         if form.is_admin.data:
             role.add_permission(Permission.ADMIN)
 
+        # 更新组织和领导信息
+        from app.models.organization import Department, User
+        department_id = request.form.get('department_id')
+        leader_id = request.form.get('leader_id')
+        role_type = request.form.get('role_type', 'general')
+        description = request.form.get('description', '')
+
+        role.department_id = int(department_id) if department_id else None
+        role.leader_id = int(leader_id) if leader_id else None
+        role.role_type = role_type
+        role.description = description
+
         db.session.commit()
-        flash('Role updated successfully!', 'success')
+        flash('角色更新成功!', 'success')
         return redirect(url_for('admin.roles'))
 
     # Set form values based on current permissions
@@ -360,7 +374,12 @@ def edit_role(role_id):
     form.can_delete_all.data = role.has_permission(Permission.DELETE_ALL)
     form.is_admin.data = role.has_permission(Permission.ADMIN)
 
-    return render_template('admin/edit_role.html', form=form, role=role)
+    # 获取部门和用户列表
+    from app.models.organization import Department
+    departments = Department.query.filter_by(is_active=True).order_by(Department.sort_order, Department.name).all()
+    users = User.query.filter_by(is_active=True).order_by(User.name).all()
+
+    return render_template('admin/edit_role.html', form=form, role=role, departments=departments, users=users)
 
 @admin.route('/roles/<int:role_id>/delete', methods=['POST'])
 def delete_role(role_id):

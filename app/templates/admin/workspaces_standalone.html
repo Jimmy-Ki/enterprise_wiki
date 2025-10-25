@@ -1,0 +1,548 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}工作区管理{% endblock %}
+
+{% block admin_content %}
+<div class="admin-stats-grid">
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_workspaces if stats else 0 }}</div>
+        <div class="admin-stat-label">工作区总数</div>
+        <div class="admin-stat-meta">全部工作区</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.active_workspaces if stats else 0 }}</div>
+        <div class="admin-stat-label">活跃工作区</div>
+        <div class="admin-stat-meta">正在使用</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.public_workspaces if stats else 0 }}</div>
+        <div class="admin-stat-label">公开工作区</div>
+        <div class="admin-stat-meta">对内部开放</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_members if stats else 0 }}</div>
+        <div class="admin-stat-label">工作区成员</div>
+        <div class="admin-stat-meta">参与人数</div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">
+            <i class="fas fa-th-large"></i>
+            工作区列表
+        </h3>
+        <div class="admin-actions">
+            <button class="admin-btn primary" data-bs-toggle="modal" data-bs-target="#createWorkspaceModal">
+                <i class="fas fa-plus"></i>
+                新建工作区
+            </button>
+        </div>
+    </div>
+    <div class="admin-card-body">
+        {% if workspaces %}
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>工作区名称</th>
+                        <th>工作区代码</th>
+                        <th>类型</th>
+                        <th>所属组织</th>
+                        <th>负责人</th>
+                        <th>成员数量</th>
+                        <th>访问权限</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for workspace in workspaces %}
+                    <tr>
+                        <td>
+                            <strong>{{ workspace.name }}</strong>
+                            {% if workspace.description %}
+                            <br><small class="text-muted">{{ workspace.description[:50] }}{% if workspace.description|length > 50 %}...{% endif %}</small>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ workspace.code }}</code></td>
+                        <td>
+                            {% if workspace.type == 'department' %}
+                            <span class="admin-badge info">部门</span>
+                            {% elif workspace.type == 'project' %}
+                            <span class="admin-badge success">项目</span>
+                            {% elif workspace.type == 'cross_functional' %}
+                            <span class="admin-badge warning">跨部门</span>
+                            {% elif workspace.type == 'personal' %}
+                            <span class="admin-badge neutral">个人</span>
+                            {% else %}
+                            <span class="admin-badge neutral">{{ workspace.type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if workspace.department %}
+                            <span class="admin-badge">{{ workspace.department.name }}</span>
+                            {% elif workspace.project %}
+                            <span class="admin-badge">{{ workspace.project.name }}</span>
+                            {% else %}
+                            <span class="text-muted">未设置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if workspace.owner %}
+                            <a href="#" class="text-decoration-none">
+                                {{ workspace.owner.name }}
+                            </a>
+                            {% else %}
+                            <span class="text-muted">未设置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="admin-badge neutral">{{ workspace.members.count() }} 人</span>
+                        </td>
+                        <td>
+                            {% if workspace.is_public %}
+                            <span class="admin-badge success">公开</span>
+                            {% else %}
+                            <span class="admin-badge warning">私有</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if workspace.is_active %}
+                            <span class="admin-badge success">活跃</span>
+                            {% else %}
+                            <span class="admin-badge neutral">停用</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ workspace.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <div class="admin-actions">
+                                <button class="admin-btn sm primary" onclick="openEditWorkspaceModal({{ workspace.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="admin-btn sm" onclick="viewWorkspace({{ workspace.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="admin-btn sm danger" onclick="deleteWorkspace({{ workspace.id }}, '{{ workspace.name }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="admin-empty-state">
+            <i class="fas fa-th-large"></i>
+            <h5>暂无工作区</h5>
+            <p>还没有创建任何工作区，点击下方按钮开始创建</p>
+            <button class="admin-btn primary" data-bs-toggle="modal" data-bs-target="#createWorkspaceModal">
+                <i class="fas fa-plus"></i>
+                创建第一个工作区
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 创建工作区模态框 -->
+<div class="modal fade" id="createWorkspaceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新建工作区</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('organization.admin_create_workspace') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">工作区名称 *</label>
+                                <input type="text" name="name" class="admin-form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">工作区代码 *</label>
+                                <input type="text" name="code" class="admin-form-control" pattern="[A-Z0-9_]+" title="只能使用大写字母、数字和下划线" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">工作区描述</label>
+                        <textarea name="description" class="admin-form-control" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">工作区类型 *</label>
+                                <select name="type" class="admin-form-select" required>
+                                    <option value="department">部门</option>
+                                    <option value="project">项目</option>
+                                    <option value="cross_functional">跨部门</option>
+                                    <option value="personal">个人</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">所属部门</label>
+                                <select name="department_id" class="admin-form-select">
+                                    <option value="">请选择</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">所属项目</label>
+                                <select name="project_id" class="admin-form-select">
+                                    <option value="">请选择</option>
+                                    {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">工作区负责人</label>
+                                <select name="owner_id" class="admin-form-select">
+                                    <option value="">请选择</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.name }} ({{ user.username }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">访问权限</label>
+                                <select name="is_public" class="admin-form-select">
+                                    <option value="1">公开（所有内部人员可见）</option>
+                                    <option value="0">私有（仅成员可见）</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="admin-btn" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="admin-btn primary">创建工作区</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑工作区模态框 -->
+<div class="modal fade" id="editWorkspaceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    编辑工作区
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editWorkspaceForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">工作区名称 *</label>
+                                <input type="text" id="editWorkspaceName" name="name" class="admin-form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">工作区代码 *</label>
+                                <input type="text" id="editWorkspaceCode" name="code" class="admin-form-control" pattern="[A-Z0-9_]+" title="只能使用大写字母、数字和下划线" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">工作区描述</label>
+                        <textarea id="editWorkspaceDescription" name="description" class="admin-form-control" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">工作区类型 *</label>
+                                <select id="editWorkspaceType" name="type" class="admin-form-select" required>
+                                    <option value="department">部门</option>
+                                    <option value="project">项目</option>
+                                    <option value="cross_functional">跨部门</option>
+                                    <option value="personal">个人</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">所属部门</label>
+                                <select id="editWorkspaceDepartment" name="department_id" class="admin-form-select">
+                                    <option value="">请选择</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">所属项目</label>
+                                <select id="editWorkspaceProject" name="project_id" class="admin-form-select">
+                                    <option value="">请选择</option>
+                                    {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">工作区负责人</label>
+                                <select id="editWorkspaceOwner" name="owner_id" class="admin-form-select">
+                                    <option value="">请选择</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.name }} ({{ user.username }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">访问权限</label>
+                                <select id="editWorkspacePublic" name="is_public" class="admin-form-select">
+                                    <option value="1">公开（所有内部人员可见）</option>
+                                    <option value="0">私有（仅成员可见）</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="admin-form-check">
+                                <input type="checkbox" id="editWorkspaceActive" name="is_active" class="admin-form-check-input" checked>
+                                <label class="admin-form-check-label" for="editWorkspaceActive">
+                                    <i class="fas fa-toggle-on"></i>
+                                    启用工作区
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="editWorkspaceId" name="workspace_id">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="admin-btn" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="admin-btn primary" onclick="updateWorkspace()">
+                    <i class="fas fa-save"></i>
+                    保存更改
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentWorkspaceId = null;
+
+function openEditWorkspaceModal(workspaceId) {
+    currentWorkspaceId = workspaceId;
+    loadWorkspaceData(workspaceId);
+
+    const modal = new bootstrap.Modal(document.getElementById('editWorkspaceModal'));
+    modal.show();
+}
+
+function loadWorkspaceData(workspaceId) {
+    fetch(`/admin/api/workspace/${workspaceId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const workspace = data.workspace;
+
+                // 填充表单数据
+                document.getElementById('editWorkspaceId').value = workspace.id;
+                document.getElementById('editWorkspaceName').value = workspace.name;
+                document.getElementById('editWorkspaceCode').value = workspace.code;
+                document.getElementById('editWorkspaceDescription').value = workspace.description || '';
+                document.getElementById('editWorkspaceType').value = workspace.type;
+                document.getElementById('editWorkspaceDepartment').value = workspace.department_id || '';
+                document.getElementById('editWorkspaceProject').value = workspace.project_id || '';
+                document.getElementById('editWorkspaceOwner').value = workspace.owner_id || '';
+                document.getElementById('editWorkspacePublic').value = workspace.is_public ? '1' : '0';
+                document.getElementById('editWorkspaceActive').checked = workspace.is_active;
+
+            } else {
+                showMessage(data.message || '加载工作区数据失败', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('加载工作区数据失败:', error);
+            showMessage('加载工作区数据失败', 'error');
+        });
+}
+
+function updateWorkspace() {
+    if (!currentWorkspaceId) return;
+
+    const form = document.getElementById('editWorkspaceForm');
+    const formData = new FormData(form);
+
+    // 转换为JSON对象
+    const data = {
+        name: formData.get('name').trim(),
+        code: formData.get('code').trim(),
+        description: formData.get('description').trim(),
+        type: formData.get('type'),
+        department_id: formData.get('department_id') ? parseInt(formData.get('department_id')) : null,
+        project_id: formData.get('project_id') ? parseInt(formData.get('project_id')) : null,
+        owner_id: formData.get('owner_id') ? parseInt(formData.get('owner_id')) : null,
+        is_public: formData.get('is_public') === '1',
+        is_active: document.getElementById('editWorkspaceActive').checked
+    };
+
+    // 基本验证
+    if (!data.name) {
+        showMessage('工作区名称不能为空', 'warning');
+        return;
+    }
+
+    if (!data.code) {
+        showMessage('工作区代码不能为空', 'warning');
+        return;
+    }
+
+    // 验证代码格式
+    if (!/^[A-Z0-9_]+$/.test(data.code)) {
+        showMessage('工作区代码只能使用大写字母、数字和下划线', 'warning');
+        return;
+    }
+
+    // 显示加载状态
+    const submitBtn = document.querySelector('#editWorkspaceModal .modal-footer .admin-btn.primary');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+    submitBtn.disabled = true;
+
+    fetch(`/admin/api/workspace/${currentWorkspaceId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.content
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage('工作区更新成功', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editWorkspaceModal')).hide();
+            // 刷新页面显示更新后的数据
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showMessage(result.message || '更新工作区失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('更新工作区失败:', error);
+        showMessage('更新工作区失败', 'error');
+    })
+    .finally(() => {
+        // 恢复按钮状态
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function deleteWorkspace(workspaceId, workspaceName) {
+    if (!confirm(`确定要删除工作区 "${workspaceName}" 吗？\n\n删除后将无法恢复，且会影响工作区内的所有内容。`)) {
+        return;
+    }
+
+    // 显示加载状态
+    const btn = event.target.closest('button');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+
+    fetch(`/admin/api/workspace/${workspaceId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.content
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage('工作区删除成功', 'success');
+            // 从表格中移除该行
+            const row = btn.closest('tr');
+            row.remove();
+
+            // 检查是否还有数据，如果没有则显示空状态
+            const tbody = document.querySelector('.admin-table tbody');
+            if (tbody && tbody.children.length === 0) {
+                window.location.reload();
+            }
+        } else {
+            showMessage(result.message || '删除工作区失败', 'error');
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('删除工作区失败:', error);
+        showMessage('删除工作区失败', 'error');
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    });
+}
+
+function showMessage(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+
+function editWorkspace(workspaceId) {
+    // 保留原功能作为备用
+    openEditWorkspaceModal(workspaceId);
+}
+
+function viewWorkspace(workspaceId) {
+    // 查看工作区详情
+    window.location.href = `/organization/admin/workspaces/${workspaceId}`;
+}
+</script>
+{% endblock %}

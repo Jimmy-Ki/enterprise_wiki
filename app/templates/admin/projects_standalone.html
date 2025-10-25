@@ -1,0 +1,553 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}项目管理{% endblock %}
+
+{% block admin_content %}
+<div class="admin-stats-grid">
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_projects if stats else 0 }}</div>
+        <div class="admin-stat-label">项目总数</div>
+        <div class="admin-stat-meta">全部项目</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.active_projects if stats else 0 }}</div>
+        <div class="admin-stat-label">进行中</div>
+        <div class="admin-stat-meta">活跃项目</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.completed_projects if stats else 0 }}</div>
+        <div class="admin-stat-label">已完成</div>
+        <div class="admin-stat-meta">成功交付</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_members if stats else 0 }}</div>
+        <div class="admin-stat-label">项目成员</div>
+        <div class="admin-stat-meta">参与人数</div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">
+            <i class="fas fa-project-diagram"></i>
+            项目列表
+        </h3>
+        <div class="admin-actions">
+            <button class="admin-btn primary" data-bs-toggle="modal" data-bs-target="#createProjectModal">
+                <i class="fas fa-plus"></i>
+                新建项目
+            </button>
+        </div>
+    </div>
+    <div class="admin-card-body">
+        {% if projects %}
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>项目名称</th>
+                        <th>项目代码</th>
+                        <th>所属部门</th>
+                        <th>项目经理</th>
+                        <th>状态</th>
+                        <th>优先级</th>
+                        <th>成员数量</th>
+                        <th>进度</th>
+                        <th>开始时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr>
+                        <td>
+                            <strong>{{ project.name }}</strong>
+                            {% if project.description %}
+                            <br><small class="text-muted">{{ project.description[:50] }}{% if project.description|length > 50 %}...{% endif %}</small>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ project.code }}</code></td>
+                        <td>
+                            {% if project.department %}
+                            <span class="admin-badge">{{ project.department.name }}</span>
+                            {% else %}
+                            <span class="text-muted">未设置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if project.manager %}
+                            <a href="#" class="text-decoration-none">
+                                {{ project.manager.name }}
+                            </a>
+                            {% else %}
+                            <span class="text-muted">未设置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if project.status == 'active' %}
+                            <span class="admin-badge success">进行中</span>
+                            {% elif project.status == 'completed' %}
+                            <span class="admin-badge info">已完成</span>
+                            {% elif project.status == 'archived' %}
+                            <span class="admin-badge neutral">已归档</span>
+                            {% elif project.status == 'on_hold' %}
+                            <span class="admin-badge warning">暂停</span>
+                            {% elif project.status == 'planning' %}
+                            <span class="admin-badge">规划中</span>
+                            {% else %}
+                            <span class="admin-badge neutral">{{ project.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if project.priority == 'critical' %}
+                            <span class="admin-badge danger">紧急</span>
+                            {% elif project.priority == 'high' %}
+                            <span class="admin-badge warning">高</span>
+                            {% elif project.priority == 'medium' %}
+                            <span class="admin-badge info">中</span>
+                            {% elif project.priority == 'low' %}
+                            <span class="admin-badge neutral">低</span>
+                            {% else %}
+                            <span class="admin-badge neutral">{{ project.priority }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="admin-badge neutral">{{ project.members.count() }} 人</span>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" style="width: 65%; background-color: var(--admin-primary);"></div>
+                            </div>
+                            <small class="text-muted">65%</small>
+                        </td>
+                        <td>
+                            {% if project.start_date %}
+                            {{ project.start_date.strftime('%Y-%m-%d') }}
+                            {% else %}
+                            <span class="text-muted">未设置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="admin-actions">
+                                <button class="admin-btn sm" onclick="openEditProjectModal({{ project.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="admin-btn sm" onclick="viewProject({{ project.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="admin-btn sm danger" onclick="deleteProject({{ project.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="admin-empty-state">
+            <i class="fas fa-project-diagram"></i>
+            <h5>暂无项目</h5>
+            <p>还没有创建任何项目，点击下方按钮开始创建</p>
+            <button class="admin-btn primary" data-bs-toggle="modal" data-bs-target="#createProjectModal">
+                <i class="fas fa-plus"></i>
+                创建第一个项目
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 创建项目模态框 -->
+<div class="modal fade" id="createProjectModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新建项目</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('organization.admin_create_project') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">项目名称 *</label>
+                                <input type="text" name="name" class="admin-form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">项目代码 *</label>
+                                <input type="text" name="code" class="admin-form-control" pattern="[A-Z0-9_]+" title="只能使用大写字母、数字和下划线" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">项目描述</label>
+                        <textarea name="description" class="admin-form-control" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">所属部门</label>
+                                <select name="department_id" class="admin-form-select">
+                                    <option value="">请选择</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">项目经理</label>
+                                <select name="manager_id" class="admin-form-select">
+                                    <option value="">请选择</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.name }} ({{ user.username }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">项目状态</label>
+                                <select name="status" class="admin-form-select">
+                                    <option value="planning">规划中</option>
+                                    <option value="active" selected>进行中</option>
+                                    <option value="on_hold">暂停</option>
+                                    <option value="completed">已完成</option>
+                                    <option value="archived">已归档</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">优先级</label>
+                                <select name="priority" class="admin-form-select">
+                                    <option value="low">低</option>
+                                    <option value="medium" selected>中</option>
+                                    <option value="high">高</option>
+                                    <option value="critical">紧急</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">计划开始时间</label>
+                                <input type="date" name="start_date" class="admin-form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">计划结束时间</label>
+                        <input type="date" name="end_date" class="admin-form-control">
+                    </div>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="admin-btn" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="admin-btn primary">创建项目</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑项目模态框 -->
+<div class="modal fade" id="editProjectModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑项目</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editProjectForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editProjectId" name="id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">项目名称 *</label>
+                                <input type="text" id="editProjectName" name="name" class="admin-form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">项目代码 *</label>
+                                <input type="text" id="editProjectCode" name="code" class="admin-form-control" pattern="[A-Z0-9_]+" title="只能使用大写字母、数字和下划线" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">项目描述</label>
+                        <textarea id="editProjectDescription" name="description" class="admin-form-control" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">所属部门</label>
+                                <select id="editProjectDepartment" name="department_id" class="admin-form-select">
+                                    <option value="">请选择部门</option>
+                                    <!-- 动态加载部门列表 -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">项目经理</label>
+                                <select id="editProjectManager" name="manager_id" class="admin-form-select">
+                                    <option value="">请选择项目经理</option>
+                                    <!-- 动态加载用户列表 -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">项目状态</label>
+                                <select id="editProjectStatus" name="status" class="admin-form-select">
+                                    <option value="planning">规划中</option>
+                                    <option value="active">进行中</option>
+                                    <option value="on_hold">暂停</option>
+                                    <option value="completed">已完成</option>
+                                    <option value="archived">已归档</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">优先级</label>
+                                <select id="editProjectPriority" name="priority" class="admin-form-select">
+                                    <option value="low">低</option>
+                                    <option value="medium">中</option>
+                                    <option value="high">高</option>
+                                    <option value="critical">紧急</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">项目成员数</label>
+                                <span id="editProjectMemberCount" class="admin-form-control bg-light">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">计划开始时间</label>
+                                <input type="date" id="editProjectStartDate" name="start_date" class="admin-form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">计划结束时间</label>
+                                <input type="date" id="editProjectEndDate" name="end_date" class="admin-form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="admin-btn" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="admin-btn primary" onclick="updateProject()">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEditProjectModal(projectId) {
+    // 加载项目数据并显示编辑模态框
+    loadProjectData(projectId);
+}
+
+function viewProject(projectId) {
+    // 查看项目详情
+    window.location.href = `/admin/projects/${projectId}`;
+}
+
+function loadProjectData(projectId) {
+    fetch(`/admin/api/project/${projectId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 填充表单数据
+                document.getElementById('editProjectId').value = data.project.id;
+                document.getElementById('editProjectName').value = data.project.name;
+                document.getElementById('editProjectCode').value = data.project.code;
+                document.getElementById('editProjectDescription').value = data.project.description || '';
+                document.getElementById('editProjectStatus').value = data.project.status;
+                document.getElementById('editProjectPriority').value = data.project.priority;
+                document.getElementById('editProjectStartDate').value = data.project.start_date || '';
+                document.getElementById('editProjectEndDate').value = data.project.end_date || '';
+
+                // 加载部门和用户列表到选择框
+                loadDepartmentOptions('editProjectDepartment', data.project.department_id);
+                loadUserOptions('editProjectManager', data.project.manager_id);
+
+                // 显示成员数量
+                document.getElementById('editProjectMemberCount').textContent = data.project.member_count || 0;
+
+                // 显示模态框
+                const modal = new bootstrap.Modal(document.getElementById('editProjectModal'));
+                modal.show();
+            } else {
+                showMessage('加载项目数据失败', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('加载项目数据失败:', error);
+            showMessage('加载项目数据失败', 'error');
+        });
+}
+
+function loadDepartmentOptions(selectId, selectedValue = '') {
+    fetch('/admin/api/departments')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">请选择部门</option>';
+            data.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept.id;
+                option.textContent = dept.get_full_name || dept.name;
+                if (dept.id == selectedValue) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('加载部门列表失败:', error);
+        });
+}
+
+function loadUserOptions(selectId, selectedValue = '') {
+    fetch('/admin/api/users')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">请选择用户</option>';
+            data.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.name} (${user.username})`;
+                if (user.id == selectedValue) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('加载用户列表失败:', error);
+        });
+}
+
+function updateProject() {
+    const form = document.getElementById('editProjectForm');
+    const formData = new FormData(form);
+
+    const data = {
+        id: parseInt(formData.get('id')),
+        name: formData.get('name').trim(),
+        code: formData.get('code').trim(),
+        description: formData.get('description').trim(),
+        department_id: formData.get('department_id') ? parseInt(formData.get('department_id')) : null,
+        manager_id: formData.get('manager_id') ? parseInt(formData.get('manager_id')) : null,
+        status: formData.get('status'),
+        priority: formData.get('priority'),
+        start_date: formData.get('start_date'),
+        end_date: formData.get('end_date')
+    };
+
+    // 验证必填字段
+    if (!data.name || !data.code) {
+        showMessage('项目名称和代码为必填项', 'warning');
+        return;
+    }
+
+    // 检查代码格式
+    if (!/^[A-Z0-9_]+$/.test(data.code)) {
+        showMessage('项目代码只能使用大写字母、数字和下划线', 'warning');
+        return;
+    }
+
+    fetch('/admin/api/project/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage('项目更新成功', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editProjectModal')).hide();
+            location.reload();
+        } else {
+            showMessage(result.message || '项目更新失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('项目更新失败:', error);
+        showMessage('项目更新失败', 'error');
+    });
+}
+
+function deleteProject(projectId) {
+    if (confirm('确定要删除这个项目吗？此操作不可恢复。')) {
+        fetch(`/admin/api/project/${projectId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showMessage('项目删除成功', 'success');
+                location.reload();
+            } else {
+                showMessage(result.message || '项目删除失败', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('项目删除失败:', error);
+            showMessage('项目删除失败', 'error');
+        });
+    }
+}
+
+function showMessage(message, type = 'info') {
+    // 创建提示消息
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    // 3秒后自动消失
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

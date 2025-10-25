@@ -1,0 +1,500 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}部门管理{% endblock %}
+
+{% block admin_content %}
+<div class="admin-stats-grid">
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_departments if stats else 0 }}</div>
+        <div class="admin-stat-label">部门总数</div>
+        <div class="admin-stat-meta">活跃组织架构</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_members if stats else 0 }}</div>
+        <div class="admin-stat-label">部门成员</div>
+        <div class="admin-stat-meta">全公司员工</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.active_departments if stats else 0 }}</div>
+        <div class="admin-stat-label">活跃部门</div>
+        <div class="admin-stat-meta">正在运营</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.max_depth if stats else 0 }}</div>
+        <div class="admin-stat-label">组织层级</div>
+        <div class="admin-stat-meta">最大深度</div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">
+            <i class="fas fa-building"></i>
+            部门列表
+        </h3>
+        <div class="admin-actions">
+            <button class="admin-btn primary" data-bs-toggle="modal" data-bs-target="#createDepartmentModal">
+                <i class="fas fa-plus"></i>
+                新建部门
+            </button>
+        </div>
+    </div>
+    <div class="admin-card-body">
+        {% if departments %}
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>部门名称</th>
+                        <th>部门代码</th>
+                        <th>部门领导</th>
+                        <th>成员数量</th>
+                        <th>上级部门</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dept in departments %}
+                    <tr>
+                        <td>
+                            <strong>{{ dept.name }}</strong>
+                            {% if dept.children|length > 0 %}
+                            <span class="admin-badge info">{{ dept.children|length }} 子部门</span>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ dept.code }}</code></td>
+                        <td>
+                            {% if dept.leader %}
+                            <a href="#" class="text-decoration-none">
+                                {{ dept.leader.name }}
+                            </a>
+                            {% else %}
+                            <span class="text-muted">未设置</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="admin-badge neutral">{{ dept.members.count() }} 人</span>
+                        </td>
+                        <td>
+                            {% if dept.parent %}
+                            <span class="admin-badge">{{ dept.parent.name }}</span>
+                            {% else %}
+                            <span class="text-muted">根部门</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if dept.is_active %}
+                            <span class="admin-badge success">活跃</span>
+                            {% else %}
+                            <span class="admin-badge warning">停用</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ dept.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <div class="admin-actions">
+                                <button class="admin-btn sm" onclick="editDepartment({{ dept.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% if dept.children|length == 0 %}
+                                <button class="admin-btn sm danger" onclick="deleteDepartment({{ dept.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="admin-empty-state">
+            <i class="fas fa-building"></i>
+            <h5>暂无部门</h5>
+            <p>还没有创建任何部门，点击下方按钮开始创建</p>
+            <button class="admin-btn primary" data-bs-toggle="modal" data-bs-target="#createDepartmentModal">
+                <i class="fas fa-plus"></i>
+                创建第一个部门
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 部门层级结构 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">
+            <i class="fas fa-sitemap"></i>
+            组织架构图
+        </h3>
+    </div>
+    <div class="admin-card-body">
+        <div id="departmentTree" style="height: 400px; border: 1px solid var(--admin-border); border-radius: 6px;">
+            <!-- D3.js 树状图将在这里渲染 -->
+        </div>
+    </div>
+</div>
+
+<!-- 创建部门模态框 -->
+<div class="modal fade" id="createDepartmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新建部门</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('organization.admin_create_department') }}">
+                <div class="modal-body">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">部门名称 *</label>
+                        <input type="text" name="name" class="admin-form-control" required>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">部门代码 *</label>
+                        <input type="text" name="code" class="admin-form-control" pattern="[A-Z0-9_]+" title="只能使用大写字母、数字和下划线" required>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">上级部门</label>
+                        <select name="parent_id" class="admin-form-select">
+                            <option value="">无（根部门）</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.get_full_name() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">部门领导</label>
+                        <select name="leader_id" class="admin-form-select">
+                            <option value="">请选择</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.name }} ({{ user.username }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">部门描述</label>
+                        <textarea name="description" class="admin-form-control" rows="3"></textarea>
+                    </div>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="admin-btn" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="admin-btn primary">创建部门</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑部门模态框 -->
+<div class="modal fade" id="editDepartmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑部门</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editDepartmentForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editDeptId" name="id">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">部门名称 *</label>
+                        <input type="text" id="editDeptName" name="name" class="admin-form-control" required>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">部门代码 *</label>
+                        <input type="text" id="editDeptCode" name="code" class="admin-form-control" pattern="[A-Z0-9_]+" title="只能使用大写字母、数字和下划线" required>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">上级部门</label>
+                        <select id="editDeptParentId" name="parent_id" class="admin-form-select">
+                            <option value="">无（根部门）</option>
+                            <!-- 动态加载部门列表 -->
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">部门领导</label>
+                        <select id="editDeptLeaderId" name="leader_id" class="admin-form-select">
+                            <option value="">请选择</option>
+                            <!-- 动态加载用户列表 -->
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">部门描述</label>
+                        <textarea id="editDeptDescription" name="description" class="admin-form-control" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="admin-form-check">
+                                <input type="checkbox" id="editDeptIsActive" name="is_active" class="admin-form-check-input" checked>
+                                <label class="admin-form-check-label" for="editDeptIsActive">
+                                    部门启用状态
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">排序权重</label>
+                                <input type="number" id="editDeptSortOrder" name="sort_order" class="admin-form-control" min="0" value="0">
+                                <small class="text-muted">数字越小排序越靠前</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="admin-btn" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="admin-btn primary" onclick="updateDepartment()">保存更改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+function editDepartment(deptId) {
+    // 加载部门数据并显示编辑模态框
+    loadDepartmentData(deptId);
+}
+
+function loadDepartmentData(deptId) {
+    fetch(`/admin/api/department/${deptId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 填充基本表单数据（不包括下拉框）
+                document.getElementById('editDeptId').value = data.department.id;
+                document.getElementById('editDeptName').value = data.department.name;
+                document.getElementById('editDeptCode').value = data.department.code;
+                document.getElementById('editDeptDescription').value = data.department.description || '';
+                document.getElementById('editDeptIsActive').checked = data.department.is_active;
+                document.getElementById('editDeptSortOrder').value = data.department.sort_order || 0;
+
+                // 加载部门列表到父部门选择框，完成后设置当前值
+                loadDepartmentOptions('editDeptParentId', data.department.id, data.department.parent_id);
+
+                // 加载用户列表到领导选择框，完成后设置当前值
+                loadUserOptions('editDeptLeaderId', data.department.leader_id);
+
+                // 显示模态框
+                const modal = new bootstrap.Modal(document.getElementById('editDepartmentModal'));
+                modal.show();
+            } else {
+                showMessage('加载部门数据失败', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('加载部门数据失败:', error);
+            showMessage('加载部门数据失败', 'error');
+        });
+}
+
+function loadDepartmentOptions(selectId, excludeId, selectedValue = '') {
+    fetch('/admin/api/departments')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">无（根部门）</option>';
+
+            data.forEach(dept => {
+                if (dept.id !== excludeId) {
+                    const option = document.createElement('option');
+                    option.value = dept.id;
+                    option.textContent = dept.get_full_name || dept.name;
+                    if (dept.id == selectedValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('加载部门列表失败:', error);
+        });
+}
+
+function loadUserOptions(selectId, selectedId) {
+    fetch('/admin/api/users')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">请选择</option>';
+
+            data.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.name} (${user.username})`;
+                if (user.id == selectedId) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('加载用户列表失败:', error);
+        });
+}
+
+function updateDepartment() {
+    const form = document.getElementById('editDepartmentForm');
+    const formData = new FormData(form);
+
+    const data = {
+        id: parseInt(formData.get('id')),
+        name: formData.get('name').trim(),
+        code: formData.get('code').trim(),
+        parent_id: formData.get('parent_id') ? parseInt(formData.get('parent_id')) : null,
+        leader_id: formData.get('leader_id') ? parseInt(formData.get('leader_id')) : null,
+        description: formData.get('description').trim(),
+        is_active: formData.has('is_active'),
+        sort_order: parseInt(formData.get('sort_order')) || 0
+    };
+
+    // 验证必填字段
+    if (!data.name || !data.code) {
+        showMessage('部门名称和代码为必填项', 'warning');
+        return;
+    }
+
+    // 检查代码格式
+    if (!/^[A-Z0-9_]+$/.test(data.code)) {
+        showMessage('部门代码只能使用大写字母、数字和下划线', 'warning');
+        return;
+    }
+
+    fetch('/admin/api/department/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage('部门更新成功', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editDepartmentModal')).hide();
+            // 刷新页面或重新加载部门数据
+            location.reload();
+        } else {
+            showMessage(result.message || '部门更新失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('更新部门失败:', error);
+        showMessage('部门更新失败', 'error');
+    });
+}
+
+function deleteDepartment(deptId) {
+    if (confirm('确定要删除这个部门吗？此操作不可恢复。')) {
+        fetch(`/admin/api/department/${deptId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showMessage('部门删除成功', 'success');
+                location.reload();
+            } else {
+                showMessage(result.message || '部门删除失败', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('删除部门失败:', error);
+            showMessage('部门删除失败', 'error');
+        });
+    }
+}
+
+function showMessage(message, type = 'info') {
+    // 创建提示消息
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    // 3秒后自动消失
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+
+// D3.js 组织架构树
+document.addEventListener('DOMContentLoaded', function() {
+    const treeData = {{ tree_data | tojson }};
+
+    if (treeData && Object.keys(treeData).length > 0) {
+        const width = document.getElementById('departmentTree').clientWidth;
+        const height = 400;
+        const margin = {top: 20, right: 90, bottom: 30, left: 90};
+
+        const svg = d3.select("#departmentTree")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const g = svg.append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const tree = d3.tree()
+            .size([height - margin.top - margin.bottom, width - margin.left - margin.right]);
+
+        const root = d3.hierarchy(treeData);
+        const treeLayout = tree(root);
+
+        // 绘制连接线
+        g.selectAll(".link")
+            .data(treeLayout.links())
+            .enter().append("path")
+            .attr("class", "link")
+            .attr("d", d3.linkHorizontal()
+                .x(d => d.y)
+                .y(d => d.x))
+            .style("fill", "none")
+            .style("stroke", "#ccc")
+            .style("stroke-width", "2px");
+
+        // 绘制节点
+        const node = g.selectAll(".node")
+            .data(treeLayout.descendants())
+            .enter().append("g")
+            .attr("class", "node")
+            .attr("transform", d => `translate(${d.y},${d.x})`);
+
+        node.append("circle")
+            .attr("r", 8)
+            .style("fill", d => d.children ? "#1a3a52" : "#2c5282")
+            .style("stroke", "#fff")
+            .style("stroke-width", "2px");
+
+        node.append("text")
+            .attr("dy", ".35em")
+            .attr("x", d => d.children ? -13 : 13)
+            .style("text-anchor", d => d.children ? "end" : "start")
+            .text(d => d.data.name)
+            .style("font-size", "12px")
+            .style("font-family", "Arial, sans-serif");
+    } else {
+        document.getElementById('departmentTree').innerHTML =
+            '<div class="text-center text-muted p-4">暂无组织架构数据</div>';
+    }
+});
+</script>
+{% endblock %}

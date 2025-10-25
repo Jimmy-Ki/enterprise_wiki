@@ -3,7 +3,13 @@ from .wiki import Page, Category, Attachment, PageVersion
 from .search import SearchIndex
 from .watch import Watch, WatchNotification, WatchTargetType, WatchEventType
 from .comment import Comment, CommentMention, CommentTargetType
+from .organization import (
+    Department, Project, Workspace, UserDepartment, UserProject, UserWorkspace,
+    AccessLevel, OrganizationService
+)
 
 __all__ = ['User', 'Role', 'Permission', 'UserSession', 'Page', 'Category',
            'Attachment', 'PageVersion', 'SearchIndex', 'Watch', 'WatchNotification',
-           'WatchTargetType', 'WatchEventType', 'Comment', 'CommentMention', 'CommentTargetType']
+           'WatchTargetType', 'WatchEventType', 'Comment', 'CommentMention', 'CommentTargetType',
+           'Department', 'Project', 'Workspace', 'UserDepartment', 'UserProject', 'UserWorkspace',
+           'AccessLevel', 'OrganizationService']
