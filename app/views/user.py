@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, current_app, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, current_app, flash, redirect, url_for, abort
 from flask_login import login_required, current_user
 from app import db
 from app.models import User, Comment, CommentTargetType
@@ -10,7 +10,12 @@ user = Blueprint('user', __name__)
 def user_profile(username):
     """用户主页"""
     try:
-        user = User.query.filter_by(username=username).first_or_404()
+        # 查找用户，如果不存在会自动返回404
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            current_app.logger.warning(f"User not found: {username}")
+            abort(404)
+
         current_app.logger.info(f"Loading profile for user: {username} (ID: {user.id})")
 
         # 获取用户统计信息
@@ -76,7 +81,11 @@ def user_profile(username):
 def user_stats(username):
     """获取用户统计信息API"""
     try:
-        user = User.query.filter_by(username=username).first_or_404()
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            current_app.logger.warning(f"User not found for stats API: {username}")
+            return jsonify({'error': 'User not found'}), 404
+
         stats = get_user_stats(user.id)
         return jsonify(stats)
     except Exception as e:
@@ -87,7 +96,11 @@ def user_stats(username):
 def user_comments(username):
     """获取用户评论API"""
     try:
-        user = User.query.filter_by(username=username).first_or_404()
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            current_app.logger.warning(f"User not found for comments API: {username}")
+            return jsonify({'error': 'User not found'}), 404
+
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
 
