@@ -24,25 +24,46 @@
         overflow: hidden;
     }
 
-    /* Hide sidebar for chat page */
-    body .wiki-sidebar {
-        display: none;
+    /* Keep sidebar visible for chat page */
+    body .wiki-main {
+        padding: 0;
+        height: calc(100vh - var(--header-height));
+        display: flex;
+        flex-direction: column;
     }
 
-    /* Full width for chat page */
-    body .wiki-main {
-        margin-left: 0;
-        padding: 0;
-        max-width: 100%;
-        height: calc(100vh - var(--header-height));
+    .chat-layout {
+        display: flex;
+        height: 100%;
+        gap: 16px;
+        padding: 16px;
+    }
+
+    .chat-main-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0; /* Allow flex item to shrink */
+    }
+
+    .chat-sidebar {
+        width: 300px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .chat-container {
-        height: 100%;
+        flex: 1;
         display: flex;
         flex-direction: column;
         background: white;
-        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
     }
 
     .chat-header {
@@ -426,10 +447,202 @@
         background: #a8a8a8;
     }
 
+    /* Chat History Sidebar */
+    .chat-history-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .chat-history-header h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .new-chat-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .new-chat-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .chat-history-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+    }
+
+    .chat-history-item {
+        padding: 12px;
+        margin-bottom: 8px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+
+    .chat-history-item:hover {
+        background: white;
+        border-color: var(--primary-color);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .chat-history-item.active {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .chat-history-title {
+        font-weight: 500;
+        font-size: 14px;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-history-time {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .chat-history-item.active .chat-history-time {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .chat-history-preview {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-history-item.active .chat-history-preview {
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .delete-chat-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(220, 53, 69, 0.1);
+        border: none;
+        color: var(--error-color);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.2s ease;
+    }
+
+    .chat-history-item:hover .delete-chat-btn {
+        opacity: 1;
+    }
+
+    .delete-chat-btn:hover {
+        background: var(--error-color);
+        color: white;
+    }
+
+    /* Markdown Rendering */
+    .message-text {
+        line-height: 1.6;
+    }
+
+    .message-text h1, .message-text h2, .message-text h3,
+    .message-text h4, .message-text h5, .message-text h6 {
+        margin-top: 16px;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+
+    .message-text h1 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; }
+    .message-text h2 { font-size: 1.3em; }
+    .message-text h3 { font-size: 1.1em; }
+
+    .message-text p {
+        margin-bottom: 8px;
+    }
+
+    .message-text code {
+        background: #f4f5f7;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.9em;
+    }
+
+    .message-text pre {
+        background: #f4f5f7;
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 8px 0;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.85em;
+    }
+
+    .message-text blockquote {
+        border-left: 3px solid var(--primary-color);
+        padding-left: 12px;
+        margin: 8px 0;
+        color: var(--text-secondary);
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 0 4px 4px 0;
+    }
+
+    .message-text ul, .message-text ol {
+        margin: 8px 0;
+        padding-left: 20px;
+    }
+
+    .message-text li {
+        margin-bottom: 4px;
+    }
+
+    .message-text strong {
+        font-weight: 600;
+    }
+
+    .message-text em {
+        font-style: italic;
+    }
+
     /* Mobile responsive */
     @media (max-width: 768px) {
-        .chat-container {
-            height: calc(100vh - var(--header-height));
+        .chat-layout {
+            flex-direction: column;
+            gap: 8px;
+            padding: 8px;
+        }
+
+        .chat-sidebar {
+            width: 100%;
+            height: 200px;
+            order: 2;
+        }
+
+        .chat-main-area {
+            order: 1;
         }
 
         .chat-messages {
@@ -447,78 +660,277 @@
         .chat-suggestions {
             padding: 0 16px 12px;
         }
-
-        /* Hide mobile toggle button since sidebar is hidden */
-        .mobile-toggle {
-            display: none !important;
-        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="chat-container">
-    <!-- Chat Header -->
-    <div class="chat-header">
-        <h1>
-            <i class="fas fa-robot"></i>
-            AI 对话助手
-        </h1>
-        <div class="subtitle">基于 FastGPT 的智能对话系统</div>
+<div class="chat-layout">
+    <div class="chat-main-area">
+        <div class="chat-container">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <h1>
+                    <i class="fas fa-robot"></i>
+                    AI 对话助手
+                </h1>
+                <div class="subtitle">基于 FastGPT 的智能对话系统</div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome Message -->
+                <div class="welcome-message">
+                    <h2>👋 欢迎使用 AI 对话助手</h2>
+                    <p>我是您的智能助手，可以回答问题、提供信息和建议。请随时向我提问！</p>
+                </div>
+            </div>
+
+            <!-- Chat Suggestions -->
+            <div class="chat-suggestions" id="chatSuggestions">
+                <div class="suggestion-chip" onclick="sendSuggestion('你好，请介绍一下自己')">
+                    🤖 介绍一下自己
+                </div>
+                <div class="suggestion-chip" onclick="sendSuggestion('什么是人工智能？')">
+                    💡 什么是人工智能？
+                </div>
+                <div class="suggestion-chip" onclick="sendSuggestion('帮我写一个工作计划')">
+                    📝 帮我写工作计划
+                </div>
+                <div class="suggestion-chip" onclick="sendSuggestion('推荐一些学习资源')">
+                    📚 推荐学习资源
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea
+                        id="chatInput"
+                        class="chat-input"
+                        placeholder="输入您的问题..."
+                        rows="1"
+                        maxlength="2000"
+                    ></textarea>
+                    <button id="sendBtn" class="chat-send-btn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Chat Messages -->
-    <div class="chat-messages" id="chatMessages">
-        <!-- Welcome Message -->
-        <div class="welcome-message">
-            <h2>👋 欢迎使用 AI 对话助手</h2>
-            <p>我是您的智能助手，可以回答问题、提供信息和建议。请随时向我提问！</p>
-        </div>
-    </div>
-
-    <!-- Chat Suggestions -->
-    <div class="chat-suggestions" id="chatSuggestions">
-        <div class="suggestion-chip" onclick="sendSuggestion('你好，请介绍一下自己')">
-            🤖 介绍一下自己
-        </div>
-        <div class="suggestion-chip" onclick="sendSuggestion('什么是人工智能？')">
-            💡 什么是人工智能？
-        </div>
-        <div class="suggestion-chip" onclick="sendSuggestion('帮我写一个工作计划')">
-            📝 帮我写工作计划
-        </div>
-        <div class="suggestion-chip" onclick="sendSuggestion('推荐一些学习资源')">
-            📚 推荐学习资源
-        </div>
-    </div>
-
-    <!-- Chat Input -->
-    <div class="chat-input-container">
-        <div class="chat-input-wrapper">
-            <textarea
-                id="chatInput"
-                class="chat-input"
-                placeholder="输入您的问题..."
-                rows="1"
-                maxlength="2000"
-            ></textarea>
-            <button id="sendBtn" class="chat-send-btn" onclick="sendMessage()">
-                <i class="fas fa-paper-plane"></i>
+    <!-- Chat History Sidebar -->
+    <div class="chat-sidebar">
+        <div class="chat-history-header">
+            <h3>
+                <i class="fas fa-history me-2"></i>
+                聊天记录
+            </h3>
+            <button class="new-chat-btn" onclick="createNewChat()">
+                <i class="fas fa-plus me-1"></i>
+                新建
             </button>
+        </div>
+        <div class="chat-history-list" id="chatHistoryList">
+            <!-- Chat history items will be loaded here -->
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<!-- Include marked.js for markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 let chatMessages = [];
 let isTyping = false;
+let currentChatId = null;
+let chatHistory = [];
+
+// Initialize chat storage
+function initChatStorage() {
+    const stored = localStorage.getItem('fastgpt_chat_history');
+    if (stored) {
+        try {
+            chatHistory = JSON.parse(stored);
+        } catch (e) {
+            chatHistory = [];
+        }
+    }
+
+    // Load current chat ID from localStorage
+    currentChatId = localStorage.getItem('fastgpt_current_chat_id');
+
+    // If no current chat, create one
+    if (!currentChatId) {
+        createNewChat();
+    } else {
+        loadChatMessages(currentChatId);
+    }
+
+    renderChatHistory();
+}
+
+// Create new chat
+function createNewChat() {
+    const chatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    currentChatId = chatId;
+
+    // Add to history
+    chatHistory.unshift({
+        id: chatId,
+        title: '新对话',
+        messages: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    });
+
+    // Keep only last 50 chats
+    if (chatHistory.length > 50) {
+        chatHistory = chatHistory.slice(0, 50);
+    }
+
+    saveChatHistory();
+    renderChatHistory();
+    clearChatMessages();
+
+    // Save to localStorage for FastGPT
+    localStorage.setItem('fastgpt_chat_id', chatId);
+}
+
+// Save chat history to localStorage
+function saveChatHistory() {
+    localStorage.setItem('fastgpt_chat_history', JSON.stringify(chatHistory));
+}
+
+// Load chat messages
+function loadChatMessages(chatId) {
+    const chat = chatHistory.find(c => c.id === chatId);
+    if (chat) {
+        clearChatMessages();
+        chat.messages.forEach(msg => {
+            addMessage(msg.role, msg.content, msg.quotes || [], false, false);
+        });
+    }
+}
+
+// Clear chat messages display
+function clearChatMessages() {
+    const chatMessagesDiv = document.getElementById('chatMessages');
+    chatMessagesDiv.innerHTML = `
+        <div class="welcome-message">
+            <h2>👋 欢迎使用 AI 对话助手</h2>
+            <p>我是您的智能助手，可以回答问题、提供信息和建议。请随时向我提问！</p>
+        </div>
+    `;
+}
+
+// Render chat history sidebar
+function renderChatHistory() {
+    const historyList = document.getElementById('chatHistoryList');
+
+    if (chatHistory.length === 0) {
+        historyList.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                <i class="fas fa-comments fa-2x mb-3"></i>
+                <p>暂无聊天记录</p>
+            </div>
+        `;
+        return;
+    }
+
+    historyList.innerHTML = chatHistory.map(chat => {
+        const isActive = chat.id === currentChatId;
+        const lastMessage = chat.messages[chat.messages.length - 1];
+        const preview = lastMessage ?
+            (lastMessage.role === 'user' ? lastMessage.content : lastMessage.content.substring(0, 50) + '...') :
+            '开始新对话';
+
+        return `
+            <div class="chat-history-item ${isActive ? 'active' : ''}" onclick="loadChat('${chat.id}')" data-chat-id="${chat.id}">
+                <div class="chat-history-title">${chat.title}</div>
+                <div class="chat-history-time">${formatTime(chat.updatedAt)}</div>
+                <div class="chat-history-preview">${preview}</div>
+                <button class="delete-chat-btn" onclick="deleteChat('${chat.id}', event)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+// Load specific chat
+function loadChat(chatId) {
+    currentChatId = chatId;
+    localStorage.setItem('fastgpt_current_chat_id', chatId);
+    localStorage.setItem('fastgpt_chat_id', chatId);
+    loadChatMessages(chatId);
+    renderChatHistory();
+}
+
+// Delete chat
+function deleteChat(chatId, event) {
+    event.stopPropagation();
+
+    if (confirm('确定要删除这个对话吗？')) {
+        chatHistory = chatHistory.filter(c => c.id !== chatId);
+        saveChatHistory();
+
+        if (currentChatId === chatId) {
+            if (chatHistory.length > 0) {
+                loadChat(chatHistory[0].id);
+            } else {
+                createNewChat();
+            }
+        } else {
+            renderChatHistory();
+        }
+    }
+}
+
+// Update chat title and timestamp
+function updateChatInfo() {
+    if (!currentChatId) return;
+
+    const chat = chatHistory.find(c => c.id === currentChatId);
+    if (chat) {
+        // Update title based on first user message
+        const userMessages = chat.messages.filter(m => m.role === 'user');
+        if (userMessages.length > 0 && chat.title === '新对话') {
+            chat.title = userMessages[0].content.substring(0, 30) + (userMessages[0].content.length > 30 ? '...' : '');
+        }
+
+        chat.updatedAt = new Date().toISOString();
+        saveChatHistory();
+        renderChatHistory();
+    }
+}
+
+// Format time for display
+function formatTime(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+
+    if (diff < 60000) { // Less than 1 minute
+        return '刚刚';
+    } else if (diff < 3600000) { // Less than 1 hour
+        return Math.floor(diff / 60000) + '分钟前';
+    } else if (diff < 86400000) { // Less than 1 day
+        return Math.floor(diff / 3600000) + '小时前';
+    } else {
+        return date.toLocaleDateString('zh-CN');
+    }
+}
 
 // Initialize chat
 document.addEventListener('DOMContentLoaded', function() {
     const chatInput = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
+
+    // Initialize chat storage and history
+    initChatStorage();
 
     // Auto-resize textarea
     chatInput.addEventListener('input', function() {
@@ -642,7 +1054,7 @@ function sendSuggestion(message) {
     sendMessage();
 }
 
-function addMessage(role, content, quotes = [], error = false) {
+function addMessage(role, content, quotes = [], error = false, saveToHistory = true) {
     const chatMessages = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
@@ -658,6 +1070,17 @@ function addMessage(role, content, quotes = [], error = false) {
         avatarContent = username.charAt(0).toUpperCase();
     } else {
         avatarContent = '🤖';
+    }
+
+    // Render markdown for AI messages
+    let renderedContent = content;
+    if (role === 'ai' && typeof marked !== 'undefined') {
+        try {
+            renderedContent = marked.parse(content);
+        } catch (e) {
+            // Fallback to plain text if markdown parsing fails
+            renderedContent = content;
+        }
     }
 
     let quotesHtml = '';
@@ -680,7 +1103,7 @@ function addMessage(role, content, quotes = [], error = false) {
         <div class="message-avatar">${avatarContent}</div>
         <div class="message-content">
             <div class="message-bubble">
-                <div class="message-text">${content}</div>
+                <div class="message-text">${renderedContent}</div>
                 ${quotesHtml}
                 <div class="message-time">${time}</div>
             </div>
@@ -695,6 +1118,21 @@ function addMessage(role, content, quotes = [], error = false) {
 
     chatMessages.appendChild(messageDiv);
     scrollToBottom();
+
+    // Save to chat history
+    if (saveToHistory && currentChatId) {
+        const chat = chatHistory.find(c => c.id === currentChatId);
+        if (chat) {
+            chat.messages.push({
+                role: role,
+                content: content,
+                quotes: quotes,
+                timestamp: new Date().toISOString()
+            });
+            saveChatHistory();
+            updateChatInfo();
+        }
+    }
 }
 
 async function sendToFastGPT(message) {
