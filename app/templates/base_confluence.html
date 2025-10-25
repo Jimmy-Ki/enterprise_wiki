@@ -769,6 +769,9 @@
                     {{ current_user.username }}
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('user.profile') }}">
+                        <i class="fas fa-user me-2"></i>Profile
+                    </a></li>
                     <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">
                         <i class="fas fa-key me-2"></i>Change Password
                     </a></li>
