@@ -1224,7 +1224,19 @@ async function sendToFastGPT(message) {
                                 }
 
                                 aiResponse += content;
-                                responseTextDiv.innerHTML = aiResponse.replace(/\n/g, '<br>');
+                                // Render markdown for AI response
+                                let renderedContent = aiResponse;
+                                if (typeof marked !== 'undefined') {
+                                    try {
+                                        renderedContent = marked.parse(aiResponse);
+                                    } catch (e) {
+                                        // Fallback to plain text if markdown parsing fails
+                                        renderedContent = aiResponse.replace(/\n/g, '<br>');
+                                    }
+                                } else {
+                                    renderedContent = aiResponse.replace(/\n/g, '<br>');
+                                }
+                                responseTextDiv.innerHTML = renderedContent;
                                 scrollToBottom();
                             }
                         }
@@ -1264,6 +1276,22 @@ async function sendToFastGPT(message) {
         }
 
         scrollToBottom();
+
+        // Save AI response to chat history after streaming is complete
+        if (aiResponse && currentChatId) {
+            const chat = chatHistory.find(c => c.id === currentChatId);
+            if (chat) {
+                chat.messages.push({
+                    role: 'ai',
+                    content: aiResponse,
+                    quotes: quotes,
+                    timestamp: new Date().toISOString()
+                });
+                saveChatHistory();
+                updateChatInfo();
+                renderChatHistory(); // Refresh the chat history sidebar
+            }
+        }
 
     } catch (error) {
         console.error('发送消息失败:', error);
