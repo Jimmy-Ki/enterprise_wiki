@@ -4,639 +4,526 @@
 
 {% block styles %}
 <style>
-/* 隐藏原始侧边栏并调整布局 */
-.wiki-sidebar {
-    display: none !important;
-}
-
-.wiki-main {
-    margin-left: 0 !important;
-    max-width: 100% !important;
-}
-
-.wiki-container {
-    justify-content: center;
-}
-
-/* Profile设置页面样式 */
-.profile-settings-container {
-    display: flex;
-    gap: 24px;
-    min-height: calc(100vh - 200px);
-}
-
-.profile-sidebar {
-    width: 280px;
-    background: #ffffff;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    padding: 24px 0;
-    height: fit-content;
-    position: sticky;
-    top: 24px;
-}
-
-.profile-sidebar-item {
-    display: block;
-    padding: 12px 24px;
-    color: #64748b;
-    text-decoration: none;
-    border-radius: 0;
-    transition: all 0.2s ease;
-    border-left: 3px solid transparent;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.profile-sidebar-item:hover {
-    background: #f8f9fa;
-    color: #2c3e50;
-    text-decoration: none;
-}
-
-.profile-sidebar-item.active {
-    background: #e3f2fd;
-    color: var(--primary-color);
-    border-left-color: var(--primary-color);
-}
-
-.profile-sidebar-item i {
-    width: 20px;
-    text-align: center;
-    margin-right: 12px;
-    font-size: 16px;
-}
-
-.profile-content {
-    flex: 1;
-    background: #ffffff;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    padding: 32px;
-    min-height: 600px;
-}
-
-.profile-section {
-    display: none;
-}
-
-.profile-section.active {
-    display: block;
-}
-
-/* 用户信息卡片 */
-.user-info-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 24px;
-    border-radius: 12px;
-    margin-bottom: 24px;
-    text-align: center;
-}
-
-.user-avatar-large {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    border: 4px solid rgba(255, 255, 255, 0.2);
-    margin-bottom: 16px;
-}
-
-.user-name {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.user-email {
-    font-size: 14px;
-    opacity: 0.9;
-    margin-bottom: 16px;
-}
-
-.user-role {
-    display: inline-block;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-/* 设置表单样式 */
-.settings-form {
-    max-width: 600px;
-}
-
-.form-section {
-    margin-bottom: 32px;
-}
-
-.form-section-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #e2e8f0;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-label {
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 8px;
-}
-
-.form-text {
-    color: #6b7280;
-    font-size: 14px;
-    margin-top: 4px;
-}
-
-.form-control {
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    padding: 10px 14px;
-    transition: all 0.2s ease;
-}
-
-.form-control:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(12, 102, 228, 0.1);
-}
-
-/* 开关按钮样式 */
-.form-switch {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 0;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.form-switch:last-child {
-    border-bottom: none;
-}
-
-.switch-info {
-    flex: 1;
-}
-
-.switch-title {
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 4px;
-}
-
-.switch-description {
-    font-size: 14px;
-    color: #6b7280;
-}
-
-/* 按钮样式 */
-.btn-primary {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 500;
-}
-
-.btn-primary:hover {
-    background: #0b5ab8;
-    border-color: #0b5ab8;
-}
-
-.btn-outline-secondary {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 500;
-}
-
-/* 通知设置样式 */
-.notification-settings {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.notification-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 0;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.notification-item:last-child {
-    border-bottom: none;
-}
-
-.notification-info h6 {
-    margin: 0 0 4px 0;
-    font-weight: 500;
-    color: #374151;
-}
-
-.notification-info p {
-    margin: 0;
-    font-size: 14px;
-    color: #6b7280;
-}
-
-/* 统计卡片 */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 32px;
-}
-
-.stat-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 24px;
-    text-align: center;
-    transition: all 0.2s ease;
-}
-
-.stat-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-}
-
-.stat-number {
-    font-size: 32px;
-    font-weight: 700;
-    color: var(--primary-color);
-    margin-bottom: 8px;
-}
-
-.stat-label {
-    font-size: 14px;
-    color: #64748b;
-    font-weight: 500;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .profile-settings-container {
-        flex-direction: column;
+    /* Hide sidebar for this specific page */
+    .wiki-sidebar {
+        display: none !important;
     }
 
-    .profile-sidebar {
-        width: 100%;
-        position: static;
+    /* Adjust main content area */
+    .wiki-main {
+        margin-left: 0 !important;
+        max-width: 100% !important;
+    }
+
+    /* Center the content container */
+    .wiki-container {
+        justify-content: center;
+    }
+
+    /* Profile设置页面样式 */
+    .profile-tabs {
+        margin-bottom: 24px;
+    }
+
+    .profile-tabs .nav-link {
+        color: #64748b;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 12px 16px;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+    .profile-tabs .nav-link:hover {
+        color: var(--primary-color);
+        border-bottom-color: #a0aec0;
+        background: none;
+    }
+
+    .profile-tabs .nav-link.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+        background: none;
+    }
+
+    .profile-tabs .nav-link i {
+        margin-right: 8px;
+    }
+
+    /* 用户信息卡片 */
+    .user-info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 24px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        text-align: center;
+    }
+
+    .user-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+        margin-bottom: 16px;
+    }
+
+    .user-name {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .user-email {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 16px;
+    }
+
+    .user-role {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    /* 表单样式 */
+    .form-section {
+        margin-bottom: 32px;
+    }
+
+    .form-section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .form-text {
+        color: #6b7280;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+
+    /* 开关按钮样式 */
+    .form-switch {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         padding: 16px 0;
+        border-bottom: 1px solid #f3f4f6;
     }
 
-    .profile-sidebar-item {
-        padding: 10px 16px;
+    .form-switch:last-child {
+        border-bottom: none;
     }
 
-    .profile-content {
-        padding: 20px;
+    .switch-info {
+        flex: 1;
     }
 
-    .stats-grid {
-        grid-template-columns: 1fr;
+    .switch-title {
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 4px;
     }
-}
+
+    .switch-description {
+        font-size: 14px;
+        color: #6b7280;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .profile-tabs {
+            flex-wrap: wrap;
+        }
+
+        .profile-tabs .nav-link {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .user-info-card {
+            padding: 20px;
+        }
+
+        .user-avatar-large {
+            width: 60px;
+            height: 60px;
+        }
+
+        .user-name {
+            font-size: 18px;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="profile-settings-container">
-        <!-- 左侧导航菜单 -->
-        <nav class="profile-sidebar">
-            <!-- 用户信息卡片 -->
-            <div class="user-info-card">
-                <img src="{{ current_user.get_avatar() or '/static/img/default-avatar.png' }}"
-                     alt="{{ current_user.username }}"
-                     class="user-avatar-large">
-                <div class="user-name">{{ current_user.name or current_user.username }}</div>
-                <div class="user-email">{{ current_user.email }}</div>
-                <div class="user-role">{{ current_user.role.name if current_user.role else 'User' }}</div>
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <!-- 用户信息卡片 -->
+        <div class="user-info-card">
+            <img src="{{ current_user.get_avatar() or '/static/img/default-avatar.png' }}"
+                 alt="{{ current_user.username }}"
+                 class="user-avatar-large">
+            <div class="user-name">{{ current_user.name or current_user.username }}</div>
+            <div class="user-email">{{ current_user.email }}</div>
+            <div class="user-role">{{ current_user.role.name if current_user.role else 'User' }}</div>
+        </div>
+
+        <!-- 选项卡导航 -->
+        <ul class="nav nav-tabs profile-tabs" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="profile-info-tab" data-bs-toggle="tab" data-bs-target="#profile-info" type="button" role="tab">
+                    <i class="fas fa-user"></i>Personal Information
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="account-settings-tab" data-bs-toggle="tab" data-bs-target="#account-settings" type="button" role="tab">
+                    <i class="fas fa-cog"></i>Account Settings
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" data-bs-target="#notifications" type="button" role="tab">
+                    <i class="fas fa-bell"></i>Notifications
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="privacy-tab" data-bs-toggle="tab" data-bs-target="#privacy" type="button" role="tab">
+                    <i class="fas fa-shield-alt"></i>Privacy & Security
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="preferences-tab" data-bs-toggle="tab" data-bs-target="#preferences" type="button" role="tab">
+                    <i class="fas fa-palette"></i>Preferences
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sessions-tab" data-bs-toggle="tab" data-bs-target="#sessions" type="button" role="tab">
+                    <i class="fas fa-desktop"></i>Active Sessions
+                </button>
+            </li>
+        </ul>
+
+        <!-- 选项卡内容 -->
+        <div class="tab-content" id="profileTabsContent">
+            <!-- 个人信息部分 -->
+            <div class="tab-pane fade show active" id="profile-info" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user me-2"></i>Personal Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="profileInfoForm">
+                            <div class="form-section">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Display Name</label>
+                                    <input type="text" class="form-control" id="name"
+                                           value="{{ current_user.name or '' }}"
+                                           placeholder="Enter your display name">
+                                    <div class="form-text">This is how your name will appear throughout the system.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="email"
+                                           value="{{ current_user.email or '' }}"
+                                           placeholder="Enter your email address">
+                                    <div class="form-text">Used for notifications and account recovery.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="avatar" class="form-label">Avatar URL</label>
+                                    <input type="url" class="form-control" id="avatar"
+                                           value="{{ current_user.avatar or '' }}"
+                                           placeholder="https://example.com/avatar.jpg">
+                                    <div class="form-text">Optional: URL to your profile picture.</div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="resetProfileForm()">
+                                    <i class="fas fa-undo me-2"></i>Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
 
-            <!-- 设置菜单项 -->
-            <a href="#" class="profile-sidebar-item active" data-section="profile-info">
-                <i class="fas fa-user"></i>
-                Personal Information
-            </a>
-            <a href="#" class="profile-sidebar-item" data-section="account-settings">
-                <i class="fas fa-cog"></i>
-                Account Settings
-            </a>
-            <a href="#" class="profile-sidebar-item" data-section="notifications">
-                <i class="fas fa-bell"></i>
-                Notifications
-            </a>
-            <a href="#" class="profile-sidebar-item" data-section="privacy">
-                <i class="fas fa-shield-alt"></i>
-                Privacy & Security
-            </a>
-            <a href="#" class="profile-sidebar-item" data-section="preferences">
-                <i class="fas fa-palette"></i>
-                Preferences
-            </a>
-            <a href="#" class="profile-sidebar-item" data-section="sessions">
-                <i class="fas fa-desktop"></i>
-                Active Sessions
-            </a>
-            <a href="{{ url_for('auth.change_password') }}" class="profile-sidebar-item">
-                <i class="fas fa-key"></i>
-                Change Password
-            </a>
-        </nav>
-
-        <!-- 主要内容区域 -->
-        <main class="profile-content">
-            <!-- 个人信息部分 -->
-            <section id="profile-info" class="profile-section active">
-                <h2 class="form-section-title">
-                    <i class="fas fa-user me-2"></i>Personal Information
-                </h2>
-
-                <form class="settings-form" id="profileInfoForm">
-                    <div class="form-section">
-                        <div class="form-group">
-                            <label for="name" class="form-label">Display Name</label>
-                            <input type="text" class="form-control" id="name"
-                                   value="{{ current_user.name or '' }}"
-                                   placeholder="Enter your display name">
-                            <div class="form-text">This is how your name will appear throughout the system.</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control" id="email"
-                                   value="{{ current_user.email or '' }}"
-                                   placeholder="Enter your email address">
-                            <div class="form-text">Used for notifications and account recovery.</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="avatar" class="form-label">Avatar URL</label>
-                            <input type="url" class="form-control" id="avatar"
-                                   value="{{ current_user.avatar or '' }}"
-                                   placeholder="https://example.com/avatar.jpg">
-                            <div class="form-text">Optional: URL to your profile picture.</div>
-                        </div>
-                    </div>
-
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Save Changes
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" onclick="resetProfileForm()">
-                            <i class="fas fa-undo me-2"></i>Cancel
-                        </button>
-                    </div>
-                </form>
-            </section>
-
             <!-- 账户设置部分 -->
-            <section id="account-settings" class="profile-section">
-                <h2 class="form-section-title">
-                    <i class="fas fa-cog me-2"></i>Account Settings
-                </h2>
-
-                <div class="form-section">
-                    <h4 class="mb-3">Account Status</h4>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Your account is <strong>Active</strong> and in good standing.
+            <div class="tab-pane fade" id="account-settings" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>Account Settings
+                        </h5>
                     </div>
+                    <div class="card-body">
+                        <div class="form-section">
+                            <h6 class="mb-3">Account Status</h6>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Your account is <strong>Active</strong> and in good standing.
+                            </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Member Since</label>
-                                <p class="form-control-plaintext">
-                                    {{ current_user.member_since.strftime('%B %d, %Y') if current_user.member_since else 'Unknown' }}
-                                </p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Member Since</label>
+                                        <p class="form-control-plaintext">
+                                            {{ current_user.member_since.strftime('%B %d, %Y') if current_user.member_since else 'Unknown' }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Last Login</label>
+                                        <p class="form-control-plaintext">
+                                            {{ current_user.last_seen.strftime('%B %d, %Y at %I:%M %p') if current_user.last_seen else 'Never' }}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Last Login</label>
-                                <p class="form-control-plaintext">
-                                    {{ current_user.last_seen.strftime('%B %d, %Y at %I:%M %p') if current_user.last_seen else 'Never' }}
-                                </p>
+
+                        <div class="form-section">
+                            <h6 class="mb-3">Account Actions</h6>
+                            <div class="d-grid gap-2" style="max-width: 400px;">
+                                <button class="btn btn-outline-warning" onclick="confirmAccountDeactivation()">
+                                    <i class="fas fa-pause me-2"></i>Deactivate Account
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="confirmAccountDeletion()">
+                                    <i class="fas fa-trash me-2"></i>Delete Account
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="form-section">
-                    <h4 class="mb-3">Account Actions</h4>
-                    <div class="d-grid gap-2" style="max-width: 400px;">
-                        <button class="btn btn-outline-warning" onclick="confirmAccountDeactivation()">
-                            <i class="fas fa-pause me-2"></i>Deactivate Account
-                        </button>
-                        <button class="btn btn-outline-danger" onclick="confirmAccountDeletion()">
-                            <i class="fas fa-trash me-2"></i>Delete Account
-                        </button>
-                    </div>
-                </div>
-            </section>
+            </div>
 
             <!-- 通知设置部分 -->
-            <section id="notifications" class="profile-section">
-                <h2 class="form-section-title">
-                    <i class="fas fa-bell me-2"></i>Notification Preferences
-                </h2>
-
-                <form class="settings-form" id="notificationsForm">
-                    <div class="form-section">
-                        <h4 class="mb-3">Email Notifications</h4>
-
-                        <div class="form-switch">
-                            <div class="switch-info">
-                                <div class="switch-title">Comment Notifications</div>
-                                <div class="switch-description">Get notified when someone replies to your comments</div>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="commentNotif" checked>
-                            </div>
-                        </div>
-
-                        <div class="form-switch">
-                            <div class="switch-info">
-                                <div class="switch-title">Mention Notifications</div>
-                                <div class="switch-description">Get notified when someone mentions you</div>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="mentionNotif" checked>
-                            </div>
-                        </div>
-
-                        <div class="form-switch">
-                            <div class="switch-info">
-                                <div class="switch-title">Page Watch Notifications</div>
-                                <div class="switch-description">Get notified when watched pages are updated</div>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="watchNotif" checked>
-                            </div>
-                        </div>
-
-                        <div class="form-switch">
-                            <div class="switch-info">
-                                <div class="switch-title">Daily Digest</div>
-                                <div class="switch-description">Receive a daily summary of activity</div>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="dailyDigest">
-                            </div>
-                        </div>
+            <div class="tab-pane fade" id="notifications" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bell me-2"></i>Notification Preferences
+                        </h5>
                     </div>
+                    <div class="card-body">
+                        <form id="notificationsForm">
+                            <div class="form-section">
+                                <h6 class="mb-3">Email Notifications</h6>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Save Preferences
-                        </button>
+                                <div class="form-switch">
+                                    <div class="switch-info">
+                                        <div class="switch-title">Comment Notifications</div>
+                                        <div class="switch-description">Get notified when someone replies to your comments</div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="commentNotif" checked>
+                                    </div>
+                                </div>
+
+                                <div class="form-switch">
+                                    <div class="switch-info">
+                                        <div class="switch-title">Mention Notifications</div>
+                                        <div class="switch-description">Get notified when someone mentions you</div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="mentionNotif" checked>
+                                    </div>
+                                </div>
+
+                                <div class="form-switch">
+                                    <div class="switch-info">
+                                        <div class="switch-title">Page Watch Notifications</div>
+                                        <div class="switch-description">Get notified when watched pages are updated</div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="watchNotif" checked>
+                                    </div>
+                                </div>
+
+                                <div class="form-switch">
+                                    <div class="switch-info">
+                                        <div class="switch-title">Daily Digest</div>
+                                        <div class="switch-description">Receive a daily summary of activity</div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="dailyDigest">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Preferences
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
-            </section>
+                </div>
+            </div>
 
             <!-- 隐私与安全部分 -->
-            <section id="privacy" class="profile-section">
-                <h2 class="form-section-title">
-                    <i class="fas fa-shield-alt me-2"></i>Privacy & Security
-                </h2>
-
-                <div class="form-section">
-                    <h4 class="mb-3">Profile Visibility</h4>
-
-                    <div class="form-switch">
-                        <div class="switch-info">
-                            <div class="switch-title">Public Profile</div>
-                            <div class="switch-description">Allow other users to see your profile and activity</div>
-                        </div>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="publicProfile" checked>
-                        </div>
+            <div class="tab-pane fade" id="privacy" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>Privacy & Security
+                        </h5>
                     </div>
+                    <div class="card-body">
+                        <div class="form-section">
+                            <h6 class="mb-3">Profile Visibility</h6>
 
-                    <div class="form-switch">
-                        <div class="switch-info">
-                            <div class="switch-title">Show Activity Status</div>
-                            <div class="switch-description">Show when you were last active</div>
+                            <div class="form-switch">
+                                <div class="switch-info">
+                                    <div class="switch-title">Public Profile</div>
+                                    <div class="switch-description">Allow other users to see your profile and activity</div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="publicProfile" checked>
+                                </div>
+                            </div>
+
+                            <div class="form-switch">
+                                <div class="switch-info">
+                                    <div class="switch-title">Show Activity Status</div>
+                                    <div class="switch-description">Show when you were last active</div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="showActivity" checked>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="showActivity" checked>
+
+                        <div class="form-section">
+                            <h6 class="mb-3">Security Settings</h6>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Consider enabling two-factor authentication for enhanced security.
+                            </div>
+
+                            <div class="d-grid gap-2" style="max-width: 400px;">
+                                <button class="btn btn-outline-primary">
+                                    <i class="fas fa-mobile-alt me-2"></i>Enable Two-Factor Authentication
+                                </button>
+                                <a href="{{ url_for('auth.sessions') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-desktop me-2"></i>Manage Active Sessions
+                                </a>
+                                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-key me-2"></i>Change Password
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="form-section">
-                    <h4 class="mb-3">Security Settings</h4>
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Consider enabling two-factor authentication for enhanced security.
-                    </div>
-
-                    <div class="d-grid gap-2" style="max-width: 400px;">
-                        <button class="btn btn-outline-primary">
-                            <i class="fas fa-mobile-alt me-2"></i>Enable Two-Factor Authentication
-                        </button>
-                        <a href="{{ url_for('auth.sessions') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-desktop me-2"></i>Manage Active Sessions
-                        </a>
-                    </div>
-                </div>
-            </section>
+            </div>
 
             <!-- 偏好设置部分 -->
-            <section id="preferences" class="profile-section">
-                <h2 class="form-section-title">
-                    <i class="fas fa-palette me-2"></i>Display Preferences
-                </h2>
-
-                <form class="settings-form" id="preferencesForm">
-                    <div class="form-section">
-                        <h4 class="mb-3">Theme</h4>
-
-                        <div class="form-group">
-                            <label for="theme" class="form-label">Color Scheme</label>
-                            <select class="form-select" id="theme">
-                                <option value="light" selected>Light Theme</option>
-                                <option value="dark">Dark Theme</option>
-                                <option value="auto">Auto (System Preference)</option>
-                            </select>
-                            <div class="form-text">Choose your preferred color scheme.</div>
-                        </div>
+            <div class="tab-pane fade" id="preferences" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-palette me-2"></i>Display Preferences
+                        </h5>
                     </div>
+                    <div class="card-body">
+                        <form id="preferencesForm">
+                            <div class="form-section">
+                                <h6 class="mb-3">Theme</h6>
 
-                    <div class="form-section">
-                        <h4 class="mb-3">Language & Region</h4>
+                                <div class="mb-3">
+                                    <label for="theme" class="form-label">Color Scheme</label>
+                                    <select class="form-select" id="theme">
+                                        <option value="light" selected>Light Theme</option>
+                                        <option value="dark">Dark Theme</option>
+                                        <option value="auto">Auto (System Preference)</option>
+                                    </select>
+                                    <div class="form-text">Choose your preferred color scheme.</div>
+                                </div>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="language" class="form-label">Language</label>
-                            <select class="form-select" id="language">
-                                <option value="en" selected>English</option>
-                                <option value="zh">中文</option>
-                                <option value="es">Español</option>
-                            </select>
-                        </div>
+                            <div class="form-section">
+                                <h6 class="mb-3">Language & Region</h6>
 
-                        <div class="form-group">
-                            <label for="timezone" class="form-label">Timezone</label>
-                            <select class="form-select" id="timezone">
-                                <option value="UTC">UTC</option>
-                                <option value="America/New_York" selected>Eastern Time</option>
-                                <option value="America/Chicago">Central Time</option>
-                                <option value="America/Denver">Mountain Time</option>
-                                <option value="America/Los_Angeles">Pacific Time</option>
-                                <option value="Asia/Shanghai">China Standard Time</option>
-                            </select>
-                        </div>
+                                <div class="mb-3">
+                                    <label for="language" class="form-label">Language</label>
+                                    <select class="form-select" id="language">
+                                        <option value="en" selected>English</option>
+                                        <option value="zh">中文</option>
+                                        <option value="es">Español</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="timezone" class="form-label">Timezone</label>
+                                    <select class="form-select" id="timezone">
+                                        <option value="UTC">UTC</option>
+                                        <option value="America/New_York" selected>Eastern Time</option>
+                                        <option value="America/Chicago">Central Time</option>
+                                        <option value="America/Denver">Mountain Time</option>
+                                        <option value="America/Los_Angeles">Pacific Time</option>
+                                        <option value="Asia/Shanghai">China Standard Time</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Preferences
+                                </button>
+                            </div>
+                        </form>
                     </div>
-
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Save Preferences
-                        </button>
-                    </div>
-                </form>
-            </section>
+                </div>
+            </div>
 
             <!-- 活动会话部分 -->
-            <section id="sessions" class="profile-section">
-                <h2 class="form-section-title">
-                    <i class="fas fa-desktop me-2"></i>Active Sessions
-                </h2>
-
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    These are the devices currently logged into your account.
-                </div>
-
-                <div id="sessionsList">
-                    <div class="text-center py-4">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+            <div class="tab-pane fade" id="sessions" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-desktop me-2"></i>Active Sessions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            These are the devices currently logged into your account.
                         </div>
-                        <p class="mt-2">Loading your active sessions...</p>
+
+                        <div id="sessionsList">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading your active sessions...</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button class="btn btn-outline-danger" onclick="revokeAllSessions()">
+                                <i class="fas fa-sign-out-alt me-2"></i>Sign Out All Other Sessions
+                            </button>
+                        </div>
                     </div>
                 </div>
-
-                <div class="mt-4">
-                    <button class="btn btn-outline-danger" onclick="revokeAllSessions()">
-                        <i class="fas fa-sign-out-alt me-2"></i>Sign Out All Other Sessions
-                    </button>
-                </div>
-            </section>
-        </main>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -644,30 +531,6 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 侧边栏导航切换
-    const sidebarItems = document.querySelectorAll('.profile-sidebar-item[data-section]');
-    const sections = document.querySelectorAll('.profile-section');
-
-    sidebarItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-
-            // 移除所有active类
-            sidebarItems.forEach(i => i.classList.remove('active'));
-            sections.forEach(s => s.classList.remove('active'));
-
-            // 添加active类到当前项
-            this.classList.add('active');
-            const targetSection = document.getElementById(this.dataset.section);
-            if (targetSection) {
-                targetSection.classList.add('active');
-            }
-
-            // 加载特定数据
-            loadSectionData(this.dataset.section);
-        });
-    });
-
     // 个人信息表单提交
     document.getElementById('profileInfoForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -758,17 +621,12 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('Failed to update preferences', 'danger');
         }
     });
-});
 
-// 加载特定部分的数据
-function loadSectionData(section) {
-    switch(section) {
-        case 'sessions':
-            loadSessions();
-            break;
-        // 可以添加其他部分的数据加载逻辑
-    }
-}
+    // 当会话选项卡被激活时加载会话数据
+    document.getElementById('sessions-tab').addEventListener('shown.bs.tab', function() {
+        loadSessions();
+    });
+});
 
 // 加载活动会话
 async function loadSessions() {

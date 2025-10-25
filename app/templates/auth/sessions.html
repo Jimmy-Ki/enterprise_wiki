@@ -2,6 +2,26 @@
 
 {% block title %}My Sessions - Enterprise Wiki{% endblock %}
 
+{% block styles %}
+<style>
+    /* Hide sidebar for this specific page */
+    .wiki-sidebar {
+        display: none !important;
+    }
+
+    /* Adjust main content area */
+    .wiki-main {
+        margin-left: 0 !important;
+        max-width: 100% !important;
+    }
+
+    /* Center the content container */
+    .wiki-container {
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mt-4">
     <div class="col-12">
