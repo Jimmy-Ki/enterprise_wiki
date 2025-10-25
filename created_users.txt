@@ -1,0 +1,205 @@
+批量创建的用户信息
+==================================================
+创建时间: 2025-10-25 17:02:16
+总用户数: 20
+
+用户 1:
+  用户名: barbara.perez
+  邮箱: barbara.perez.687@example.com
+  姓名: Barbara Perez
+  密码: wmrC8#&Zm7bC
+  角色: Editor
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 2:
+  用户名: user02_4b7f
+  邮箱: user02_4b7f@example.com
+  姓名: 傅萍平
+  密码: r#@S8&0X&iha
+  角色: Editor
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 3:
+  用户名: james.wilson
+  邮箱: james.wilson.355@example.com
+  姓名: James Wilson
+  密码: ^s@vzhZaW2Wy
+  角色: Moderator
+  状态: 激活
+  邮箱确认: 未确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 4:
+  用户名: user04_c954
+  邮箱: user04_c954@example.com
+  姓名: 沈志
+  密码: bCb2U#q5CjzY
+  角色: Viewer
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 5:
+  用户名: user05_cb60
+  邮箱: user05_cb60@example.com
+  姓名: 袁磊
+  密码: D*DVc3Aqxfm!
+  角色: Viewer
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 6:
+  用户名: user06_ca5a
+  邮箱: user06_ca5a@example.com
+  姓名: 马丽丽桂英
+  密码: m$P@JrEp3ehT
+  角色: User
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 7:
+  用户名: user07_8030
+  邮箱: user07_8030@example.com
+  姓名: 沈春
+  密码: pR#q66I5mT8Q
+  角色: Editor
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 8:
+  用户名: user08_9e21
+  邮箱: user08_9e21@example.com
+  姓名: 罗艳
+  密码: YIA6m4vUlPp@
+  角色: Editor
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 9:
+  用户名: ashley.williams
+  邮箱: ashley.williams.979@example.com
+  姓名: Ashley Williams
+  密码: sV6R&krarn7j
+  角色: User
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 10:
+  用户名: user10_93b7
+  邮箱: user10_93b7@example.com
+  姓名: 徐华建国
+  密码: ioJufZ8lODvQ
+  角色: Viewer
+  状态: 未激活
+  邮箱确认: 未确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 11:
+  用户名: user11_b209
+  邮箱: user11_b209@example.com
+  姓名: 何建国
+  密码: *tizm3b8VbHI
+  角色: Moderator
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 12:
+  用户名: user12_a3b6
+  邮箱: user12_a3b6@example.com
+  姓名: 朱文
+  密码: u2fie7cUwB#k
+  角色: User
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 13:
+  用户名: user13_6874
+  邮箱: user13_6874@example.com
+  姓名: 李建国
+  密码: YRfZQC$07Pw0
+  角色: Moderator
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 14:
+  用户名: user14_015c
+  邮箱: user14_015c@example.com
+  姓名: 杨红
+  密码: c5zlspe%%5ot
+  角色: User
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 15:
+  用户名: ashley.robinson
+  邮箱: ashley.robinson.777@example.com
+  姓名: Ashley Robinson
+  密码: A96LKDukXTzF
+  角色: Viewer
+  状态: 激活
+  邮箱确认: 未确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 16:
+  用户名: user16_9989
+  邮箱: user16_9989@example.com
+  姓名: 曾娟
+  密码: TD!5AAmsGB5d
+  角色: Moderator
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 17:
+  用户名: user17_9434
+  邮箱: user17_9434@example.com
+  姓名: 曹超
+  密码: s@TMj!kFhtOn
+  角色: Viewer
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 18:
+  用户名: user18_72b5
+  邮箱: user18_72b5@example.com
+  姓名: 曹建国
+  密码: p@dt96Mb80kI
+  角色: Viewer
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 19:
+  用户名: user19_399d
+  邮箱: user19_399d@example.com
+  姓名: 程磊
+  密码: N7zkyJbpWd4n
+  角色: Viewer
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------
+用户 20:
+  用户名: user20_f086
+  邮箱: user20_f086@example.com
+  姓名: 何勇
+  密码: YPc$E1v3envs
+  角色: User
+  状态: 激活
+  邮箱确认: 已确认
+  登录地址: http://127.0.0.1:5004/auth/login
+------------------------------

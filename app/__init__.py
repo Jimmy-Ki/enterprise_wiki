@@ -110,8 +110,8 @@ def create_app(config_name='default'):
     from app.views.two_factor import two_factor as two_factor_blueprint
     app.register_blueprint(two_factor_blueprint, url_prefix='/2fa')
 
-    from app.views.fastgpt_api import fastgpt_api as fastgpt_blueprint
-    app.register_blueprint(fastgpt_blueprint)
+    from app.views.chat import chat as chat_blueprint
+    app.register_blueprint(chat_blueprint, url_prefix='/chat')
 
     # CSRF exemptions for API endpoints
     @csrf.exempt
@@ -121,7 +121,7 @@ def create_app(config_name='default'):
     # Exempt specific API routes from CSRF
     csrf.exempt(api_blueprint)
     csrf.exempt(comment_blueprint)
-    csrf.exempt(fastgpt_blueprint)  # Exempt FastGPT API from CSRF
+    csrf.exempt(chat_blueprint)  # Exempt Chat API from CSRF
     # Exempt only specific user API routes from CSRF
     from app.views import user as user_views
     csrf.exempt(user_views.update_avatar)  # Exempt only the avatar update endpoint
