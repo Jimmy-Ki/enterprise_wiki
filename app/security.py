@@ -96,7 +96,10 @@ class RateLimiter:
         if current_requests >= limit:
             # Get oldest request time for reset time
             oldest = self.redis_client.zrange(key, 0, 0, withscores=True)
-            reset_time = oldest[0][1] + window if oldest else now + window
+            if oldest and len(oldest) > 0 and len(oldest[0]) > 1:
+                reset_time = oldest[0][1] + window
+            else:
+                reset_time = now + window
             return True, 0, reset_time
 
         # Add current request

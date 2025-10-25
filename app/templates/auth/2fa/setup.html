@@ -1,0 +1,127 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}设置双因素认证 - {{ config.WIKI_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <!-- Logo and Title -->
+        <div class="auth-header text-center">
+            <div class="auth-logo">
+                <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+            </div>
+            <h1 class="auth-title">设置双因素认证</h1>
+            <p class="auth-subtitle">增强您的账户安全性</p>
+        </div>
+
+        <!-- Setup Instructions -->
+        <div class="alert alert-info" role="alert">
+            <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>设置步骤</h6>
+            <ol class="mb-0">
+                <li>下载 Microsoft Authenticator 或 Google Authenticator 应用</li>
+                <li>扫描下方二维码或手动输入密钥</li>
+                <li>输入应用显示的6位验证码</li>
+                <li>保存备用恢复码以备不时之需</li>
+            </ol>
+        </div>
+
+        <!-- QR Code Display -->
+        {% if qr_code %}
+        <div class="text-center mb-4">
+            <div class="qr-code-container d-inline-block p-3 bg-white rounded shadow-sm">
+                <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="img-fluid">
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Secret Key -->
+        {% if secret %}
+        <div class="mb-4">
+            <label class="form-label fw-bold">手动输入密钥（如果无法扫描二维码）：</label>
+            <div class="input-group">
+                <input type="text" class="form-control font-monospace" value="{{ secret }}" readonly>
+                <button class="btn btn-outline-secondary" type="button" onclick="copySecret()">
+                    <i class="fas fa-copy"></i> 复制
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Verification Form -->
+        <div class="auth-form">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="mb-3">
+                    <label for="verification_code" class="form-label fw-bold">验证码</label>
+                    {{ form.verification_code(class="form-control form-control-lg text-center",
+                           placeholder="000000",
+                           pattern="[0-9]{6}",
+                           maxlength="6",
+                           autocomplete="one-time-code",
+                           autofocus=True) }}
+                    {% if form.verification_code.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.verification_code.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">请输入认证器应用中的6位数字</div>
+                </div>
+
+                <button type="submit" class="btn-wiki btn-primary w-100 mb-3">
+                    <i class="fas fa-check me-2"></i>启用双因素认证
+                </button>
+            </form>
+        </div>
+
+        <!-- Links -->
+        <div class="auth-links">
+            <div class="text-center">
+                <a href="{{ url_for('user.profile') }}" class="auth-link">
+                    <i class="fas fa-arrow-left me-1"></i>返回个人资料
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copySecret() {
+    const secretInput = document.querySelector('input[value="{{ secret }}"]');
+    secretInput.select();
+    document.execCommand('copy');
+
+    // Show success message
+    const btn = event.target.closest('button');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> 已复制';
+    btn.classList.remove('btn-outline-secondary');
+    btn.classList.add('btn-success');
+
+    setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+
+// Auto-focus verification code input
+document.addEventListener('DOMContentLoaded', function() {
+    const codeInput = document.getElementById('verification_code');
+    if (codeInput) {
+        codeInput.focus();
+
+        // Auto-submit when 6 digits entered
+        codeInput.addEventListener('input', function(e) {
+            if (e.target.value.length === 6) {
+                e.target.form.submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

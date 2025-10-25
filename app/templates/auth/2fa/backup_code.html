@@ -1,0 +1,105 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}备用恢复码登录 - {{ config.WIKI_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <!-- Logo and Title -->
+        <div class="auth-header text-center">
+            <div class="auth-logo">
+                <i class="fas fa-key fa-3x text-warning mb-3"></i>
+            </div>
+            <h1 class="auth-title">备用恢复码登录</h1>
+            <p class="auth-subtitle">使用备用恢复码访问您的账户</p>
+        </div>
+
+        <!-- Alert Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Info Alert -->
+        <div class="alert alert-info" role="alert">
+            <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>使用说明</h6>
+            <p class="mb-0">
+                备用恢复码是在您设置双因素认证时生成的8位代码。每个代码只能使用一次。
+                如果您使用了所有备用码，请重新设置双因素认证以生成新的备用码。
+            </p>
+        </div>
+
+        <!-- Backup Code Form -->
+        <div class="auth-form">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="mb-3">
+                    <label for="backup_code" class="form-label fw-bold">备用恢复码</label>
+                    {{ form.backup_code(class="form-control form-control-lg text-center",
+                               placeholder="00000000",
+                               pattern="[0-9]{8}",
+                               maxlength="8",
+                               autocomplete="one-time-code",
+                               autofocus=True) }}
+                    {% if form.backup_code.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.backup_code.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">请输入8位数字备用恢复码</div>
+                </div>
+
+                <button type="submit" class="btn-wiki btn-primary w-100 mb-3">
+                    <i class="fas fa-sign-in-alt me-2"></i>使用备用码登录
+                </button>
+            </form>
+        </div>
+
+        <!-- Links -->
+        <div class="auth-links">
+            <div class="text-center">
+                <a href="{{ url_for('two_factor.verify') }}" class="auth-link">
+                    <i class="fas fa-mobile-alt me-1"></i>使用认证器应用
+                </a>
+            </div>
+            <div class="text-center mt-3">
+                <a href="{{ url_for('auth.login') }}" class="auth-link">
+                    <i class="fas fa-arrow-left me-1"></i>返回登录
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const codeInput = document.getElementById('backup_code');
+    if (codeInput) {
+        codeInput.focus();
+
+        // Auto-submit when 8 digits entered
+        codeInput.addEventListener('input', function(e) {
+            if (e.target.value.length === 8) {
+                e.target.form.submit();
+            }
+        });
+
+        // Format input to only allow numbers
+        codeInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        });
+    }
+});
+</script>
+{% endblock %}

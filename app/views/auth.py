@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
+from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User, Role, UserSession, Permission
@@ -65,13 +65,24 @@ def login():
                 db.session.add(user_session)
                 db.session.commit()
 
-                # Login user
-                login_user(user, form.remember_me.data)
-                next_page = request.args.get('next')
-                if next_page is None or not next_page.startswith('/'):
-                    next_page = url_for('wiki.index')
-                flash('You have been logged in successfully.', 'success')
-                return redirect(next_page)
+                # Check if user has 2FA enabled
+                if user.two_factor_enabled:
+                    # Store user info in session for 2FA verification
+                    session['2fa_user_id'] = user.id
+                    session['2fa_next'] = request.args.get('next') or url_for('wiki.index')
+                    session['2fa_remember'] = form.remember_me.data
+
+                    # Redirect to 2FA verification page
+                    flash('请输入双因素认证码', 'info')
+                    return redirect(url_for('two_factor.verify'))
+                else:
+                    # Login user normally if 2FA is not enabled
+                    login_user(user, form.remember_me.data)
+                    next_page = request.args.get('next')
+                    if next_page is None or not next_page.startswith('/'):
+                        next_page = url_for('wiki.index')
+                    flash('登录成功！', 'success')
+                    return redirect(next_page)
             else:
                 # Increment failed login attempts
                 user.increment_failed_login()

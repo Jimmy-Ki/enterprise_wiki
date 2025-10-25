@@ -89,6 +89,12 @@ class User(UserMixin, db.Model):
     failed_login_attempts = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime)
 
+    # 2FA (Two-Factor Authentication) fields
+    two_factor_enabled = db.Column(db.Boolean, default=False)
+    two_factor_secret = db.Column(db.String(32))  # TOTP secret key
+    backup_codes = db.Column(db.Text)  # JSON string of backup codes
+    two_factor_setup_date = db.Column(db.DateTime)
+
     # Relationships
     sessions = db.relationship('UserSession', backref='user', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -213,6 +219,107 @@ class User(UserMixin, db.Model):
         url = 'https://secure.gravatar.com/avatar'
         hash = self.avatar_hash or self.gravatar_hash()
         return f'{url}/{hash}?s={size}&d={default}&r={rating}'
+
+    # 2FA (Two-Factor Authentication) methods
+    def generate_totp_secret(self):
+        """生成TOTP密钥"""
+        import pyotp
+        import base64
+        import secrets
+
+        # 生成16字节的随机密钥
+        secret = base64.b32encode(secrets.token_bytes(16)).decode('utf-8')
+        return secret
+
+    def generate_totp_qr_code(self, secret, issuer_name="Enterprise Wiki"):
+        """生成TOTP QR码"""
+        import pyotp
+        import qrcode
+        import io
+        import base64
+
+        totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
+            name=self.email,
+            issuer_name=issuer_name
+        )
+
+        # 生成QR码
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(totp_uri)
+        qr.make(fit=True)
+
+        # 将QR码转换为base64字符串
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+        img_str = base64.b64encode(buffer.getvalue()).decode()
+
+        return img_str
+
+    def verify_totp_token(self, token):
+        """验证TOTP令牌"""
+        import pyotp
+
+        if not self.two_factor_secret:
+            return False
+
+        totp = pyotp.TOTP(self.two_factor_secret)
+        return totp.verify(token, valid_window=1)  # 允许1个时间窗口的误差
+
+    def generate_backup_codes(self):
+        """生成备用恢复码"""
+        import secrets
+        import json
+
+        # 生成8个6位数的备用码
+        backup_codes = []
+        for _ in range(8):
+            code = f"{secrets.randbelow(1000000):06d}"
+            backup_codes.append(code)
+
+        # 存储为JSON字符串
+        self.backup_codes = json.dumps(backup_codes)
+        self.two_factor_setup_date = datetime.utcnow()
+
+        return backup_codes
+
+    def verify_backup_code(self, code):
+        """验证备用恢复码"""
+        import json
+
+        if not self.backup_codes:
+            return False
+
+        try:
+            backup_codes = json.loads(self.backup_codes)
+            if code in backup_codes:
+                # 使用后删除备用码
+                backup_codes.remove(code)
+                self.backup_codes = json.dumps(backup_codes)
+                return True
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+        return False
+
+    def enable_two_factor(self, secret):
+        """启用双因素认证"""
+        self.two_factor_secret = secret
+        self.two_factor_enabled = True
+        self.generate_backup_codes()
+
+    def disable_two_factor(self):
+        """禁用双因素认证"""
+        self.two_factor_enabled = False
+        self.two_factor_secret = None
+        self.backup_codes = None
+        self.two_factor_setup_date = None
 
     def to_dict(self):
         return {
