@@ -555,7 +555,7 @@
             <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
                 <!-- 统计卡片 -->
                 <div class="dashboard-grid">
-                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.user_pages', username=user.username) }}'">
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
                         <div class="stat-icon-wrapper pages">
                             <i class="fas fa-file-alt"></i>
                         </div>
@@ -566,7 +566,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.user_pages', username=user.username) }}'">
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
                         <div class="stat-icon-wrapper comments">
                             <i class="fas fa-comments"></i>
                         </div>
@@ -577,7 +577,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.user_pages', username=user.username) }}'">
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
                         <div class="stat-icon-wrapper views">
                             <i class="fas fa-eye"></i>
                         </div>
@@ -590,7 +590,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.user_pages', username=user.username) }}'">
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
                         <div class="stat-icon-wrapper edits">
                             <i class="fas fa-edit"></i>
                         </div>
@@ -601,7 +601,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.user_attachments', username=user.username) }}'">
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
                         <div class="stat-icon-wrapper attachments">
                             <i class="fas fa-paperclip"></i>
                         </div>
@@ -612,7 +612,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.user_mentions', username=user.username) }}'">
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
                         <div class="stat-icon-wrapper mentions">
                             <i class="fas fa-at"></i>
                         </div>
@@ -715,7 +715,7 @@
                 </div>
 
                 <!-- Recent Comments (if user has comments) -->
-                {% if comments.comments %}
+                {% if comments and comments.comments %}
                 <div class="card mt-4">
                     <div class="card-header">
                         <h5 class="section-title">
@@ -738,7 +738,7 @@
                                         {% endif %}
                                     </div>
                                     <small class="text-muted">
-                                        {{ comment.created_at|timeago }}
+                                        {{ comment.created_at|timeago if comment.created_at else 'Unknown time' }}
                                         {% if comment.is_edited %}
                                         <span class="text-muted">(edited)</span>
                                         {% endif %}
@@ -746,7 +746,7 @@
                                 </div>
 
                                 <div class="comment-text">
-                                    {{ comment.content_html|safe|truncate(150) }}
+                                    {{ comment.content_html|safe|truncate(150) if comment.content_html else (comment.content|truncate(150)) }}
                                 </div>
 
                                 <div class="comment-footer">
@@ -760,7 +760,7 @@
 
                         {% if comments.total > 5 %}
                         <div class="text-center p-3">
-                            <a href="{{ url_for('wiki.user_comments', username=user.username) }}" class="btn btn-outline-primary btn-sm">
+                            <a href="{{ url_for('wiki.index') }}" class="btn btn-outline-primary btn-sm">
                                 View All {{ comments.total }} Comments
                             </a>
                         </div>
