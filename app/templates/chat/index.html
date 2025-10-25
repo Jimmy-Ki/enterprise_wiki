@@ -478,7 +478,7 @@ function scrollToBottom() {
 }
 
 function showTypingIndicator() {
-    const indicator = document.getElementById('typingIndicator');
+    let indicator = document.getElementById('typingIndicator');
     if (!indicator) {
         const typingDiv = document.createElement('div');
         typingDiv.id = 'typingIndicator';
@@ -491,6 +491,7 @@ function showTypingIndicator() {
             </div>
         `;
         document.getElementById('chatMessages').appendChild(typingDiv);
+        indicator = typingDiv;
     }
     indicator.classList.add('show');
     scrollToBottom();
