@@ -1,0 +1,412 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}编辑角色{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">
+            <i class="fas fa-user-tag"></i>
+            编辑角色: {{ role.name }}
+        </h3>
+        <div class="admin-actions">
+            <a href="{{ url_for('admin.roles') }}" class="admin-btn">
+                <i class="fas fa-arrow-left"></i>
+                返回角色列表
+            </a>
+        </div>
+    </div>
+    <div class="admin-card-body">
+        <form method="POST" class="admin-form">
+            {{ form.hidden_tag() }}
+
+            <!-- 基本信息 -->
+            <div class="admin-section">
+                <h5 class="admin-section-title">基本信息</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">角色名称 *</label>
+                            {{ form.name(class="admin-form-control") }}
+                            {% if form.name.errors %}
+                            <div class="admin-form-error">
+                                {{ form.name.errors[0] }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">所属部门</label>
+                            <select name="department_id" class="admin-form-select">
+                                <option value="">无部门</option>
+                                {% for dept in departments %}
+                                <option value="{{ dept.id }}" {% if role.department_id == dept.id %}selected{% endif %}>
+                                    {{ dept.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">为角色指定所属部门</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 组织架构设置 -->
+            <div class="admin-section">
+                <h5 class="admin-section-title">组织架构设置</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">角色负责人</label>
+                            <select name="leader_id" class="admin-form-select">
+                                <option value="">无负责人</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if role.leader_id == user.id %}selected{% endif %}>
+                                    {{ user.name }} ({{ user.username }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">指定该角色的负责人</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">角色类型</label>
+                            <select name="role_type" class="admin-form-select">
+                                <option value="general" {% if role.role_type == 'general' %}selected{% endif %}>通用角色</option>
+                                <option value="management" {% if role.role_type == 'management' %}selected{% endif %}>管理角色</option>
+                                <option value="technical" {% if role.role_type == 'technical' %}selected{% endif %}>技术角色</option>
+                                <option value="business" {% if role.role_type == 'business' %}selected{% endif %}>业务角色</option>
+                            </select>
+                            <small class="text-muted">角色类型影响权限范围</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">角色描述</label>
+                            <textarea name="description" class="admin-form-control" rows="3" placeholder="描述该角色的职责和作用">{{ role.description or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 权限设置 -->
+            <div class="admin-section">
+                <h5 class="admin-section-title">权限设置</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="admin-form-check">
+                            {{ form.can_follow(class="admin-form-check-input") }}
+                            <label class="admin-form-check-label" for="can_follow">
+                                <i class="fas fa-user-plus"></i>
+                                关注用户
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="admin-form-check">
+                            {{ form.can_comment(class="admin-form-check-input") }}
+                            <label class="admin-form-check-label" for="can_comment">
+                                <i class="fas fa-comment"></i>
+                                发表评论
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="admin-form-check">
+                            {{ form.can_write(class="admin-form-check-input") }}
+                            <label class="admin-form-check-label" for="can_write">
+                                <i class="fas fa-edit"></i>
+                                撰写文章
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="admin-form-check">
+                            {{ form.can_moderate(class="admin-form-check-input") }}
+                            <label class="admin-form-check-label" for="can_moderate">
+                                <i class="fas fa-shield-alt"></i>
+                                内容审核
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="admin-form-check">
+                            {{ form.can_view_private(class="admin-form-check-input") }}
+                            <label class="admin-form-check-label" for="can_view_private">
+                                <i class="fas fa-eye-slash"></i>
+                                查看私有内容
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="admin-form-check">
+                            {{ form.can_edit_all(class="admin-form-check-input") }}
+                            <label class="admin-form-check-label" for="can_edit_all">
+                                <i class="fas fa-edit"></i>
+                                编辑所有内容
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="admin-form-check">
+                            {{ form.can_delete_all(class="admin-form-check-input") }}
+                            <label class="admin-form-check-label" for="can_delete_all">
+                                <i class="fas fa-trash"></i>
+                                删除所有内容
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="admin-form-check">
+                            {{ form.is_admin(class="admin-form-check-input") }}
+                            <label class="admin-form-check-label" for="is_admin">
+                                <i class="fas fa-user-shield"></i>
+                                系统管理员
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 角色成员 -->
+            <div class="admin-section">
+                <h5 class="admin-section-title">角色成员管理</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">当前拥有此角色的用户</span>
+                    <button type="button" class="admin-btn sm" onclick="showAssignUserModal()">
+                        <i class="fas fa-user-plus"></i>
+                        分配用户
+                    </button>
+                </div>
+                <div id="roleMembers" class="row">
+                    <!-- 动态加载角色成员 -->
+                </div>
+            </div>
+
+            <div class="admin-form-actions">
+                <button type="submit" class="admin-btn primary">
+                    <i class="fas fa-save"></i>
+                    保存角色
+                </button>
+                <a href="{{ url_for('admin.roles') }}" class="admin-btn">
+                    <i class="fas fa-times"></i>
+                    取消
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 分配用户模态框 -->
+<div class="modal fade" id="assignUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus"></i>
+                    为角色分配用户
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="admin-form-group">
+                    <label class="admin-form-label">搜索用户</label>
+                    <input type="text" id="userSearch" class="admin-form-control" placeholder="输入用户名或姓名搜索...">
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">选择用户</label>
+                    <div id="userSelectionList" style="max-height: 300px; overflow-y: auto;">
+                        <!-- 动态加载用户列表 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="admin-btn" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="admin-btn primary" onclick="assignUsersToRole()">
+                    <i class="fas fa-check"></i>
+                    确认分配
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadRoleMembers();
+    setupUserSearch();
+});
+
+function loadRoleMembers() {
+    fetch(`/admin/api/role/{{ role.id }}/members`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('roleMembers');
+            container.innerHTML = '';
+
+            if (data.members && data.members.length > 0) {
+                data.members.forEach(member => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 mb-2';
+                    col.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                            <div>
+                                <strong>${member.name}</strong>
+                                <br><small class="text-muted">${member.username}</small>
+                            </div>
+                            <button type="button" class="admin-btn sm danger" onclick="removeUserRole(${member.id})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(col);
+                });
+            } else {
+                container.innerHTML = '<div class="col-12"><p class="text-muted">暂无用户拥有此角色</p></div>';
+            }
+        })
+        .catch(error => {
+            console.error('加载角色成员失败:', error);
+        });
+}
+
+function showAssignUserModal() {
+    const modal = new bootstrap.Modal(document.getElementById('assignUserModal'));
+    loadAvailableUsers();
+    modal.show();
+}
+
+function loadAvailableUsers() {
+    fetch('/admin/api/users-available-for-role')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('userSelectionList');
+            container.innerHTML = '';
+
+            if (data.users && data.users.length > 0) {
+                data.users.forEach(user => {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'd-flex justify-content-between align-items-center p-2 border-bottom user-item';
+                    userDiv.innerHTML = `
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="${user.id}" id="user_${user.id}">
+                            <label class="form-check-label" for="user_${user.id}">
+                                <strong>${user.name}</strong>
+                                <br><small class="text-muted">${user.username} - ${user.email}</small>
+                            </label>
+                        </div>
+                    `;
+                    container.appendChild(userDiv);
+                });
+            } else {
+                container.innerHTML = '<p class="text-muted text-center">没有可分配的用户</p>';
+            }
+        })
+        .catch(error => {
+            console.error('加载用户列表失败:', error);
+        });
+}
+
+function setupUserSearch() {
+    const searchInput = document.getElementById('userSearch');
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const userItems = document.querySelectorAll('.user-item');
+
+        userItems.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+        });
+    });
+}
+
+function assignUsersToRole() {
+    const selectedUsers = Array.from(document.querySelectorAll('#userSelectionList input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+
+    if (selectedUsers.length === 0) {
+        showMessage('请至少选择一个用户', 'warning');
+        return;
+    }
+
+    fetch(`/admin/api/role/{{ role.id }}/assign-users`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.content
+        },
+        body: JSON.stringify({
+            user_ids: selectedUsers
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage(`成功分配 ${result.assigned_count} 个用户`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('assignUserModal')).hide();
+            loadRoleMembers();
+        } else {
+            showMessage(result.message || '分配用户失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('分配用户失败:', error);
+        showMessage('分配用户失败', 'error');
+    });
+}
+
+function removeUserRole(userId) {
+    if (!confirm('确定要移除该用户的角色吗？')) {
+        return;
+    }
+
+    fetch(`/admin/api/role/{{ role.id }}/remove-user/${userId}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.content
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage('移除用户角色成功', 'success');
+            loadRoleMembers();
+        } else {
+            showMessage(result.message || '移除用户角色失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('移除用户角色失败:', error);
+        showMessage('移除用户角色失败', 'error');
+    });
+}
+
+function showMessage(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

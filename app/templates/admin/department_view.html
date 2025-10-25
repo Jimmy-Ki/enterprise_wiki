@@ -1,0 +1,610 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}部门详情 - {{ department.name }}{% endblock %}
+
+{% block admin_content %}
+<div class="admin-breadcrumb">
+    <a href="{{ url_for('admin.departments') }}" class="admin-breadcrumb-item">
+        <i class="fas fa-sitemap"></i>
+        部门管理
+    </a>
+    <span class="admin-breadcrumb-divider">/</span>
+    <span class="admin-breadcrumb-item active">{{ department.name }}</span>
+</div>
+
+<div class="admin-row">
+    <!-- 部门基本信息 -->
+    <div class="admin-col-md-8">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title">
+                    <i class="fas fa-info-circle"></i>
+                    部门信息
+                </h3>
+                <div class="admin-actions">
+                    <a href="{{ url_for('admin.departments') }}" class="admin-btn">
+                        <i class="fas fa-arrow-left"></i>
+                        返回列表
+                    </a>
+                    <button class="admin-btn primary" onclick="openEditModal()">
+                        <i class="fas fa-edit"></i>
+                        编辑部门
+                    </button>
+                </div>
+            </div>
+            <div class="admin-card-body">
+                <div class="admin-row">
+                    <div class="admin-col-md-6">
+                        <div class="admin-info-group">
+                            <label class="admin-info-label">部门名称</label>
+                            <div class="admin-info-value">{{ department.name }}</div>
+                        </div>
+                        <div class="admin-info-group">
+                            <label class="admin-info-label">部门代码</label>
+                            <div class="admin-info-value"><code>{{ department.code }}</code></div>
+                        </div>
+                        <div class="admin-info-group">
+                            <label class="admin-info-label">状态</label>
+                            <div class="admin-info-value">
+                                {% if department.is_active %}
+                                <span class="admin-badge success">活跃</span>
+                                {% else %}
+                                <span class="admin-badge neutral">停用</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-col-md-6">
+                        <div class="admin-info-group">
+                            <label class="admin-info-label">上级部门</label>
+                            <div class="admin-info-value">
+                                {% if department.parent %}
+                                <a href="{{ url_for('admin.view_department', dept_id=department.parent.id) }}" class="admin-link">
+                                    {{ department.parent.name }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">无</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="admin-info-group">
+                            <label class="admin-info-label">部门负责人</label>
+                            <div class="admin-info-value">
+                                {% if department.leader %}
+                                <a href="#" class="admin-link">
+                                    {{ department.leader.name }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">未设置</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="admin-info-group">
+                            <label class="admin-info-label">创建时间</label>
+                            <div class="admin-info-value">{{ department.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% if department.description %}
+                <div class="admin-info-group">
+                    <label class="admin-info-label">部门描述</label>
+                    <div class="admin-info-value">{{ department.description }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 部门成员 -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h4 class="admin-card-title">
+                    <i class="fas fa-users"></i>
+                    部门成员
+                </h4>
+                <div class="admin-actions">
+                    <button class="admin-btn sm" onclick="openAssignUserModal()">
+                        <i class="fas fa-user-plus"></i>
+                        分配成员
+                    </button>
+                </div>
+            </div>
+            <div class="admin-card-body">
+                {% if members %}
+                <div class="admin-table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>用户名</th>
+                                <th>邮箱</th>
+                                <th>角色</th>
+                                <th>加入时间</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in members %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="admin-avatar-sm">{{ member.name[0] }}</div>
+                                        <div>
+                                            <div class="fw-medium">{{ member.name }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ member.username }}</td>
+                                <td>{{ member.email }}</td>
+                                <td>
+                                    {% if member.role == 'manager' %}
+                                    <span class="admin-badge info">经理</span>
+                                    {% elif member.role == 'lead' %}
+                                    <span class="admin-badge warning">主管</span>
+                                    {% else %}
+                                    <span class="admin-badge neutral">成员</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ member.joined_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if member.is_active %}
+                                    <span class="admin-badge success">活跃</span>
+                                    {% else %}
+                                    <span class="admin-badge neutral">已离开</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="admin-actions">
+                                        <button class="admin-btn sm danger" onclick="removeMember({{ member.id }}, '{{ member.name }}')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="admin-empty-state">
+                    <i class="fas fa-users"></i>
+                    <h5>暂无成员</h5>
+                    <p>该部门还没有分配任何成员</p>
+                    <button class="admin-btn primary" onclick="openAssignUserModal()">
+                        <i class="fas fa-user-plus"></i>
+                        分配成员
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 子部门 -->
+        {% if children %}
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h4 class="admin-card-title">
+                    <i class="fas fa-sitemap"></i>
+                    子部门
+                </h4>
+            </div>
+            <div class="admin-card-body">
+                <div class="admin-departments-grid">
+                    {% for child in children %}
+                    <div class="admin-department-card">
+                        <div class="admin-department-header">
+                            <h5>{{ child.name }}</h5>
+                            {% if child.is_active %}
+                            <span class="admin-badge success">活跃</span>
+                            {% else %}
+                            <span class="admin-badge neutral">停用</span>
+                            {% endif %}
+                        </div>
+                        <div class="admin-department-info">
+                            <div class="admin-department-stat">
+                                <span class="admin-department-label">代码:</span>
+                                <code>{{ child.code }}</code>
+                            </div>
+                            <div class="admin-department-stat">
+                                <span class="admin-department-label">成员:</span>
+                                <span>{{ child.members_count }}</span>
+                            </div>
+                        </div>
+                        <div class="admin-department-actions">
+                            <a href="{{ url_for('admin.view_department', dept_id=child.id) }}" class="admin-btn sm">
+                                <i class="fas fa-eye"></i>
+                                查看详情
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="admin-col-md-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h4 class="admin-card-title">
+                    <i class="fas fa-chart-bar"></i>
+                    统计信息
+                </h4>
+            </div>
+            <div class="admin-card-body">
+                <div class="admin-stat-item">
+                    <div class="admin-stat-label">总成员数</div>
+                    <div class="admin-stat-value">{{ members_count }}</div>
+                </div>
+                <div class="admin-stat-item">
+                    <div class="admin-stat-label">活跃成员</div>
+                    <div class="admin-stat-value">{{ active_members_count }}</div>
+                </div>
+                <div class="admin-stat-item">
+                    <div class="admin-stat-label">子部门数</div>
+                    <div class="admin-stat-value">{{ children_count }}</div>
+                </div>
+                <div class="admin-stat-item">
+                    <div class="admin-stat-label">关联项目</div>
+                    <div class="admin-stat-value">{{ projects_count }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 部门层级 -->
+        {% if department_hierarchy %}
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h4 class="admin-card-title">
+                    <i class="fas fa-project-diagram"></i>
+                    组织层级
+                </h4>
+            </div>
+            <div class="admin-card-body">
+                <div class="admin-hierarchy">
+                    {% for dept in department_hierarchy %}
+                    <div class="admin-hierarchy-item" style="margin-left: {{ dept.level * 20 }}px;">
+                        <i class="fas fa-folder"></i>
+                        <a href="{{ url_for('admin.view_department', dept_id=dept.id) }}" class="admin-link">
+                            {{ dept.name }}
+                        </a>
+                        {% if dept.id == department.id %}
+                        <span class="admin-badge info">当前</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 编辑部门模态框 -->
+<div class="modal fade" id="editDepartmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    编辑部门
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editDepartmentForm">
+                    <div class="admin-row">
+                        <div class="admin-col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">部门名称 *</label>
+                                <input type="text" id="editDepartmentName" name="name" class="admin-form-control" required>
+                            </div>
+                        </div>
+                        <div class="admin-col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">部门代码 *</label>
+                                <input type="text" id="editDepartmentCode" name="code" class="admin-form-control" pattern="[A-Z0-9_]+" title="只能使用大写字母、数字和下划线" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">部门描述</label>
+                        <textarea id="editDepartmentDescription" name="description" class="admin-form-control" rows="3"></textarea>
+                    </div>
+                    <div class="admin-row">
+                        <div class="admin-col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">上级部门</label>
+                                <select id="editDepartmentParent" name="parent_id" class="admin-form-select">
+                                    <option value="">无（顶级部门）</option>
+                                    {% for dept in all_departments %}
+                                    {% if dept.id != department.id %}
+                                    <option value="{{ dept.id }}" {% if department.parent_id == dept.id %}selected{% endif %}>
+                                        {{ dept.name }}
+                                    </option>
+                                    {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="admin-col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">部门负责人</label>
+                                <select id="editDepartmentLeader" name="leader_id" class="admin-form-select">
+                                    <option value="">请选择</option>
+                                    {% for user in all_users %}
+                                    <option value="{{ user.id }}" {% if department.leader_id == user.id %}selected{% endif %}>
+                                        {{ user.name }} ({{ user.username }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-form-check">
+                        <input type="checkbox" id="editDepartmentActive" name="is_active" class="admin-form-check-input" {% if department.is_active %}checked{% endif %}>
+                        <label class="admin-form-check-label" for="editDepartmentActive">
+                            <i class="fas fa-toggle-on"></i>
+                            启用部门
+                        </label>
+                    </div>
+                    <input type="hidden" id="editDepartmentId" name="department_id" value="{{ department.id }}">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="admin-btn" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="admin-btn primary" onclick="updateDepartment()">
+                    <i class="fas fa-save"></i>
+                    保存更改
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 分配用户模态框 -->
+<div class="modal fade" id="assignUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus"></i>
+                    为部门分配用户
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="admin-form-group">
+                    <label class="admin-form-label">搜索用户</label>
+                    <input type="text" id="userSearch" class="admin-form-control" placeholder="输入用户名或姓名搜索...">
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">选择用户</label>
+                    <div id="userSelectionList" style="max-height: 300px; overflow-y: auto;">
+                        <!-- 动态加载用户列表 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="admin-btn" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="admin-btn primary" onclick="assignUsersToDepartment()">
+                    <i class="fas fa-check"></i>
+                    确认分配
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEditModal() {
+    const modal = new bootstrap.Modal(document.getElementById('editDepartmentModal'));
+    modal.show();
+}
+
+function updateDepartment() {
+    const form = document.getElementById('editDepartmentForm');
+    const formData = new FormData(form);
+
+    const data = {
+        name: formData.get('name').trim(),
+        code: formData.get('code').trim(),
+        description: formData.get('description').trim(),
+        parent_id: formData.get('parent_id') ? parseInt(formData.get('parent_id')) : null,
+        leader_id: formData.get('leader_id') ? parseInt(formData.get('leader_id')) : null,
+        is_active: document.getElementById('editDepartmentActive').checked
+    };
+
+    if (!data.name) {
+        showMessage('部门名称不能为空', 'warning');
+        return;
+    }
+
+    if (!data.code) {
+        showMessage('部门代码不能为空', 'warning');
+        return;
+    }
+
+    if (!/^[A-Z0-9_]+$/.test(data.code)) {
+        showMessage('部门代码只能使用大写字母、数字和下划线', 'warning');
+        return;
+    }
+
+    const submitBtn = document.querySelector('#editDepartmentModal .modal-footer .admin-btn.primary');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+    submitBtn.disabled = true;
+
+    fetch(`/admin/api/department/{{ department.id }}/update`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.content
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage('部门更新成功', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editDepartmentModal')).hide();
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showMessage(result.message || '更新部门失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('更新部门失败:', error);
+        showMessage('更新部门失败', 'error');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function openAssignUserModal() {
+    const modal = new bootstrap.Modal(document.getElementById('assignUserModal'));
+    loadAvailableUsers();
+    modal.show();
+}
+
+function loadAvailableUsers() {
+    fetch('/admin/api/users')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('userSelectionList');
+            container.innerHTML = '';
+
+            if (data.users && data.users.length > 0) {
+                data.users.forEach(user => {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'd-flex justify-content-between align-items-center p-2 border-bottom user-item';
+                    userDiv.innerHTML = `
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="${user.id}" id="user_${user.id}">
+                            <label class="form-check-label" for="user_${user.id}">
+                                <strong>${user.name}</strong>
+                                <br><small class="text-muted">${user.username} - ${user.email}</small>
+                            </label>
+                        </div>
+                    `;
+                    container.appendChild(userDiv);
+                });
+            } else {
+                container.innerHTML = '<p class="text-muted text-center">没有可分配的用户</p>';
+            }
+        })
+        .catch(error => {
+            console.error('加载用户列表失败:', error);
+            showMessage('加载用户列表失败', 'error');
+        });
+}
+
+function assignUsersToDepartment() {
+    const selectedUsers = Array.from(document.querySelectorAll('#userSelectionList input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+
+    if (selectedUsers.length === 0) {
+        showMessage('请至少选择一个用户', 'warning');
+        return;
+    }
+
+    fetch(`/admin/api/batch-assign-users`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.content
+        },
+        body: JSON.stringify({
+            department_id: {{ department.id }},
+            user_ids: selectedUsers
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage(`成功分配 ${result.assigned_count} 个用户`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('assignUserModal')).hide();
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showMessage(result.message || '分配用户失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('分配用户失败:', error);
+        showMessage('分配用户失败', 'error');
+    });
+}
+
+function removeMember(userId, userName) {
+    if (!confirm(`确定要将 ${userName} 从部门中移除吗？`)) {
+        return;
+    }
+
+    fetch(`/admin/api/department/{{ department.id }}/remove-member/${userId}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.content
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage('移除成员成功', 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showMessage(result.message || '移除成员失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('移除成员失败:', error);
+        showMessage('移除成员失败', 'error');
+    });
+}
+
+function showMessage(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+
+// 用户搜索功能
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('userSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const userItems = document.querySelectorAll('.user-item');
+
+            userItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

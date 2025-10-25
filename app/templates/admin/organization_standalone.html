@@ -1,0 +1,688 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}组织架构总览{% endblock %}
+
+{% block admin_content %}
+<div class="admin-stats-grid">
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_departments if stats else 0 }}</div>
+        <div class="admin-stat-label">部门总数</div>
+        <div class="admin-stat-meta">活跃组织架构</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_projects if stats else 0 }}</div>
+        <div class="admin-stat-label">项目总数</div>
+        <div class="admin-stat-meta">进行中的工作</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_workspaces if stats else 0 }}</div>
+        <div class="admin-stat-label">工作区总数</div>
+        <div class="admin-stat-meta">协作空间</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-number">{{ stats.total_members if stats else 0 }}</div>
+        <div class="admin-stat-label">组织成员</div>
+        <div class="admin-stat-meta">参与员工</div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">
+            <i class="fas fa-sitemap"></i>
+            组织架构概览
+        </h3>
+    </div>
+    <div class="admin-card-body">
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">组织架构图</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="admin-btn sm" onclick="refreshOrgChart()">
+                            <i class="fas fa-sync-alt"></i>
+                            刷新
+                        </button>
+                        <button type="button" class="admin-btn primary sm" onclick="showBatchAddModal()">
+                            <i class="fas fa-users-cog"></i>
+                            批量添加
+                        </button>
+                        <button type="button" class="admin-btn sm" onclick="exportOrgChart()">
+                            <i class="fas fa-download"></i>
+                            导出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div id="organizationOverviewChart" style="height: 400px; border: 1px solid var(--admin-border); border-radius: 6px; background: #fafbfc;">
+                    <!-- D3.js 组织架构图 -->
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h5>快速统计</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="admin-card" style="margin-bottom: 16px;">
+                            <div class="admin-card-body text-center">
+                                <h4 style="color: var(--admin-primary); margin: 0;">{{ stats.active_departments if stats else 0 }}</h4>
+                                <p class="mb-0">活跃部门</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="admin-card" style="margin-bottom: 16px;">
+                            <div class="admin-card-body text-center">
+                                <h4 style="color: var(--admin-success); margin: 0;">{{ stats.max_depth if stats else 0 }}</h4>
+                                <p class="mb-0">组织层级</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="admin-card" style="margin-bottom: 16px;">
+                            <div class="admin-card-body text-center">
+                                <h4 style="color: var(--admin-info); margin: 0;">{{ stats.total_workspaces if stats else 0 }}</h4>
+                                <p class="mb-0">工作区</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="admin-card" style="margin-bottom: 16px;">
+                            <div class="admin-card-body text-center">
+                                <h4 style="color: var(--admin-warning); margin: 0;">{{ stats.total_members if stats else 0 }}</h4>
+                                <p class="mb-0">成员总数</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title">
+                    <i class="fas fa-building"></i>
+                    最新部门
+                </h3>
+            </div>
+            <div class="admin-card-body">
+                {% if recent_departments %}
+                {% for dept in recent_departments %}
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div>
+                        <strong>{{ dept.name }}</strong>
+                        <br><small class="text-muted">{{ dept.description[:40] }}{% if dept.description|length > 40 %}...{% endif %}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="admin-badge">{{ dept.members.count() }} 人</span>
+                        <br><small class="text-muted">{{ dept.created_at.strftime('%m-%d') }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">暂无部门</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title">
+                    <i class="fas fa-project-diagram"></i>
+                    最新项目
+                </h3>
+            </div>
+            <div class="admin-card-body">
+                {% if recent_projects %}
+                {% for project in recent_projects %}
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div>
+                        <strong>{{ project.name }}</strong>
+                        <br><small class="text-muted">{{ project.description[:40] }}{% if project.description|length > 40 %}...{% endif %}</small>
+                    </div>
+                    <div class="text-end">
+                        {% if project.status == 'active' %}
+                        <span class="admin-badge success">进行中</span>
+                        {% else %}
+                        <span class="admin-badge neutral">{{ project.status }}</span>
+                        {% endif %}
+                        <br><small class="text-muted">{{ project.created_at.strftime('%m-%d') }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">暂无项目</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">
+            <i class="fas fa-th-large"></i>
+            最新工作区
+        </h3>
+    </div>
+    <div class="admin-card-body">
+        {% if recent_workspaces %}
+        <div class="row">
+            {% for workspace in recent_workspaces %}
+            <div class="col-md-4 mb-3">
+                <div class="admin-card h-100">
+                    <div class="admin-card-body">
+                        <h6>{{ workspace.name }}</h6>
+                        <p class="text-muted small mb-2">{{ workspace.description[:60] }}{% if workspace.description|length > 60 %}...{% endif %}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="admin-badge info">{{ workspace.type }}</span>
+                            <small class="text-muted">{{ workspace.members.count() }} 成员</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">暂无工作区</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 批量添加组织架构模态框 -->
+<div class="modal fade" id="batchAddModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-users-cog"></i>
+                    批量添加组织架构
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="batchAddTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="batch-dept-tab" data-bs-toggle="tab" data-bs-target="#batch-dept" type="button" role="tab">
+                            <i class="fas fa-building"></i>
+                            批量添加部门
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="batch-user-dept-tab" data-bs-toggle="tab" data-bs-target="#batch-user-dept" type="button" role="tab">
+                            <i class="fas fa-user-plus"></i>
+                            批量分配用户到部门
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="batch-import-tab" data-bs-toggle="tab" data-bs-target="#batch-import" type="button" role="tab">
+                            <i class="fas fa-file-upload"></i>
+                            Excel导入
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content pt-3" id="batchAddTabContent">
+                    <!-- 批量添加部门 -->
+                    <div class="tab-pane fade show active" id="batch-dept" role="tabpanel">
+                        <form id="batchDeptForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="admin-form-group">
+                                        <label class="admin-form-label">上级部门</label>
+                                        <select name="parent_id" class="admin-form-select">
+                                            <option value="">无（根部门）</option>
+                                            <!-- 动态加载部门列表 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="admin-form-group">
+                                        <label class="admin-form-label">部门类型前缀</label>
+                                        <select name="prefix" class="admin-form-select">
+                                            <option value="DEPT">DEPT</option>
+                                            <option value="TEAM">TEAM</option>
+                                            <option value="GROUP">GROUP</option>
+                                            <option value="OFFICE">OFFICE</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">部门名称列表（每行一个）</label>
+                                <textarea name="dept_names" class="admin-form-control" rows="8" placeholder="例如：&#10;技术研发部&#10;产品设计部&#10;市场营销部&#10;客户服务部"></textarea>
+                                <small class="text-muted">每行输入一个部门名称，系统会自动生成部门代码</small>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">默认部门描述模板</label>
+                                <input type="text" name="description_template" class="admin-form-control" placeholder="例如：{name}，负责相关业务" value="{name}，负责相关业务">
+                                <small class="text-muted">使用 {name} 作为部门名称的占位符</small>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 批量分配用户到部门 -->
+                    <div class="tab-pane fade" id="batch-user-dept" role="tabpanel">
+                        <form id="batchUserDeptForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="admin-form-group">
+                                        <label class="admin-form-label">选择部门</label>
+                                        <select name="department_id" class="admin-form-select" required>
+                                            <option value="">请选择部门</option>
+                                            <!-- 动态加载部门列表 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="admin-form-group">
+                                        <label class="admin-form-label">职位角色</label>
+                                        <select name="role" class="admin-form-select">
+                                            <option value="member">普通成员</option>
+                                            <option value="leader">部门领导</option>
+                                            <option value="deputy">副职领导</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">选择用户</label>
+                                <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                    <div class="row">
+                                        <!-- 动态加载用户列表 -->
+                                    </div>
+                                </div>
+                                <small class="text-muted">勾选需要分配到该部门的用户</small>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Excel导入 -->
+                    <div class="tab-pane fade" id="batch-import" role="tabpanel">
+                        <form id="batchImportForm">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">选择Excel文件</label>
+                                <input type="file" name="excel_file" class="admin-form-control" accept=".xlsx,.xls" required>
+                                <small class="text-muted">支持 .xlsx 和 .xls 格式</small>
+                            </div>
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Excel文件格式要求：</h6>
+                                <ul class="mb-0">
+                                    <li>第一行为标题行</li>
+                                    <li>列包括：部门名称、部门代码、上级部门代码、部门领导、部门描述</li>
+                                    <li>部门代码如果为空，将自动生成</li>
+                                </ul>
+                            </div>
+                            <div class="text-center">
+                                <button type="button" class="admin-btn" onclick="downloadTemplate()">
+                                    <i class="fas fa-download"></i>
+                                    下载Excel模板
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="admin-btn" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="admin-btn primary" onclick="executeBatchAdd()">
+                    <i class="fas fa-play"></i>
+                    执行批量操作
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 获取组织架构数据并渲染图表
+    fetch('/api/organization/tree')
+        .then(response => response.json())
+        .then(data => {
+            if (data && Object.keys(data).length > 0) {
+                renderOrganizationChart(data);
+            } else {
+                document.getElementById('organizationOverviewChart').innerHTML =
+                    '<div class="text-center text-muted p-4">暂无组织架构数据</div>';
+            }
+        })
+        .catch(error => {
+            console.error('获取组织架构数据失败:', error);
+            document.getElementById('organizationOverviewChart').innerHTML =
+                '<div class="text-center text-danger p-4">加载组织架构数据失败</div>';
+        });
+});
+
+function renderOrganizationChart(data) {
+    // 清空现有内容
+    d3.select("#organizationOverviewChart").selectAll("*").remove();
+
+    const container = document.getElementById('organizationOverviewChart');
+    const width = container.clientWidth;
+    const height = 400;
+    const margin = {top: 20, right: 120, bottom: 30, left: 120};
+
+    const svg = d3.select("#organizationOverviewChart")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .style("background", "#fafbfc")
+        .style("border-radius", "6px");
+
+    const g = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const tree = d3.tree()
+        .size([height - margin.top - margin.bottom, width - margin.left - margin.right]);
+
+    const root = d3.hierarchy(data);
+    const treeData = tree(root);
+
+    // 绘制连接线
+    g.selectAll(".link")
+        .data(treeData.links())
+        .enter().append("path")
+        .attr("class", "link")
+        .attr("d", d3.linkHorizontal()
+            .x(d => d.y)
+            .y(d => d.x))
+        .style("fill", "none")
+        .style("stroke", "#cbd5e0")
+        .style("stroke-width", "2px");
+
+    // 绘制节点
+    const node = g.selectAll(".node")
+        .data(treeData.descendants())
+        .enter().append("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${d.y},${d.x})`);
+
+    // 节点圆圈
+    node.append("circle")
+        .attr("r", 8)
+        .style("fill", d => d.children ? "#1a3a52" : "#2c5282")
+        .style("stroke", "#fff")
+        .style("stroke-width", "2px")
+        .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+            d3.select(this)
+                .transition()
+                .duration(200)
+                .attr("r", 10);
+        })
+        .on("mouseout", function(event, d) {
+            d3.select(this)
+                .transition()
+                .duration(200)
+                .attr("r", 8);
+        });
+
+    // 节点文本
+    node.append("text")
+        .attr("dy", ".35em")
+        .attr("x", d => d.children ? -13 : 13)
+        .style("text-anchor", d => d.children ? "end" : "start")
+        .text(d => d.data.name)
+        .style("font-size", "12px")
+        .style("font-family", "Arial, sans-serif")
+        .style("fill", "#2d3748")
+        .style("pointer-events", "none");
+
+    // 节点信息（领导、成员数）
+    node.append("text")
+        .attr("dy", "1.5em")
+        .attr("x", d => d.children ? -13 : 13)
+        .style("text-anchor", d => d.children ? "end" : "start")
+        .text(d => {
+            let info = [];
+            if (d.data.leader) info.push(`负责人: ${d.data.leader}`);
+            if (d.data.member_count) info.push(`${d.data.member_count}人`);
+            return info.join(" | ");
+        })
+        .style("font-size", "10px")
+        .style("font-family", "Arial, sans-serif")
+        .style("fill", "#718096")
+        .style("pointer-events", "none");
+}
+
+// 组织架构图功能函数
+function refreshOrgChart() {
+    fetch('/api/organization/tree')
+        .then(response => response.json())
+        .then(data => {
+            if (data && Object.keys(data).length > 0) {
+                renderOrganizationChart(data);
+            } else {
+                document.getElementById('organizationOverviewChart').innerHTML =
+                    '<div class="text-center text-muted p-4">暂无组织架构数据</div>';
+            }
+        })
+        .catch(error => {
+            console.error('刷新组织架构数据失败:', error);
+            showMessage('刷新组织架构数据失败', 'error');
+        });
+}
+
+function showBatchAddModal() {
+    const modal = new bootstrap.Modal(document.getElementById('batchAddModal'));
+    loadDepartmentsAndUsers();
+    modal.show();
+}
+
+function loadDepartmentsAndUsers() {
+    // 加载部门列表
+    fetch('/admin/api/departments')
+        .then(response => response.json())
+        .then(departments => {
+            const deptSelects = document.querySelectorAll('select[name="parent_id"], select[name="department_id"]');
+            deptSelects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = select.name === 'parent_id' ?
+                    '<option value="">无（根部门）</option>' :
+                    '<option value="">请选择部门</option>';
+
+                departments.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept.id;
+                    option.textContent = dept.name;
+                    if (dept.id == currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            });
+        })
+        .catch(error => console.error('加载部门列表失败:', error));
+
+    // 加载用户列表
+    fetch('/admin/api/users')
+        .then(response => response.json())
+        .then(users => {
+            const userContainer = document.querySelector('#batch-user-dept .row');
+            userContainer.innerHTML = '';
+
+            users.forEach(user => {
+                const col = document.createElement('div');
+                col.className = 'col-md-4 mb-2';
+                col.innerHTML = `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="${user.id}" id="user_${user.id}">
+                        <label class="form-check-label" for="user_${user.id}">
+                            ${user.name} (${user.username})
+                        </label>
+                    </div>
+                `;
+                userContainer.appendChild(col);
+            });
+        })
+        .catch(error => console.error('加载用户列表失败:', error));
+}
+
+function executeBatchAdd() {
+    const activeTab = document.querySelector('.tab-pane.active').id;
+
+    switch(activeTab) {
+        case 'batch-dept':
+            executeBatchAddDepartments();
+            break;
+        case 'batch-user-dept':
+            executeBatchAssignUsers();
+            break;
+        case 'batch-import':
+            executeBatchImport();
+            break;
+    }
+}
+
+function executeBatchAddDepartments() {
+    const form = document.getElementById('batchDeptForm');
+    const formData = new FormData(form);
+    const deptNames = formData.get('dept_names').split('\n').filter(name => name.trim());
+
+    if (deptNames.length === 0) {
+        showMessage('请至少输入一个部门名称', 'warning');
+        return;
+    }
+
+    const data = {
+        parent_id: formData.get('parent_id') || null,
+        prefix: formData.get('prefix'),
+        dept_names: deptNames,
+        description_template: formData.get('description_template')
+    };
+
+    fetch('/admin/api/batch-add-departments', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.content
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage(`成功创建 ${result.created_count} 个部门`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('batchAddModal')).hide();
+            refreshOrgChart();
+        } else {
+            showMessage(result.message || '批量添加部门失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('批量添加部门失败:', error);
+        showMessage('批量添加部门失败', 'error');
+    });
+}
+
+function executeBatchAssignUsers() {
+    const form = document.getElementById('batchUserDeptForm');
+    const formData = new FormData(form);
+    const selectedUsers = Array.from(document.querySelectorAll('#batch-user-dept input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+
+    if (selectedUsers.length === 0) {
+        showMessage('请至少选择一个用户', 'warning');
+        return;
+    }
+
+    const data = {
+        department_id: formData.get('department_id'),
+        user_ids: selectedUsers,
+        role: formData.get('role')
+    };
+
+    fetch('/admin/api/batch-assign-users', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.content
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showMessage(`成功分配 ${result.assigned_count} 个用户到部门`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('batchAddModal')).hide();
+            refreshOrgChart();
+        } else {
+            showMessage(result.message || '批量分配用户失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('批量分配用户失败:', error);
+        showMessage('批量分配用户失败', 'error');
+    });
+}
+
+function exportOrgChart() {
+    fetch('/admin/api/export-org-chart')
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `组织架构图_${new Date().toLocaleDateString()}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('导出组织架构失败:', error);
+            showMessage('导出组织架构失败', 'error');
+        });
+}
+
+function downloadTemplate() {
+    fetch('/admin/api/download-org-template')
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '组织架构导入模板.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('下载模板失败:', error);
+            showMessage('下载模板失败', 'error');
+        });
+}
+
+function showMessage(message, type = 'info') {
+    // 创建提示消息
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    // 3秒后自动消失
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

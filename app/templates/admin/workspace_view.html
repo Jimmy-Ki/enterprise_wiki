@@ -1,0 +1,723 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}工作区详情 - {{ workspace.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.workspace-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+.workspace-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.info-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 4px solid #667eea;
+}
+
+.info-card h3 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.info-card p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.info-card .value {
+    font-weight: 600;
+    color: #333;
+    font-size: 1rem;
+}
+
+.workspace-members {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.members-header {
+    background: #f8f9fa;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.members-list {
+    padding: 1rem;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #f1f3f4;
+    transition: background-color 0.2s;
+}
+
+.member-item:last-child {
+    border-bottom: none;
+}
+
+.member-item:hover {
+    background-color: #f8f9fa;
+}
+
+.member-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-right: 1rem;
+}
+
+.member-info {
+    flex: 1;
+}
+
+.member-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.member-role {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.member-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.workspace-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.back-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+    background: #5a6268;
+    color: white;
+    text-decoration: none;
+}
+
+.edit-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+.edit-btn:hover {
+    background: #218838;
+    color: white;
+    text-decoration: none;
+}
+
+.delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+.delete-btn:hover {
+    background: #c82333;
+    color: white;
+    text-decoration: none;
+}
+
+.project-list {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.project-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f3f4;
+    transition: background-color 0.2s;
+}
+
+.project-item:last-child {
+    border-bottom: none;
+}
+
+.project-item:hover {
+    background-color: #f8f9fa;
+}
+
+.project-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
+
+.project-info {
+    flex: 1;
+}
+
+.project-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.project-description {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.priority-high {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.priority-medium {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.priority-low {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+.add-member-form {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    align-items: end;
+}
+
+.form-group {
+    flex: 1;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .workspace-info {
+        grid-template-columns: 1fr;
+    }
+
+    .workspace-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 工作区头部信息 -->
+    <div class="workspace-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-layer-group me-3"></i>{{ workspace.name }}
+                </h1>
+                <p class="mb-0 opacity-90">{{ workspace.description or '暂无描述' }}</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="workspace-code">
+                    <span class="badge bg-white text-dark fs-6">代码: {{ workspace.code }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="action-buttons">
+        <a href="{{ url_for('organization.workspaces_standalone') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            返回工作区列表
+        </a>
+        <button class="edit-btn" onclick="editWorkspace({{ workspace.id }})">
+            <i class="fas fa-edit"></i>
+            编辑工作区
+        </button>
+        <button class="delete-btn" onclick="confirmDeleteWorkspace({{ workspace.id }})">
+            <i class="fas fa-trash"></i>
+            删除工作区
+        </button>
+    </div>
+
+    <!-- 工作区基本信息 -->
+    <div class="workspace-info">
+        <div class="info-card">
+            <h3><i class="fas fa-building me-2"></i>所属部门</h3>
+            <p class="value">{{ workspace.department.name if workspace.department else '未设置' }}</p>
+        </div>
+        <div class="info-card">
+            <h3><i class="fas fa-user-tie me-2"></i>负责人</h3>
+            <p class="value">{{ workspace.manager.name if workspace.manager else '未设置' }}</p>
+        </div>
+        <div class="info-card">
+            <h3><i class="fas fa-info-circle me-2"></i>状态</h3>
+            <p class="value">
+                {% if workspace.is_active %}
+                    <span class="status-badge status-active">活跃</span>
+                {% else %}
+                    <span class="status-badge status-inactive">非活跃</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="info-card">
+            <h3><i class="fas fa-calendar me-2"></i>创建时间</h3>
+            <p class="value">{{ workspace.created_at.strftime('%Y-%m-%d %H:%M') if workspace.created_at else '未知' }}</p>
+        </div>
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="workspace-stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ members_count }}</div>
+            <div class="stat-label">成员数量</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ projects_count }}</div>
+            <div class="stat-label">关联项目</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ active_members_count }}</div>
+            <div class="stat-label">活跃成员</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">
+                {% if workspace.is_active %}
+                    <i class="fas fa-check-circle text-success"></i>
+                {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                {% endif %}
+            </div>
+            <div class="stat-label">工作区状态</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 工作区成员 -->
+        <div class="col-lg-6">
+            <div class="workspace-members">
+                <div class="members-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        工作区成员
+                    </h3>
+                    <span class="badge bg-primary">{{ members_count }}</span>
+                </div>
+                <div class="members-list" id="membersList">
+                    {% if members %}
+                        {% for member in members %}
+                        <div class="member-item" data-member-id="{{ member.user.id }}">
+                            <div class="member-avatar">
+                                {{ member.user.name[0] if member.user.name else 'U' }}
+                            </div>
+                            <div class="member-info">
+                                <div class="member-name">{{ member.user.name }}</div>
+                                <div class="member-role">
+                                    {% if member.user.email %}
+                                        <i class="fas fa-envelope me-1"></i>{{ member.user.email }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="member-actions">
+                                <button class="admin-btn sm danger" onclick="removeMember({{ member.user.id }})">
+                                    <i class="fas fa-user-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <p>暂无成员</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="add-member-form">
+                    <form id="addMemberForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="userSelect">添加成员</label>
+                                <select id="userSelect" name="user_id" required>
+                                    <option value="">选择用户</option>
+                                    {% for user in available_users %}
+                                    <option value="{{ user.id }}">{{ user.name }} ({{ user.email }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="admin-btn sm primary">
+                                    <i class="fas fa-plus"></i>
+                                    添加
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 关联项目 -->
+        <div class="col-lg-6">
+            <div class="project-list">
+                <div class="members-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-project-diagram me-2"></i>
+                        关联项目
+                    </h3>
+                    <span class="badge bg-success">{{ projects_count }}</span>
+                </div>
+                {% if projects %}
+                    {% for project in projects %}
+                    <div class="project-item">
+                        <div class="project-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="project-info">
+                            <div class="project-name">{{ project.name }}</div>
+                            <div class="project-description">{{ project.description or '暂无描述' }}</div>
+                        </div>
+                        <div class="project-actions">
+                            <a href="{{ url_for('organization.view_project', project_id=project.id) }}" class="admin-btn sm primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-project-diagram"></i>
+                        <p>暂无关联项目</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑工作区模态框 (复用工作区管理页面的模态框) -->
+{% include 'admin/workspaces_standalone.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 添加成员
+document.getElementById('addMemberForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const userId = formData.get('user_id');
+
+    if (!userId) {
+        showToast('请选择用户', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/organization/admin/api/workspace/{{ workspace.id }}/add_member`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ user_id: parseInt(userId) })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('成员添加成功', 'success');
+            location.reload();
+        } else {
+            showToast(result.message || '添加成员失败', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding member:', error);
+        showToast('添加成员失败', 'error');
+    }
+});
+
+// 移除成员
+async function removeMember(userId) {
+    if (!confirm('确定要移除此成员吗？')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/organization/admin/api/workspace/{{ workspace.id }}/remove_member`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ user_id: userId })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('成员移除成功', 'success');
+            location.reload();
+        } else {
+            showToast(result.message || '移除成员失败', 'error');
+        }
+    } catch (error) {
+        console.error('Error removing member:', error);
+        showToast('移除成员失败', 'error');
+    }
+}
+
+// 编辑工作区
+function editWorkspace(workspaceId) {
+    // 调用工作区管理页面的编辑函数
+    if (typeof openEditWorkspaceModal === 'function') {
+        openEditWorkspaceModal(workspaceId);
+    } else {
+        showToast('编辑功能不可用', 'warning');
+    }
+}
+
+// 确认删除工作区
+function confirmDeleteWorkspace(workspaceId) {
+    if (confirm('确定要删除此工作区吗？此操作不可恢复！')) {
+        deleteWorkspace(workspaceId);
+    }
+}
+
+// 删除工作区
+async function deleteWorkspace(workspaceId) {
+    try {
+        const response = await fetch(`/organization/admin/api/workspace/${workspaceId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('工作区删除成功', 'success');
+            setTimeout(() => {
+                window.location.href = '{{ url_for("organization.workspaces_standalone") }}';
+            }, 1500);
+        } else {
+            showToast(result.message || '删除工作区失败', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting workspace:', error);
+        showToast('删除工作区失败', 'error');
+    }
+}
+
+// Toast 提示函数
+function showToast(message, type = 'info') {
+    // 检查是否有现有的 toast 容器
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        `;
+        document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info'}`;
+    toast.style.cssText = `
+        margin-bottom: 10px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        min-width: 300px;
+        animation: slideIn 0.3s ease-out;
+    `;
+
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span>${message}</span>
+            <button type="button" style="background: none; border: none; font-size: 1.2em; cursor: pointer; margin-left: 15px;" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    // 3秒后自动移除
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 3000);
+}
+
+// 添加动画样式
+if (!document.getElementById('toast-animations')) {
+    const style = document.createElement('style');
+    style.id = 'toast-animations';
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+</script>
+{% endblock %}

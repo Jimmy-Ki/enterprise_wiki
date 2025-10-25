@@ -113,6 +113,9 @@ def create_app(config_name='default'):
     from app.views.chat import chat as chat_blueprint
     app.register_blueprint(chat_blueprint, url_prefix='/chat')
 
+    from app.views.organization import organization as organization_blueprint
+    app.register_blueprint(organization_blueprint)
+
     # CSRF exemptions for API endpoints
     @csrf.exempt
     def csrf_exempt_register():

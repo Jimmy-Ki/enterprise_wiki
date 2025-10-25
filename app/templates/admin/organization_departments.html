@@ -1,0 +1,877 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}部门管理{% endblock %}
+
+{% block admin_content %}
+<style>
+    .dept-container {
+        padding: 20px;
+        background: #f8f9fa;
+        min-height: calc(100vh - 60px);
+    }
+
+    .org-subnav {
+        display: flex;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .subnav-link {
+        flex: 1;
+        padding: 16px 20px;
+        text-decoration: none;
+        color: #666;
+        font-weight: 500;
+        text-align: center;
+        border-right: 1px solid #e0e0e0;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .subnav-link:last-child {
+        border-right: none;
+    }
+
+    .subnav-link:hover {
+        background: #f8f9fa;
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .subnav-link.active {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .subnav-link i {
+        font-size: 14px;
+    }
+
+    .page-header {
+        background: white;
+        padding: 24px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .page-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 14px;
+        cursor: pointer;
+        border: 1px solid #ddd;
+        background: white;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background: #0056b3;
+        border-color: #0056b3;
+    }
+
+    .btn:hover {
+        background: #f8f9fa;
+        border-color: var(--primary-color);
+    }
+
+    .departments-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .dept-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .dept-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+
+    .dept-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 16px;
+    }
+
+    .dept-info h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        color: #333;
+        font-weight: 600;
+    }
+
+    .dept-code {
+        background: #e3f2fd;
+        color: var(--primary-color);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        margin-bottom: 12px;
+        display: inline-block;
+    }
+
+    .dept-description {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .dept-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+    }
+
+    .stat-number {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+    }
+
+    .dept-leader {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        margin-bottom: 16px;
+    }
+
+    .leader-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        font-size: 16px;
+    }
+
+    .leader-info h4 {
+        margin: 0 0 4px 0;
+        font-size: 14px;
+        color: #333;
+        font-weight: 500;
+    }
+
+    .leader-info .leader-role {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .dept-actions {
+        display: flex;
+        gap: 8px;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+    }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #666;
+    }
+
+    .action-btn:hover {
+        background: #f8f9fa;
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+
+    .sub-departments {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .sub-departments h4 {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .sub-dept-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .sub-dept-tag {
+        background: #f0f0f0;
+        color: #666;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+
+    .empty-state {
+        background: white;
+        border-radius: 8px;
+        padding: 60px 20px;
+        text-align: center;
+        color: #999;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 20px;
+        color: #ddd;
+    }
+
+    .empty-state h3 {
+        margin: 0 0 12px 0;
+        color: #666;
+    }
+
+    .empty-state p {
+        margin: 0 0 20px 0;
+        color: #999;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        margin: 0;
+        font-size: 18px;
+        color: #333;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #999;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+    }
+
+    .modal-close:hover {
+        background: #f0f0f0;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .modal-footer {
+        padding: 20px;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        border-color: #6c757d;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+        border-color: #545b62;
+    }
+
+    @media (max-width: 768px) {
+        .departments-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .org-subnav {
+            flex-direction: column;
+        }
+
+        .subnav-link {
+            border-right: none;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .subnav-link:last-child {
+            border-bottom: none;
+        }
+
+        .page-header {
+            flex-direction: column;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .header-actions {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dept-container">
+    <div class="org-subnav">
+        <a href="{{ url_for('organization.admin_organization') }}" class="subnav-link">
+            <i class="fas fa-sitemap"></i>
+            组织架构总览
+        </a>
+        <a href="{{ url_for('organization.admin_departments') }}" class="subnav-link active">
+            <i class="fas fa-building"></i>
+            部门管理
+        </a>
+        <a href="{{ url_for('organization.admin_projects') }}" class="subnav-link">
+            <i class="fas fa-project-diagram"></i>
+            项目管理
+        </a>
+        <a href="{{ url_for('organization.admin_workspaces') }}" class="subnav-link">
+            <i class="fas fa-th-large"></i>
+            工作区管理
+        </a>
+        <a href="{{ url_for('organization.admin_permissions') }}" class="subnav-link">
+            <i class="fas fa-shield-alt"></i>
+            权限管理
+        </a>
+    </div>
+
+    <div class="page-header">
+        <h1 class="page-title">部门管理</h1>
+        <div class="header-actions">
+            <button class="btn" onclick="refreshDepartments()">
+                <i class="fas fa-sync-alt"></i>
+                刷新
+            </button>
+            <button class="btn btn-primary" onclick="showCreateModal()">
+                <i class="fas fa-plus"></i>
+                新建部门
+            </button>
+        </div>
+    </div>
+
+    <div class="departments-grid" id="departmentsGrid">
+        <!-- 部门卡片将在这里动态生成 -->
+    </div>
+</div>
+
+<!-- 创建/编辑部门模态框 -->
+<div class="modal" id="departmentModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">新建部门</h3>
+            <button class="modal-close" onclick="hideModal()">&times;</button>
+        </div>
+        <form id="departmentForm">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="deptName">部门名称 *</label>
+                    <input type="text" class="form-control" id="deptName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="deptCode">部门代码 *</label>
+                    <input type="text" class="form-control" id="deptCode" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="deptDescription">部门描述</label>
+                    <textarea class="form-control form-textarea" id="deptDescription"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="parentDept">上级部门</label>
+                    <select class="form-control" id="parentDept">
+                        <option value="">无上级部门</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="deptLeader">部门负责人</label>
+                    <select class="form-control" id="deptLeader">
+                        <option value="">请选择负责人</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="hideModal()">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let departments = [];
+    let currentEditId = null;
+
+    // 模拟部门数据
+    const mockDepartments = [
+        {
+            id: 1,
+            name: '技术部',
+            code: 'TECH',
+            description: '负责公司技术研发和系统维护，包括前端开发、后端开发、测试运维等工作。',
+            leader: {
+                id: 1,
+                name: '张三',
+                username: 'zhangsan',
+                avatar: null
+            },
+            member_count: 25,
+            sub_departments: [
+                {
+                    id: 11,
+                    name: '前端开发组',
+                    code: 'FRONTEND'
+                },
+                {
+                    id: 12,
+                    name: '后端开发组',
+                    code: 'BACKEND'
+                },
+                {
+                    id: 13,
+                    name: '测试组',
+                    code: 'QA'
+                }
+            ],
+            created_at: '2023-01-15',
+            project_count: 8,
+            workspace_count: 3
+        },
+        {
+            id: 2,
+            name: '产品部',
+            code: 'PRODUCT',
+            description: '负责产品设计、用户研究和产品规划工作。',
+            leader: {
+                id: 2,
+                name: '李四',
+                username: 'lisi',
+                avatar: null
+            },
+            member_count: 12,
+            sub_departments: [
+                {
+                    id: 21,
+                    name: '产品设计组',
+                    code: 'UI_UX'
+                },
+                {
+                    id: 22,
+                    name: '用户研究组',
+                    code: 'RESEARCH'
+                }
+            ],
+            created_at: '2023-02-01',
+            project_count: 5,
+            workspace_count: 2
+        },
+        {
+            id: 3,
+            name: '财务部',
+            code: 'FINANCE',
+            description: '负责公司财务管理、会计核算和财务分析工作。',
+            leader: {
+                id: 3,
+                name: '王五',
+                username: 'wangwu',
+                avatar: null
+            },
+            member_count: 8,
+            sub_departments: [],
+            created_at: '2023-01-20',
+            project_count: 2,
+            workspace_count: 1
+        },
+        {
+            id: 4,
+            name: '人力资源部',
+            code: 'HR',
+            description: '负责人力资源管理、招聘培训和组织发展工作。',
+            leader: {
+                id: 4,
+                name: '赵六',
+                username: 'zhaoliu',
+                avatar: null
+            },
+            member_count: 6,
+            sub_departments: [],
+            created_at: '2023-03-01',
+            project_count: 3,
+            workspace_count: 1
+        }
+    ];
+
+    // 模拟用户数据
+    const mockUsers = [
+        { id: 1, name: '张三', username: 'zhangsan' },
+        { id: 2, name: '李四', username: 'lisi' },
+        { id: 3, name: '王五', username: 'wangwu' },
+        { id: 4, name: '赵六', username: 'zhaoliu' },
+        { id: 5, name: '钱七', username: 'qianqi' },
+        { id: 6, name: '孙八', username: 'sunba' }
+    ];
+
+    function initDepartments() {
+        departments = mockDepartments;
+        renderDepartments();
+        populateParentOptions();
+        populateLeaderOptions();
+    }
+
+    function renderDepartments() {
+        const grid = document.getElementById('departmentsGrid');
+
+        if (departments.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="fas fa-building"></i>
+                    <h3>暂无部门</h3>
+                    <p>还没有创建任何部门，点击"新建部门"开始创建第一个部门。</p>
+                    <button class="btn btn-primary" onclick="showCreateModal()">
+                        <i class="fas fa-plus"></i>
+                        新建部门
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = departments.map(dept => `
+            <div class="dept-card">
+                <div class="dept-actions">
+                    <button class="action-btn" onclick="editDepartment(${dept.id})" title="编辑">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn" onclick="deleteDepartment(${dept.id})" title="删除">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="dept-header">
+                    <div class="dept-info">
+                        <h3>${dept.name}</h3>
+                        <div class="dept-code">${dept.code}</div>
+                        <div class="dept-description">${dept.description}</div>
+                    </div>
+                </div>
+                <div class="dept-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">${dept.member_count}</div>
+                        <div class="stat-label">成员数量</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${dept.project_count}</div>
+                        <div class="stat-label">参与项目</div>
+                    </div>
+                </div>
+                ${dept.leader ? `
+                    <div class="dept-leader">
+                        <div class="leader-avatar">
+                            ${dept.leader.avatar ?
+                                `<img src="${dept.leader.avatar}" alt="${dept.leader.name}">` :
+                                `<i class="fas fa-user"></i>`
+                            }
+                        </div>
+                        <div class="leader-info">
+                            <h4>${dept.leader.name}</h4>
+                            <div class="leader-role">部门负责人</div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="dept-leader">
+                        <div class="leader-info">
+                            <h4 style="color: #999;">暂无负责人</h4>
+                            <div class="leader-role">点击设置负责人</div>
+                        </div>
+                    </div>
+                `}
+                ${dept.sub_departments && dept.sub_departments.length > 0 ? `
+                    <div class="sub-departments">
+                        <h4>下级部门 (${dept.sub_departments.length})</h4>
+                        <div class="sub-dept-list">
+                            ${dept.sub_departments.map(sub => `
+                                <span class="sub-dept-tag">${sub.name}</span>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+
+    function populateParentOptions() {
+        const select = document.getElementById('parentDept');
+        select.innerHTML = '<option value="">无上级部门</option>' +
+            departments.map(dept =>
+                `<option value="${dept.id}">${dept.name} (${dept.code})</option>`
+            ).join('');
+    }
+
+    function populateLeaderOptions() {
+        const select = document.getElementById('deptLeader');
+        select.innerHTML = '<option value="">请选择负责人</option>' +
+            mockUsers.map(user =>
+                `<option value="${user.id}">${user.name} (@${user.username})</option>`
+            ).join('');
+    }
+
+    function showCreateModal() {
+        currentEditId = null;
+        document.getElementById('modalTitle').textContent = '新建部门';
+        document.getElementById('departmentForm').reset();
+        populateParentOptions();
+        populateLeaderOptions();
+        document.getElementById('departmentModal').classList.add('show');
+    }
+
+    function editDepartment(id) {
+        const dept = departments.find(d => d.id === id);
+        if (!dept) return;
+
+        currentEditId = id;
+        document.getElementById('modalTitle').textContent = '编辑部门';
+        document.getElementById('deptName').value = dept.name;
+        document.getElementById('deptCode').value = dept.code;
+        document.getElementById('deptDescription').value = dept.description;
+
+        populateParentOptions();
+        if (dept.parent_id) {
+            document.getElementById('parentDept').value = dept.parent_id;
+        }
+
+        populateLeaderOptions();
+        if (dept.leader) {
+            document.getElementById('deptLeader').value = dept.leader.id;
+        }
+
+        document.getElementById('departmentModal').classList.add('show');
+    }
+
+    function hideModal() {
+        document.getElementById('departmentModal').classList.remove('show');
+        currentEditId = null;
+    }
+
+    function deleteDepartment(id) {
+        if (!confirm('确定要删除这个部门吗？此操作不可恢复。')) {
+            return;
+        }
+
+        // 检查是否有下级部门
+        const dept = departments.find(d => d.id === id);
+        if (dept && dept.sub_departments && dept.sub_departments.length > 0) {
+            alert('该部门下还有子部门，无法删除。请先删除或转移子部门。');
+            return;
+        }
+
+        // 删除部门
+        departments = departments.filter(d => d.id !== id);
+        renderDepartments();
+        alert('部门已删除');
+    }
+
+    function refreshDepartments() {
+        // 显示加载状态
+        const grid = document.getElementById('departmentsGrid');
+        grid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p>正在刷新部门数据...</p>
+            </div>
+        `;
+
+        // 模拟加载延迟
+        setTimeout(() => {
+            initDepartments();
+        }, 1000);
+    }
+
+    // 表单提交处理
+    document.getElementById('departmentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = {
+            name: document.getElementById('deptName').value,
+            code: document.getElementById('deptCode').value,
+            description: document.getElementById('deptDescription').value,
+            parent_id: document.getElementById('parentDept').value || null,
+            leader_id: document.getElementById('deptLeader').value || null
+        };
+
+        if (currentEditId) {
+            // 编辑现有部门
+            const index = departments.findIndex(d => d.id === currentEditId);
+            if (index !== -1) {
+                departments[index] = {
+                    ...departments[index],
+                    ...formData
+                };
+                alert('部门信息已更新');
+            }
+        } else {
+            // 创建新部门
+            const newDept = {
+                id: Math.max(...departments.map(d => d.id)) + 1,
+                ...formData,
+                member_count: 0,
+                sub_departments: [],
+                created_at: new Date().toISOString().split('T')[0],
+                project_count: 0,
+                workspace_count: 0,
+                leader: formData.leader_id ?
+                    mockUsers.find(u => u.id == formData.leader_id) : null
+            };
+            departments.push(newDept);
+            alert('部门创建成功');
+        }
+
+        renderDepartments();
+        hideModal();
+    });
+
+    // 模态框背景点击关闭
+    document.getElementById('departmentModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideModal();
+        }
+    });
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        initDepartments();
+    });
+</script>
+{% endblock %}

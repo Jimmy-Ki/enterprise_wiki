@@ -22,7 +22,20 @@ class Role(db.Model):
     name = db.Column(db.String(64), unique=True)
     default = db.Column(db.Boolean, default=False, index=True)
     permissions = db.Column(db.Integer)
-    users = db.relationship('User', backref='role', lazy='dynamic')
+
+    # 组织架构相关字段
+    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), index=True)  # 所属部门
+    leader_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)  # 角色负责人
+    role_type = db.Column(db.String(20), default='general')  # 角色类型: general, management, technical, business
+    description = db.Column(db.Text)  # 角色描述
+
+    # 关系 - 明确指定外键避免冲突
+    department = db.relationship('Department', backref='roles')
+    leader = db.relationship('User', foreign_keys=[leader_id], backref='led_roles')
+
+    # 重新定义users关系，明确指定外键
+    users = db.relationship('User', backref='role', lazy='dynamic',
+                           foreign_keys='User.role_id')
 
     def __init__(self, **kwargs):
         super(Role, self).__init__(**kwargs)
@@ -100,8 +113,30 @@ class User(UserMixin, db.Model):
     backup_codes = db.Column(db.Text)  # JSON string of backup codes
     two_factor_setup_date = db.Column(db.DateTime)
 
+    # Leader relationships
+    leader_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)  # 直属上级
+    is_department_leader = db.Column(db.Boolean, default=False)  # 是否是部门领导
+    is_project_manager = db.Column(db.Boolean, default=False)   # 是否是项目经理
+
     # Relationships
     sessions = db.relationship('UserSession', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+
+    # Organization relationships
+    leader = db.relationship('User', remote_side=[id], backref='subordinates')
+
+    # 组织架构关系 - 明确指定外键避免冲突
+    department_memberships = db.relationship('UserDepartment', back_populates='user',
+                                           primaryjoin="User.id == UserDepartment.user_id",
+                                           foreign_keys='[UserDepartment.user_id]',
+                                           lazy='dynamic', cascade='all, delete-orphan')
+    project_memberships = db.relationship('UserProject', back_populates='user',
+                                        primaryjoin="User.id == UserProject.user_id",
+                                        foreign_keys='[UserProject.user_id]',
+                                        lazy='dynamic', cascade='all, delete-orphan')
+    workspace_memberships = db.relationship('UserWorkspace', back_populates='user',
+                                          primaryjoin="User.id == UserWorkspace.user_id",
+                                          foreign_keys='[UserWorkspace.user_id]',
+                                          lazy='dynamic', cascade='all, delete-orphan')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -390,6 +425,227 @@ class User(UserMixin, db.Model):
             return settings.get(setting_key, True)
 
         return True  # 默认发送
+
+    # Organization and Leadership methods
+    def would_create_leader_cycle(self, leader_id):
+        """检查设置leader是否会造成循环依赖"""
+        if leader_id is None or leader_id == 0:
+            return False
+
+        # 不能设置自己为leader
+        if leader_id == self.id:
+            return True
+
+        # 检查潜在的leader是否是自己的下级
+        from app.models.organization import Department, UserDepartment, Project, UserProject
+
+        potential_leader = User.query.get(leader_id)
+        if not potential_leader:
+            return False
+
+        # DFS检查是否会造成循环
+        stack = [potential_leader]
+        visited = set()
+
+        while stack:
+            current = stack.pop()
+            if current.id in visited:
+                continue
+
+            visited.add(current.id)
+            if current.id == self.id:
+                return True  # 会造成循环
+
+            # 检查直属下级
+            for subordinate in current.subordinates:
+                if subordinate.id not in visited:
+                    stack.append(subordinate)
+
+            # 检查部门领导关系
+            dept_memberships = UserDepartment.query.filter_by(
+                user_id=current.id,
+                is_active=True
+            ).all()
+            for membership in dept_memberships:
+                if membership.department and membership.department.leader_id == current.id:
+                    # 获取部门所有成员
+                    for member in membership.department.members:
+                        if member.user.id not in visited and member.is_active:
+                            stack.append(member.user)
+
+            # 检查项目管理关系
+            proj_memberships = UserProject.query.filter_by(
+                user_id=current.id,
+                is_active=True
+            ).all()
+            for membership in proj_memberships:
+                if membership.project and membership.project.manager_id == current.id:
+                    # 获取项目所有成员
+                    for member in membership.project.members:
+                        if member.user.id not in visited and member.is_active:
+                            stack.append(member.user)
+
+        return False
+
+    def get_all_subordinates(self):
+        """获取所有下级用户（包括间接下级）"""
+        all_subordinates = set()
+        stack = [self]
+        visited = set()
+
+        while stack:
+            current = stack.pop()
+            if current.id in visited:
+                continue
+
+            visited.add(current.id)
+
+            # 添加直属下级
+            for subordinate in current.subordinates:
+                if subordinate.id not in visited:
+                    all_subordinates.add(subordinate)
+                    stack.append(subordinate)
+
+            # 添加通过部门领导关系的下级
+            from app.models.organization import Department, UserDepartment
+            dept_memberships = UserDepartment.query.filter_by(
+                user_id=current.id,
+                is_active=True
+            ).all()
+            for membership in dept_memberships:
+                if membership.department and membership.department.leader_id == current.id:
+                    for member in membership.department.members:
+                        if member.user.id not in visited and member.is_active and member.user.id != current.id:
+                            all_subordinates.add(member.user)
+                            stack.append(member.user)
+
+            # 添加通过项目管理关系的下级
+            from app.models.organization import Project, UserProject
+            proj_memberships = UserProject.query.filter_by(
+                user_id=current.id,
+                is_active=True
+            ).all()
+            for membership in proj_memberships:
+                if membership.project and membership.project.manager_id == current.id:
+                    for member in membership.project.members:
+                        if member.user.id not in visited and member.is_active and member.user.id != current.id:
+                            all_subordinates.add(member.user)
+                            stack.append(member.user)
+
+        return list(all_subordinates)
+
+    def get_leader_chain(self):
+        """获取领导链，从直接上级到最高级领导"""
+        leaders = []
+        current_user = self
+        visited = set()
+
+        while current_user and current_user.id not in visited:
+            visited.add(current_user.id)
+
+            # 检查直属上级
+            if current_user.leader_id:
+                direct_leader = User.query.get(current_user.leader_id)
+                if direct_leader and direct_leader.id not in visited:
+                    leaders.append(direct_leader)
+                    current_user = direct_leader
+                    continue
+
+            # 检查部门领导
+            from app.models.organization import UserDepartment
+            dept_membership = UserDepartment.query.filter_by(
+                user_id=current_user.id,
+                is_active=True
+            ).first()
+
+            if dept_membership and dept_membership.department:
+                dept_leader = dept_membership.department.leader
+                if dept_leader and dept_leader.id not in visited:
+                    leaders.append(dept_leader)
+                    current_user = dept_leader
+                    continue
+
+            # 检查项目经理
+            from app.models.organization import UserProject
+            proj_membership = UserProject.query.filter_by(
+                user_id=current_user.id,
+                is_active=True
+            ).first()
+
+            if proj_membership and proj_membership.project:
+                proj_manager = proj_membership.project.manager
+                if proj_manager and proj_manager.id not in visited:
+                    leaders.append(proj_manager)
+                    current_user = proj_manager
+                    continue
+
+            break
+
+        return leaders
+
+    def can_manage_user(self, target_user):
+        """检查是否可以管理目标用户"""
+        if self.is_administrator():
+            return True
+
+        # 不能管理自己
+        if self.id == target_user.id:
+            return False
+
+        # 检查是否在领导链中
+        return self in target_user.get_leader_chain()
+
+    def get_departments(self):
+        """获取用户所属的所有部门"""
+        return [membership.department for membership in self.department_memberships
+                if membership.is_active and membership.department]
+
+    def get_projects(self):
+        """获取用户参与的所有项目"""
+        return [membership.project for membership in self.project_memberships
+                if membership.is_active and membership.project]
+
+    def get_workspaces(self):
+        """获取用户可访问的所有工作区"""
+        workspaces = set()
+
+        # 添加直接加入的工作区
+        for membership in self.workspace_memberships:
+            if membership.is_active and membership.workspace:
+                workspaces.add(membership.workspace)
+
+        # 添加通过部门获得权限的工作区
+        from app.models.organization import Workspace
+        for department in self.get_departments():
+            dept_workspaces = Workspace.query.filter_by(
+                department_id=department.id,
+                is_active=True
+            ).all()
+            workspaces.update(dept_workspaces)
+
+        # 添加通过项目获得权限的工作区
+        for project in self.get_projects():
+            proj_workspaces = Workspace.query.filter_by(
+                project_id=project.id,
+                is_active=True
+            ).all()
+            workspaces.update(proj_workspaces)
+
+        return list(workspaces)
+
+    def update_leader_status(self):
+        """更新用户的领导状态标志"""
+        from app.models.organization import Department, Project
+
+        # 检查是否是部门领导
+        led_dept = Department.query.filter_by(leader_id=self.id, is_active=True).first()
+        self.is_department_leader = bool(led_dept)
+
+        # 检查是否是项目经理
+        managed_proj = Project.query.filter_by(manager_id=self.id, is_active=True).first()
+        self.is_project_manager = bool(managed_proj)
+
+        db.session.add(self)
 
     def get_safe_datetime(self, field_name):
         """安全地获取datetime字段，处理可能的字符串类型"""

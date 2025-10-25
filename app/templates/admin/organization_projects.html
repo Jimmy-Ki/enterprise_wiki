@@ -1,0 +1,1148 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}项目管理{% endblock %}
+
+{% block extra_css %}
+<style>
+    .project-container {
+        padding: 20px;
+        background: #f8f9fa;
+        min-height: calc(100vh - 60px);
+    }
+
+    .org-subnav {
+        display: flex;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .subnav-link {
+        flex: 1;
+        padding: 16px 20px;
+        text-decoration: none;
+        color: #666;
+        font-weight: 500;
+        text-align: center;
+        border-right: 1px solid #e0e0e0;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .subnav-link:last-child {
+        border-right: none;
+    }
+
+    .subnav-link:hover {
+        background: #f8f9fa;
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .subnav-link.active {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .subnav-link i {
+        font-size: 14px;
+    }
+
+    .page-header {
+        background: white;
+        padding: 24px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .page-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 14px;
+        cursor: pointer;
+        border: 1px solid #ddd;
+        background: white;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background: #0056b3;
+        border-color: #0056b3;
+    }
+
+    .btn:hover {
+        background: #f8f9fa;
+        border-color: var(--primary-color);
+    }
+
+    .filter-bar {
+        background: white;
+        padding: 16px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-label {
+        font-size: 14px;
+        color: #666;
+        white-space: nowrap;
+    }
+
+    .filter-select {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        background: white;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+
+    .projects-table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .table th {
+        background: #f8f9fa;
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #e0e0e0;
+        white-space: nowrap;
+    }
+
+    .table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+    }
+
+    .table tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    .project-name {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 4px;
+    }
+
+    .project-code {
+        font-size: 12px;
+        color: #666;
+        background: #f0f0f0;
+        padding: 2px 6px;
+        border-radius: 3px;
+        display: inline-block;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-block;
+    }
+
+    .status-planning {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .status-active {
+        background: #e8f5e8;
+        color: #388e3c;
+    }
+
+    .status-completed {
+        background: #f3e5f5;
+        color: #7b1fa2;
+    }
+
+    .status-suspended {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .priority-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-block;
+    }
+
+    .priority-high {
+        background: #ffebee;
+        color: #c62828;
+    }
+
+    .priority-medium {
+        background: #fff8e1;
+        color: #f57f17;
+    }
+
+    .priority-low {
+        background: #e8f5e8;
+        color: #2e7d32;
+    }
+
+    .progress-bar {
+        width: 100px;
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--primary-color);
+        transition: width 0.3s ease;
+    }
+
+    .progress-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+    }
+
+    .team-members {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .member-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #666;
+        border: 2px solid white;
+        margin-left: -8px;
+    }
+
+    .member-avatar:first-child {
+        margin-left: 0;
+    }
+
+    .member-count {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #666;
+        border: 2px solid white;
+        margin-left: -8px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #666;
+    }
+
+    .action-btn:hover {
+        background: #f8f9fa;
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 20px;
+        color: #ddd;
+    }
+
+    .empty-state h3 {
+        margin: 0 0 12px 0;
+        color: #666;
+    }
+
+    .empty-state p {
+        margin: 0 0 20px 0;
+        color: #999;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        margin: 0;
+        font-size: 18px;
+        color: #333;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #999;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+    }
+
+    .modal-close:hover {
+        background: #f0f0f0;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .modal-footer {
+        padding: 20px;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        border-color: #6c757d;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+        border-color: #545b62;
+    }
+
+    @media (max-width: 768px) {
+        .org-subnav {
+            flex-direction: column;
+        }
+
+        .subnav-link {
+            border-right: none;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .subnav-link:last-child {
+            border-bottom: none;
+        }
+
+        .page-header {
+            flex-direction: column;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .header-actions {
+            justify-content: center;
+        }
+
+        .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .filter-group {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .projects-table {
+            overflow-x: auto;
+        }
+
+        .table {
+            min-width: 800px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="project-container">
+    <div class="org-subnav">
+        <a href="{{ url_for('organization.admin_organization') }}" class="subnav-link">
+            <i class="fas fa-sitemap"></i>
+            组织架构总览
+        </a>
+        <a href="{{ url_for('organization.admin_departments') }}" class="subnav-link">
+            <i class="fas fa-building"></i>
+            部门管理
+        </a>
+        <a href="{{ url_for('organization.admin_projects') }}" class="subnav-link active">
+            <i class="fas fa-project-diagram"></i>
+            项目管理
+        </a>
+        <a href="{{ url_for('organization.admin_workspaces') }}" class="subnav-link">
+            <i class="fas fa-th-large"></i>
+            工作区管理
+        </a>
+        <a href="{{ url_for('organization.admin_permissions') }}" class="subnav-link">
+            <i class="fas fa-shield-alt"></i>
+            权限管理
+        </a>
+    </div>
+
+    <div class="page-header">
+        <h1 class="page-title">项目管理</h1>
+        <div class="header-actions">
+            <button class="btn" onclick="refreshProjects()">
+                <i class="fas fa-sync-alt"></i>
+                刷新
+            </button>
+            <button class="btn btn-primary" onclick="showCreateModal()">
+                <i class="fas fa-plus"></i>
+                新建项目
+            </button>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label class="filter-label">状态:</label>
+            <select class="filter-select" id="statusFilter" onchange="filterProjects()">
+                <option value="">全部状态</option>
+                <option value="planning">规划中</option>
+                <option value="active">进行中</option>
+                <option value="completed">已完成</option>
+                <option value="suspended">已暂停</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label">优先级:</label>
+            <select class="filter-select" id="priorityFilter" onchange="filterProjects()">
+                <option value="">全部优先级</option>
+                <option value="high">高</option>
+                <option value="medium">中</option>
+                <option value="low">低</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label">部门:</label>
+            <select class="filter-select" id="departmentFilter" onchange="filterProjects()">
+                <option value="">全部部门</option>
+            </select>
+        </div>
+        <div class="filter-group" style="flex: 1;">
+            <label class="filter-label">搜索:</label>
+            <input type="text" class="filter-select" id="searchFilter" placeholder="搜索项目名称..." onkeyup="filterProjects()">
+        </div>
+    </div>
+
+    <div class="projects-table">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>项目名称</th>
+                    <th>状态</th>
+                    <th>优先级</th>
+                    <th>进度</th>
+                    <th>负责人</th>
+                    <th>团队成员</th>
+                    <th>开始时间</th>
+                    <th>预计完成</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="projectsTableBody">
+                <!-- 项目数据将在这里动态生成 -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 创建/编辑项目模态框 -->
+<div class="modal" id="projectModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">新建项目</h3>
+            <button class="modal-close" onclick="hideModal()">&times;</button>
+        </div>
+        <form id="projectForm">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="projectName">项目名称 *</label>
+                        <input type="text" class="form-control" id="projectName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="projectCode">项目代码 *</label>
+                        <input type="text" class="form-control" id="projectCode" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="projectDescription">项目描述</label>
+                    <textarea class="form-control form-textarea" id="projectDescription"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="projectStatus">状态</label>
+                        <select class="form-control" id="projectStatus">
+                            <option value="planning">规划中</option>
+                            <option value="active">进行中</option>
+                            <option value="completed">已完成</option>
+                            <option value="suspended">已暂停</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="projectPriority">优先级</label>
+                        <select class="form-control" id="projectPriority">
+                            <option value="high">高</option>
+                            <option value="medium">中</option>
+                            <option value="low">低</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="projectManager">项目经理</label>
+                        <select class="form-control" id="projectManager">
+                            <option value="">请选择项目经理</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="projectDepartment">所属部门</label>
+                        <select class="form-control" id="projectDepartment">
+                            <option value="">请选择部门</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="startDate">开始时间</label>
+                        <input type="date" class="form-control" id="startDate">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="endDate">预计完成时间</label>
+                        <input type="date" class="form-control" id="endDate">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="projectProgress">项目进度 (%)</label>
+                    <input type="number" class="form-control" id="projectProgress" min="0" max="100" value="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="hideModal()">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let projects = [];
+    let filteredProjects = [];
+    let currentEditId = null;
+
+    // 模拟项目数据
+    const mockProjects = [
+        {
+            id: 1,
+            name: 'ERP系统升级项目',
+            code: 'ERP-2024',
+            description: '公司ERP系统全面升级改造，提升系统性能和用户体验',
+            status: 'active',
+            priority: 'high',
+            progress: 65,
+            manager: {
+                id: 1,
+                name: '张三',
+                username: 'zhangsan',
+                avatar: null
+            },
+            department: {
+                id: 1,
+                name: '技术部',
+                code: 'TECH'
+            },
+            team_members: [
+                { id: 1, name: '张三', username: 'zhangsan' },
+                { id: 2, name: '李四', username: 'lisi' },
+                { id: 3, name: '王五', username: 'wangwu' },
+                { id: 4, name: '赵六', username: 'zhaoliu' }
+            ],
+            start_date: '2024-01-15',
+            end_date: '2024-06-30',
+            created_at: '2024-01-10'
+        },
+        {
+            id: 2,
+            name: '移动应用开发',
+            code: 'MOBILE-APP',
+            description: '开发公司移动端应用，支持iOS和Android平台',
+            status: 'active',
+            priority: 'medium',
+            progress: 40,
+            manager: {
+                id: 2,
+                name: '李四',
+                username: 'lisi',
+                avatar: null
+            },
+            department: {
+                id: 1,
+                name: '技术部',
+                code: 'TECH'
+            },
+            team_members: [
+                { id: 2, name: '李四', username: 'lisi' },
+                { id: 5, name: '钱七', username: 'qianqi' },
+                { id: 6, name: '孙八', username: 'sunba' }
+            ],
+            start_date: '2024-03-01',
+            end_date: '2024-08-31',
+            created_at: '2024-02-20'
+        },
+        {
+            id: 3,
+            name: '数据分析平台',
+            code: 'DATA-PLATFORM',
+            description: '构建企业级数据分析平台，支持大数据处理和可视化',
+            status: 'planning',
+            priority: 'high',
+            progress: 10,
+            manager: {
+                id: 3,
+                name: '王五',
+                username: 'wangwu',
+                avatar: null
+            },
+            department: {
+                id: 1,
+                name: '技术部',
+                code: 'TECH'
+            },
+            team_members: [
+                { id: 3, name: '王五', username: 'wangwu' },
+                { id: 7, name: '周九', username: 'zhoujiu' }
+            ],
+            start_date: '2024-05-01',
+            end_date: '2024-12-31',
+            created_at: '2024-04-15'
+        },
+        {
+            id: 4,
+            name: 'CRM系统实施',
+            code: 'CRM-IMPLEMENT',
+            description: '实施客户关系管理系统，提升客户服务质量',
+            status: 'completed',
+            priority: 'medium',
+            progress: 100,
+            manager: {
+                id: 4,
+                name: '赵六',
+                username: 'zhaoliu',
+                avatar: null
+            },
+            department: {
+                id: 2,
+                name: '产品部',
+                code: 'PRODUCT'
+            },
+            team_members: [
+                { id: 4, name: '赵六', username: 'zhaoliu' },
+                { id: 8, name: '吴十', username: 'wushi' }
+            ],
+            start_date: '2023-09-01',
+            end_date: '2024-02-29',
+            created_at: '2023-08-20'
+        },
+        {
+            id: 5,
+            name: '官网改版项目',
+            code: 'WEBSITE-2024',
+            description: '公司官方网站全面改版，提升品牌形象和用户体验',
+            status: 'suspended',
+            priority: 'low',
+            progress: 25,
+            manager: {
+                id: 2,
+                name: '李四',
+                username: 'lisi',
+                avatar: null
+            },
+            department: {
+                id: 2,
+                name: '产品部',
+                code: 'PRODUCT'
+            },
+            team_members: [
+                { id: 2, name: '李四', username: 'lisi' },
+                { id: 9, name: '郑十一', username: 'zhengshiyi' }
+            ],
+            start_date: '2024-02-15',
+            end_date: '2024-04-30',
+            created_at: '2024-02-01'
+        }
+    ];
+
+    // 模拟部门和用户数据
+    const mockDepartments = [
+        { id: 1, name: '技术部', code: 'TECH' },
+        { id: 2, name: '产品部', code: 'PRODUCT' },
+        { id: 3, name: '财务部', code: 'FINANCE' },
+        { id: 4, name: '人力资源部', code: 'HR' }
+    ];
+
+    const mockUsers = [
+        { id: 1, name: '张三', username: 'zhangsan' },
+        { id: 2, name: '李四', username: 'lisi' },
+        { id: 3, name: '王五', username: 'wangwu' },
+        { id: 4, name: '赵六', username: 'zhaoliu' },
+        { id: 5, name: '钱七', username: 'qianqi' },
+        { id: 6, name: '孙八', username: 'sunba' },
+        { id: 7, name: '周九', username: 'zhoujiu' },
+        { id: 8, name: '吴十', username: 'wushi' },
+        { id: 9, name: '郑十一', username: 'zhengshiyi' }
+    ];
+
+    function initProjects() {
+        projects = mockProjects;
+        filteredProjects = [...projects];
+        renderProjects();
+        populateFilters();
+    }
+
+    function populateFilters() {
+        const departmentFilter = document.getElementById('departmentFilter');
+        departmentFilter.innerHTML = '<option value="">全部部门</option>' +
+            mockDepartments.map(dept =>
+                `<option value="${dept.id}">${dept.name} (${dept.code})</option>`
+            ).join('');
+
+        // 填充模态框中的选项
+        populateModalOptions();
+    }
+
+    function populateModalOptions() {
+        const managerSelect = document.getElementById('projectManager');
+        managerSelect.innerHTML = '<option value="">请选择项目经理</option>' +
+            mockUsers.map(user =>
+                `<option value="${user.id}">${user.name} (@${user.username})</option>`
+            ).join('');
+
+        const departmentSelect = document.getElementById('projectDepartment');
+        departmentSelect.innerHTML = '<option value="">请选择部门</option>' +
+            mockDepartments.map(dept =>
+                `<option value="${dept.id}">${dept.name} (${dept.code})</option>`
+            ).join('');
+    }
+
+    function renderProjects() {
+        const tbody = document.getElementById('projectsTableBody');
+
+        if (filteredProjects.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="empty-state">
+                        <i class="fas fa-project-diagram"></i>
+                        <h3>暂无项目</h3>
+                        <p>还没有创建任何项目，点击"新建项目"开始创建第一个项目。</p>
+                        <button class="btn btn-primary" onclick="showCreateModal()">
+                            <i class="fas fa-plus"></i>
+                            新建项目
+                        </button>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = filteredProjects.map(project => `
+            <tr>
+                <td>
+                    <div class="project-name">${project.name}</div>
+                    <div class="project-code">${project.code}</div>
+                </td>
+                <td>
+                    <span class="status-badge status-${project.status}">
+                        ${getStatusText(project.status)}
+                    </span>
+                </td>
+                <td>
+                    <span class="priority-badge priority-${project.priority}">
+                        ${getPriorityText(project.priority)}
+                    </span>
+                </td>
+                <td>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${project.progress}%"></div>
+                    </div>
+                    <div class="progress-text">${project.progress}%</div>
+                </td>
+                <td>
+                    ${project.manager ? `
+                        <div>${project.manager.name}</div>
+                        <div style="font-size: 12px; color: #666;">@${project.manager.username}</div>
+                    ` : '<span style="color: #999;">未指定</span>'}
+                </td>
+                <td>
+                    <div class="team-members">
+                        ${project.team_members.slice(0, 3).map(member => `
+                            <div class="member-avatar" title="${member.name} (@${member.username})">
+                                ${member.avatar ?
+                                    `<img src="${member.avatar}" alt="${member.name}">` :
+                                    member.name.charAt(0)
+                                }
+                            </div>
+                        `).join('')}
+                        ${project.team_members.length > 3 ? `
+                            <div class="member-count" title="${project.team_members.length - 3} 更多成员">
+                                +${project.team_members.length - 3}
+                            </div>
+                        ` : ''}
+                    </div>
+                </td>
+                <td>${formatDate(project.start_date)}</td>
+                <td>${formatDate(project.end_date)}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="editProject(${project.id})" title="编辑">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn" onclick="deleteProject(${project.id})" title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function getStatusText(status) {
+        const statusMap = {
+            'planning': '规划中',
+            'active': '进行中',
+            'completed': '已完成',
+            'suspended': '已暂停'
+        };
+        return statusMap[status] || status;
+    }
+
+    function getPriorityText(priority) {
+        const priorityMap = {
+            'high': '高',
+            'medium': '中',
+            'low': '低'
+        };
+        return priorityMap[priority] || priority;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('zh-CN');
+    }
+
+    function filterProjects() {
+        const statusFilter = document.getElementById('statusFilter').value;
+        const priorityFilter = document.getElementById('priorityFilter').value;
+        const departmentFilter = document.getElementById('departmentFilter').value;
+        const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+
+        filteredProjects = projects.filter(project => {
+            if (statusFilter && project.status !== statusFilter) return false;
+            if (priorityFilter && project.priority !== priorityFilter) return false;
+            if (departmentFilter && project.department.id != departmentFilter) return false;
+            if (searchFilter && !project.name.toLowerCase().includes(searchFilter) &&
+                !project.code.toLowerCase().includes(searchFilter)) return false;
+            return true;
+        });
+
+        renderProjects();
+    }
+
+    function showCreateModal() {
+        currentEditId = null;
+        document.getElementById('modalTitle').textContent = '新建项目';
+        document.getElementById('projectForm').reset();
+        document.getElementById('projectProgress').value = 0;
+        populateModalOptions();
+        document.getElementById('projectModal').classList.add('show');
+    }
+
+    function editProject(id) {
+        const project = projects.find(p => p.id === id);
+        if (!project) return;
+
+        currentEditId = id;
+        document.getElementById('modalTitle').textContent = '编辑项目';
+        document.getElementById('projectName').value = project.name;
+        document.getElementById('projectCode').value = project.code;
+        document.getElementById('projectDescription').value = project.description;
+        document.getElementById('projectStatus').value = project.status;
+        document.getElementById('projectPriority').value = project.priority;
+        document.getElementById('projectProgress').value = project.progress;
+        document.getElementById('startDate').value = project.start_date;
+        document.getElementById('endDate').value = project.end_date;
+
+        populateModalOptions();
+        if (project.manager) {
+            document.getElementById('projectManager').value = project.manager.id;
+        }
+        if (project.department) {
+            document.getElementById('projectDepartment').value = project.department.id;
+        }
+
+        document.getElementById('projectModal').classList.add('show');
+    }
+
+    function deleteProject(id) {
+        if (!confirm('确定要删除这个项目吗？此操作不可恢复。')) {
+            return;
+        }
+
+        projects = projects.filter(p => p.id !== id);
+        filterProjects();
+        alert('项目已删除');
+    }
+
+    function hideModal() {
+        document.getElementById('projectModal').classList.remove('show');
+        currentEditId = null;
+    }
+
+    function refreshProjects() {
+        // 显示加载状态
+        const tbody = document.getElementById('projectsTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" class="empty-state">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p>正在刷新项目数据...</p>
+                </td>
+            </tr>
+        `;
+
+        // 模拟加载延迟
+        setTimeout(() => {
+            initProjects();
+        }, 1000);
+    }
+
+    // 表单提交处理
+    document.getElementById('projectForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = {
+            name: document.getElementById('projectName').value,
+            code: document.getElementById('projectCode').value,
+            description: document.getElementById('projectDescription').value,
+            status: document.getElementById('projectStatus').value,
+            priority: document.getElementById('projectPriority').value,
+            progress: parseInt(document.getElementById('projectProgress').value) || 0,
+            start_date: document.getElementById('startDate').value,
+            end_date: document.getElementById('endDate').value,
+            manager_id: document.getElementById('projectManager').value || null,
+            department_id: document.getElementById('projectDepartment').value || null
+        };
+
+        if (currentEditId) {
+            // 编辑现有项目
+            const index = projects.findIndex(p => p.id === currentEditId);
+            if (index !== -1) {
+                projects[index] = {
+                    ...projects[index],
+                    ...formData,
+                    manager: formData.manager_id ?
+                        mockUsers.find(u => u.id == formData.manager_id) : null,
+                    department: formData.department_id ?
+                        mockDepartments.find(d => d.id == formData.department_id) : null
+                };
+                alert('项目信息已更新');
+            }
+        } else {
+            // 创建新项目
+            const newProject = {
+                id: Math.max(...projects.map(p => p.id)) + 1,
+                ...formData,
+                team_members: [],
+                created_at: new Date().toISOString().split('T')[0],
+                manager: formData.manager_id ?
+                    mockUsers.find(u => u.id == formData.manager_id) : null,
+                department: formData.department_id ?
+                    mockDepartments.find(d => d.id == formData.department_id) : null
+            };
+            projects.push(newProject);
+            alert('项目创建成功');
+        }
+
+        filterProjects();
+        hideModal();
+    });
+
+    // 模态框背景点击关闭
+    document.getElementById('projectModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideModal();
+        }
+    });
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        initProjects();
+    });
+</script>
+{% endblock %}
