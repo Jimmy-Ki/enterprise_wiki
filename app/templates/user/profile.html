@@ -205,6 +205,11 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="change-password-tab" data-bs-toggle="tab" data-bs-target="#change-password" type="button" role="tab">
+                    <i class="fas fa-key"></i>Change Password
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="sessions-tab" data-bs-toggle="tab" data-bs-target="#sessions" type="button" role="tab">
                     <i class="fas fa-desktop"></i>Active Sessions
                 </button>
@@ -421,10 +426,10 @@
                                 <button class="btn btn-outline-primary">
                                     <i class="fas fa-mobile-alt me-2"></i>Enable Two-Factor Authentication
                                 </button>
-                                <a href="{{ url_for('auth.sessions') }}" class="btn btn-outline-secondary">
+                                <a href="{{ url_for('user.profile') }}#sessions" class="btn btn-outline-secondary">
                                     <i class="fas fa-desktop me-2"></i>Manage Active Sessions
                                 </a>
-                                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
+                                <a href="{{ url_for('user.profile') }}#change-password" class="btn btn-outline-primary">
                                     <i class="fas fa-key me-2"></i>Change Password
                                 </a>
                             </div>
@@ -492,33 +497,171 @@
                 </div>
             </div>
 
-            <!-- 活动会话部分 -->
-            <div class="tab-pane fade" id="sessions" role="tabpanel">
+            <!-- 修改密码部分 -->
+            <div class="tab-pane fade" id="change-password" role="tabpanel">
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-desktop me-2"></i>Active Sessions
+                            <i class="fas fa-key me-2"></i>Change Password
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            These are the devices currently logged into your account.
-                        </div>
+                        <form method="POST" id="changePasswordForm" action="{{ url_for('auth.change_password') }}">
+                            {{ csrf_token() }}
 
-                        <div id="sessionsList">
-                            <div class="text-center py-4">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="old_password" class="form-label">Current Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="old_password"
+                                                   name="old_password" placeholder="Enter current password" required>
+                                            <button class="btn btn-outline-secondary" type="button" id="toggleOldPassword">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <p class="mt-2">Loading your active sessions...</p>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="password" class="form-label">New Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="password"
+                                                   name="password" placeholder="Enter new password" required>
+                                            <button class="btn btn-outline-secondary" type="button" id="toggleNewPassword">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <!-- Password Strength Indicator -->
+                                        <div class="progress mt-2" style="height: 4px;">
+                                            <div class="progress-bar" id="passwordStrength" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        <small class="form-text text-muted" id="passwordStrengthText">Enter a password to see its strength</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="password2" class="form-label">Confirm New Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="password2"
+                                                   name="password2" placeholder="Confirm new password" required>
+                                            <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary" id="changePasswordBtn">
+                                    <i class="fas fa-save me-2"></i>Change Password
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="resetPasswordForm()">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Password Guidelines -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>Password Security Guidelines
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6>Create a Strong Password:</h6>
+                                <ul class="mb-0">
+                                    <li>At least 8 characters long</li>
+                                    <li>Include both uppercase and lowercase letters</li>
+                                    <li>Add numbers and special characters</li>
+                                    <li>Avoid common words or personal information</li>
+                                    <li>Don't reuse passwords from other accounts</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-lightbulb me-2"></i>
+                                    <strong>Tip:</strong> Use a passphrase or combine unrelated words for better memorability.
+                                </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
 
-                        <div class="mt-4">
-                            <button class="btn btn-outline-danger" onclick="revokeAllSessions()">
-                                <i class="fas fa-sign-out-alt me-2"></i>Sign Out All Other Sessions
-                            </button>
+            <!-- 活动会话部分 -->
+            <div class="tab-pane fade" id="sessions" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="mb-0">
+                        <i class="fas fa-desktop me-2"></i>Active Sessions
+                    </h4>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-success me-2">
+                            <i class="fas fa-circle me-1"></i><span id="sessionCount">0</span> Active
+                        </span>
+                        <button class="btn btn-outline-warning btn-sm" id="revokeAllBtn" style="display: none;"
+                                title="Revoke all sessions except current"
+                                onclick="revokeAllSessions()">
+                            <i class="fas fa-ban me-1"></i>Revoke All Others
+                        </button>
+                    </div>
+                </div>
+
+                <div id="sessionsContent">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading your active sessions...</p>
+                    </div>
+                </div>
+
+                <!-- Session Security Info -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>Session Security
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Security Best Practices</h6>
+                                <ul class="text-muted small mb-0">
+                                    <li>Regularly review your active sessions</li>
+                                    <li>Revoke sessions from devices you no longer use</li>
+                                    <li>Always log out from shared or public devices</li>
+                                    <li>Use strong, unique passwords for your account</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Session Features</h6>
+                                <div class="d-grid gap-2">
+                                    <div class="d-flex align-items-center p-2 bg-light rounded">
+                                        <i class="fas fa-clock me-3 text-primary"></i>
+                                        <div>
+                                            <small class="fw-medium">Auto-expiry</small>
+                                            <div class="text-muted small">Sessions expire after 24 hours of inactivity</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center p-2 bg-light rounded">
+                                        <i class="fas fa-globe me-3 text-success"></i>
+                                        <div>
+                                            <small class="fw-medium">Multi-device Support</small>
+                                            <div class="text-muted small">Stay logged in across multiple devices</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -531,6 +674,30 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // 处理锚点链接，自动切换到相应选项卡
+    function handleHashChange() {
+        const hash = window.location.hash.substring(1); // 移除#号
+        if (hash === 'change-password') {
+            const tab = document.getElementById('change-password-tab');
+            if (tab) {
+                const tabTrigger = new bootstrap.Tab(tab);
+                tabTrigger.show();
+            }
+        } else if (hash === 'sessions') {
+            const tab = document.getElementById('sessions-tab');
+            if (tab) {
+                const tabTrigger = new bootstrap.Tab(tab);
+                tabTrigger.show();
+            }
+        }
+    }
+
+    // 页面加载时检查锚点
+    handleHashChange();
+
+    // 监听锚点变化
+    window.addEventListener('hashchange', handleHashChange);
+
     // 个人信息表单提交
     document.getElementById('profileInfoForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -626,22 +793,168 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('sessions-tab').addEventListener('shown.bs.tab', function() {
         loadSessions();
     });
+
+    // 密码可见性切换
+    document.getElementById('toggleOldPassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('old_password');
+        const icon = this.querySelector('i');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            passwordInput.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    });
+
+    document.getElementById('toggleNewPassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            passwordInput.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    });
+
+    document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password2');
+        const icon = this.querySelector('i');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            passwordInput.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    });
+
+    // 密码强度检测
+    document.getElementById('password').addEventListener('input', function() {
+        const password = this.value;
+        const strengthBar = document.getElementById('passwordStrength');
+        const strengthText = document.getElementById('passwordStrengthText');
+
+        let strength = 0;
+        let feedback = '';
+
+        if (password.length >= 8) strength += 25;
+        if (password.match(/[a-z]/)) strength += 25;
+        if (password.match(/[A-Z]/)) strength += 25;
+        if (password.match(/[0-9]/)) strength += 12.5;
+        if (password.match(/[^a-zA-Z0-9]/)) strength += 12.5;
+
+        strengthBar.style.width = strength + '%';
+
+        if (strength === 0) {
+            strengthBar.className = 'progress-bar';
+            feedback = 'Enter a password to see its strength';
+        } else if (strength < 30) {
+            strengthBar.className = 'progress-bar bg-danger';
+            feedback = 'Weak password';
+        } else if (strength < 60) {
+            strengthBar.className = 'progress-bar bg-warning';
+            feedback = 'Fair password';
+        } else if (strength < 80) {
+            strengthBar.className = 'progress-bar bg-info';
+            feedback = 'Good password';
+        } else {
+            strengthBar.className = 'progress-bar bg-success';
+            feedback = 'Strong password';
+        }
+
+        strengthText.textContent = feedback;
+    });
+
+    // 修改密码表单提交
+    document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const oldPassword = document.getElementById('old_password').value;
+        const newPassword = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('password2').value;
+
+        if (newPassword !== confirmPassword) {
+            showToast('New passwords do not match', 'danger');
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            showToast('Password must be at least 8 characters long', 'danger');
+            return;
+        }
+
+        const submitBtn = document.getElementById('changePasswordBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Changing...';
+
+        try {
+            const response = await fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: new URLSearchParams({
+                    'old_password': oldPassword,
+                    'password': newPassword,
+                    'password2': confirmPassword,
+                    'csrf_token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                })
+            });
+
+            if (response.ok) {
+                showToast('Password changed successfully!', 'success');
+                this.reset();
+                document.getElementById('passwordStrength').style.width = '0%';
+                document.getElementById('passwordStrengthText').textContent = 'Enter a password to see its strength';
+            } else {
+                const text = await response.text();
+                if (text.includes('Invalid current password')) {
+                    showToast('Current password is incorrect', 'danger');
+                } else {
+                    showToast('Failed to change password. Please try again.', 'danger');
+                }
+            }
+        } catch (error) {
+            showToast('An error occurred. Please try again.', 'danger');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
 });
 
 // 加载活动会话
 async function loadSessions() {
-    const sessionsList = document.getElementById('sessionsList');
+    const sessionsContent = document.getElementById('sessionsContent');
+    const sessionCount = document.getElementById('sessionCount');
+    const revokeAllBtn = document.getElementById('revokeAllBtn');
 
     try {
         const response = await fetch('/api/user/sessions');
         if (response.ok) {
             const sessions = await response.json();
             displaySessions(sessions);
+
+            // 更新会话计数
+            sessionCount.textContent = sessions.length;
+
+            // 显示/隐藏全部撤销按钮
+            const otherSessions = sessions.filter(s => !s.is_current);
+            revokeAllBtn.style.display = otherSessions.length > 0 ? 'inline-block' : 'none';
+
         } else {
             throw new Error('Failed to load sessions');
         }
     } catch (error) {
-        sessionsList.innerHTML = `
+        sessionsContent.innerHTML = `
             <div class="alert alert-danger">
                 <i class="fas fa-exclamation-triangle me-2"></i>
                 Failed to load active sessions.
@@ -652,10 +965,10 @@ async function loadSessions() {
 
 // 显示会话列表
 function displaySessions(sessions) {
-    const sessionsList = document.getElementById('sessionsList');
+    const sessionsContent = document.getElementById('sessionsContent');
 
     if (sessions.length === 0) {
-        sessionsList.innerHTML = `
+        sessionsContent.innerHTML = `
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
                 No active sessions found.
@@ -664,42 +977,78 @@ function displaySessions(sessions) {
         return;
     }
 
-    let html = '<div class="list-group">';
+    let html = '<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0"><thead class="table-light"><tr><th width="20%">Device & Location</th><th width="35%">Browser</th><th width="15%">Created</th><th width="15%">Last Activity</th><th width="10%">Status</th><th width="5%">Actions</th></tr></thead><tbody>';
 
     sessions.forEach(session => {
         const isCurrent = session.is_current;
-        const deviceInfo = session.device_info || {};
+
+        // 解析浏览器信息
+        let browserIcon = 'fas fa-globe';
+        let browserName = 'Browser';
+        let userAgent = session.user_agent || '';
+
+        if (userAgent.includes('Chrome')) {
+            browserIcon = 'fab fa-chrome';
+            browserName = 'Chrome';
+        } else if (userAgent.includes('Firefox')) {
+            browserIcon = 'fab fa-firefox';
+            browserName = 'Firefox';
+        } else if (userAgent.includes('Safari')) {
+            browserIcon = 'fab fa-safari';
+            browserName = 'Safari';
+        } else if (userAgent.includes('Edge')) {
+            browserIcon = 'fab fa-edge';
+            browserName = 'Edge';
+        }
 
         html += `
-            <div class="list-group-item ${isCurrent ? 'border-primary' : ''}">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-1">
-                            ${deviceInfo.browser || 'Unknown Browser'} on ${deviceInfo.os || 'Unknown OS'}
-                            ${isCurrent ? '<span class="badge bg-primary ms-2">Current Session</span>' : ''}
-                        </h6>
-                        <p class="mb-1 text-muted">
-                            <i class="fas fa-map-marker-alt me-1"></i>
-                            ${session.ip_address || 'Unknown IP'}
-                            ${session.location ? ` • ${session.location}` : ''}
-                        </p>
-                        <small class="text-muted">
-                            <i class="fas fa-clock me-1"></i>
-                            Last active: ${session.last_seen ? new Date(session.last_seen).toLocaleString() : 'Unknown'}
-                        </small>
+            <tr class="${isCurrent ? 'table-primary' : ''}">
+                <td>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-desktop me-2 text-muted"></i>
+                        <div>
+                            <div class="fw-medium">${session.ip_address || 'Unknown'}</div>
+                            <small class="text-muted">
+                                ${isCurrent ? 'Current Device' : 'Other Device'}
+                            </small>
+                        </div>
                     </div>
+                </td>
+                <td>
+                    <div class="text-truncate" style="max-width: 300px;" title="${userAgent}">
+                        <i class="${browserIcon} me-1 ${isCurrent ? 'text-primary' : 'text-muted'}"></i>${browserName}
+                        <br>
+                        <small class="text-muted">${userAgent.substring(0, 50)}${userAgent.length > 50 ? '...' : ''}</small>
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <div>${session.created_at ? new Date(session.created_at).toLocaleDateString() : 'Unknown'}</div>
+                        <small class="text-muted">${session.created_at ? new Date(session.created_at).toLocaleTimeString() : ''}</small>
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <div>${session.last_seen ? new Date(session.last_seen).toLocaleDateString() : 'Unknown'}</div>
+                        <small class="text-muted">${session.last_seen ? new Date(session.last_seen).toLocaleTimeString() : ''}</small>
+                    </div>
+                </td>
+                <td>
+                    ${isCurrent ? '<span class="badge bg-primary">Current</span>' : '<span class="badge bg-success">Active</span>'}
+                </td>
+                <td>
                     ${!isCurrent ? `
-                        <button class="btn btn-sm btn-outline-danger" onclick="revokeSession('${session.id}')">
-                            <i class="fas fa-times me-1"></i>Revoke
+                        <button class="btn btn-sm btn-outline-danger" onclick="revokeSession('${session.id}')" title="Revoke Session">
+                            <i class="fas fa-ban"></i>
                         </button>
-                    ` : ''}
-                </div>
-            </div>
+                    ` : '<span class="text-muted">—</span>'}
+                </td>
+            </tr>
         `;
     });
 
-    html += '</div>';
-    sessionsList.innerHTML = html;
+    html += '</tbody></table></div></div></div>';
+    sessionsContent.innerHTML = html;
 }
 
 // 撤销单个会话
@@ -757,6 +1106,13 @@ function resetProfileForm() {
     document.getElementById('name').value = '{{ current_user.name or "" }}';
     document.getElementById('email').value = '{{ current_user.email or "" }}';
     document.getElementById('avatar').value = '{{ current_user.avatar or "" }}';
+}
+
+// 重置密码表单
+function resetPasswordForm() {
+    document.getElementById('changePasswordForm').reset();
+    document.getElementById('passwordStrength').style.width = '0%';
+    document.getElementById('passwordStrengthText').textContent = 'Enter a password to see its strength';
 }
 
 // 确认账户停用
