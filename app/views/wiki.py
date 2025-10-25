@@ -294,6 +294,20 @@ def create_page():
         db.session.add(page)
         db.session.commit()
 
+        # Handle uploaded files - associate them with the page
+        uploaded_files = request.form.get('uploaded_files')
+        if uploaded_files:
+            try:
+                import json
+                files_data = json.loads(uploaded_files)
+                for file_data in files_data:
+                    attachment = Attachment.query.get(file_data['id'])
+                    if attachment and attachment.page_id is None:
+                        attachment.page_id = page.id
+                        print(f"Associated attachment {file_data['id']} with new page {page.id}")
+            except Exception as e:
+                print(f"Error processing uploaded files: {e}")
+
         # Ensure markdown rendering is triggered
         if page.content and not page.content_html:
             Page.on_changed_content(page, page.content, None, None)
@@ -421,10 +435,19 @@ def handle_edit_ajax(page):
     """Handle AJAX edit requests from click-to-edit functionality"""
     try:
         # Get form data
-        title = request.form.get('title', '').strip()
-        content = request.form.get('content', '')
-        category_id = request.form.get('category_id', type=int)
-        is_draft = request.form.get('save_draft') == 'true'
+        if request.is_json:
+            data = request.get_json()
+            title = data.get('title', '').strip()
+            content = data.get('content', '')
+            category_id = data.get('category_id', type=int)
+            is_draft = data.get('save_draft') == 'true'
+            uploaded_files = data.get('uploaded_files', [])
+        else:
+            title = request.form.get('title', '').strip()
+            content = request.form.get('content', '')
+            category_id = request.form.get('category_id', type=int)
+            is_draft = request.form.get('save_draft') == 'true'
+            uploaded_files = []
 
         # Validate required fields
         if not title:
@@ -445,6 +468,15 @@ def handle_edit_ajax(page):
         # Generate summary from content if not provided
         if not page.summary and content:
             page.generate_summary()
+
+        # Handle uploaded files - associate them with the page
+        if uploaded_files:
+            from app.models import Attachment
+            for file_data in uploaded_files:
+                attachment = Attachment.query.get(file_data['id'])
+                if attachment and attachment.page_id is None:
+                    attachment.page_id = page.id
+                    print(f"Associated attachment {file_data['id']} with page {page.id}")
 
         # Determine change summary
         change_summary = []

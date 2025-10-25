@@ -419,6 +419,13 @@ function savePage() {
     const content = editor ? editor.getValue() : document.getElementById('markdownInput').value;
     const changeSummary = document.getElementById('changeSummary').value;
 
+    // Prepare uploaded files data
+    const uploadedFiles = uploadedInlineFiles.map(file => ({
+        id: file.id,
+        filename: file.filename,
+        original_filename: file.original_filename
+    }));
+
     fetch(`/api/pages/{{ page.id }}`, {
         method: 'PATCH',
         headers: {
@@ -428,7 +435,8 @@ function savePage() {
         body: JSON.stringify({
             content: content,
             change_summary: changeSummary,
-            save_draft: false
+            save_draft: false,
+            uploaded_files: uploadedFiles
         })
     })
     .then(response => response.json())
@@ -468,6 +476,13 @@ function savePage() {
 function saveDraft() {
     const content = editor ? editor.getValue() : document.getElementById('markdownInput').value;
 
+    // Prepare uploaded files data
+    const uploadedFiles = uploadedInlineFiles.map(file => ({
+        id: file.id,
+        filename: file.filename,
+        original_filename: file.original_filename
+    }));
+
     fetch(`/api/pages/{{ page.id }}`, {
         method: 'PATCH',
         headers: {
@@ -476,7 +491,8 @@ function saveDraft() {
         },
         body: JSON.stringify({
             content: content,
-            save_draft: true
+            save_draft: true,
+            uploaded_files: uploadedFiles
         })
     })
     .then(response => response.json())
