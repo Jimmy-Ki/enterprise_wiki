@@ -9,73 +9,67 @@ user = Blueprint('user', __name__)
 @user.route('/user/<username>')
 def user_profile(username):
     """用户主页"""
+    # 查找用户，如果不存在会自动返回404
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        current_app.logger.warning(f"User not found: {username}")
+        abort(404)
+
+    current_app.logger.info(f"Loading profile for user: {username} (ID: {user.id})")
+
+    # 获取用户统计信息
     try:
-        # 查找用户，如果不存在会自动返回404
-        user = User.query.filter_by(username=username).first()
-        if not user:
-            current_app.logger.warning(f"User not found: {username}")
-            abort(404)
-
-        current_app.logger.info(f"Loading profile for user: {username} (ID: {user.id})")
-
-        # 获取用户统计信息
-        try:
-            stats = get_user_stats(user.id)
-            current_app.logger.info(f"Stats loaded for user {username}: {stats}")
-        except Exception as e:
-            current_app.logger.error(f"Error getting stats for user {username}: {e}")
-            stats = {
-                'total_comments': 0,
-                'authored_pages': 0,
-                'edited_pages': 0,
-                'uploaded_attachments': 0,
-                'received_mentions': 0,
-                'unread_mentions': 0,
-                'recent_comments': 0
-            }
-
-        # 获取用户的最新评论
-        try:
-            page = request.args.get('page', 1, type=int)
-            per_page = 10
-
-            comments_result = CommentService.get_user_comments(
-                user_id=user.id,
-                page=page,
-                per_page=per_page
-            )
-            current_app.logger.info(f"Comments loaded for user {username}: {comments_result.get('total', 0)} total")
-        except Exception as e:
-            current_app.logger.error(f"Error getting comments for user {username}: {e}")
-            comments_result = {
-                'comments': [],
-                'total': 0,
-                'pages': 0,
-                'current_page': 1,
-                'has_prev': False,
-                'has_next': False
-            }
-
-        # 获取@提及统计
-        try:
-            from app.models.comment import CommentMention
-            mentions_count = CommentMention.query.filter_by(mentioned_user_id=user.id, is_read=False).count()
-            current_app.logger.info(f"Mentions count for user {username}: {mentions_count}")
-        except Exception as e:
-            current_app.logger.error(f"Error getting mentions for user {username}: {e}")
-            mentions_count = 0
-
-        return render_template('user/profile.html',
-                             user=user,
-                             stats=stats,
-                             comments=comments_result,
-                             mentions_count=mentions_count,
-                             current_page=page)
-
+        stats = get_user_stats(user.id)
+        current_app.logger.info(f"Stats loaded for user {username}: {stats}")
     except Exception as e:
-        current_app.logger.error(f"Error loading profile for user {username}: {e}")
-        flash('An error occurred while loading the profile.', 'danger')
-        return redirect(url_for('wiki.index'))
+        current_app.logger.error(f"Error getting stats for user {username}: {e}")
+        stats = {
+            'total_comments': 0,
+            'authored_pages': 0,
+            'edited_pages': 0,
+            'uploaded_attachments': 0,
+            'received_mentions': 0,
+            'unread_mentions': 0,
+            'recent_comments': 0
+        }
+
+    # 获取用户的最新评论
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+
+        comments_result = CommentService.get_user_comments(
+            user_id=user.id,
+            page=page,
+            per_page=per_page
+        )
+        current_app.logger.info(f"Comments loaded for user {username}: {comments_result.get('total', 0)} total")
+    except Exception as e:
+        current_app.logger.error(f"Error getting comments for user {username}: {e}")
+        comments_result = {
+            'comments': [],
+            'total': 0,
+            'pages': 0,
+            'current_page': 1,
+            'has_prev': False,
+            'has_next': False
+        }
+
+    # 获取@提及统计
+    try:
+        from app.models.comment import CommentMention
+        mentions_count = CommentMention.query.filter_by(mentioned_user_id=user.id, is_read=False).count()
+        current_app.logger.info(f"Mentions count for user {username}: {mentions_count}")
+    except Exception as e:
+        current_app.logger.error(f"Error getting mentions for user {username}: {e}")
+        mentions_count = 0
+
+    return render_template('user/profile.html',
+                         user=user,
+                         stats=stats,
+                         comments=comments_result,
+                         mentions_count=mentions_count,
+                         current_page=page)
 
 @user.route('/api/user/<username>/stats')
 def user_stats(username):
