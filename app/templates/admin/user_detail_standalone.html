@@ -1,0 +1,255 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}用户详情 - {{ user.username }} - 管理控制台{% endblock %}
+
+{% set page_title = "用户详情" %}
+{% set page_subtitle = "查看用户详细信息和活动记录" %}
+{% set page_icon = "fas fa-user" %}
+
+{% block admin_content %}
+<!-- 操作工具栏 -->
+<div class="admin-card">
+    <div class="admin-card-body">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="{{ user.gravatar(32) }}" alt="{{ user.username }}"
+                     style="width: 32px; height: 32px; border-radius: 50%;">
+                <div>
+                    <div style="font-weight: 600; color: var(--admin-text);">{{ user.username }}</div>
+                    <div style="font-size: 14px; color: var(--admin-text-secondary);">{{ user.email }}</div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                {% if user.role %}
+                    {% if user.role.name == 'Administrator' %}
+                    <span class="admin-badge danger">{{ user.role.name }}</span>
+                    {% elif user.role.name == 'Moderator' %}
+                    <span class="admin-badge warning">{{ user.role.name }}</span>
+                    {% else %}
+                    <span class="admin-badge info">{{ user.role.name }}</span>
+                    {% endif %}
+                {% else %}
+                <span class="admin-badge neutral">无角色</span>
+                {% endif %}
+                {% if user.is_active %}
+                <span class="admin-badge success">活跃</span>
+                {% else %}
+                <span class="admin-badge danger">非活跃</span>
+                {% endif %}
+                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="admin-btn primary">
+                    <i class="fas fa-edit"></i>
+                    编辑用户
+                </a>
+                <a href="{{ url_for('admin.users') }}" class="admin-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    返回列表
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 用户信息 -->
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+    <!-- 基本信息 -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h5 class="admin-card-title">
+                <i class="fas fa-user"></i>
+                基本信息
+            </h5>
+        </div>
+        <div class="admin-card-body">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <img src="{{ user.gravatar(96) }}" alt="{{ user.username }}"
+                     style="width: 96px; height: 96px; border-radius: 50%; margin-bottom: 12px; border: 4px solid var(--admin-border);">
+                <h4 style="margin: 0; color: var(--admin-text);">{{ user.username }}</h4>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 4px;">邮箱地址</div>
+                    <div style="font-weight: 500; color: var(--admin-text);">{{ user.email }}</div>
+                </div>
+
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 4px;">真实姓名</div>
+                    <div style="font-weight: 500; color: var(--admin-text);">{{ user.name or '未设置' }}</div>
+                </div>
+
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 4px;">用户角色</div>
+                    <div>
+                        {% if user.role %}
+                            {% if user.role.name == 'Administrator' %}
+                            <span class="admin-badge danger">{{ user.role.name }}</span>
+                            {% elif user.role.name == 'Moderator' %}
+                            <span class="admin-badge warning">{{ user.role.name }}</span>
+                            {% else %}
+                            <span class="admin-badge info">{{ user.role.name }}</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="admin-badge neutral">未分配角色</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 4px;">账户状态</div>
+                    <div>
+                        {% if user.is_active %}
+                        <span class="admin-badge success">活跃</span>
+                        {% else %}
+                        <span class="admin-badge danger">已禁用</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 4px;">邮箱验证</div>
+                    <div>
+                        {% if user.confirmed %}
+                        <span class="admin-badge success">已验证</span>
+                        {% else %}
+                        <span class="admin-badge warning">未验证</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 4px;">注册时间</div>
+                    <div style="font-weight: 500; color: var(--admin-text);">
+                        {{ user.member_since.strftime('%Y-%m-%d') if user.member_since else '未知' }}
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 4px;">最后登录</div>
+                    <div style="font-weight: 500; color: var(--admin-text);">
+                        {{ user.last_seen.strftime('%Y-%m-%d %H:%M') if user.last_seen else '从未登录' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 活动记录 -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- 最近的页面 -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-file-alt"></i>
+                    最近的页面 ({{ user_pages|length }})
+                </h5>
+            </div>
+            <div class="admin-card-body" style="padding: 0;">
+                {% if user_pages %}
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>页面标题</th>
+                                <th>状态</th>
+                                <th>分类</th>
+                                <th>浏览量</th>
+                                <th>最后更新</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for page in user_pages %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('wiki.view_page', slug=page.slug) }}"
+                                       style="text-decoration: none; color: var(--admin-text);" target="_blank">
+                                        {{ page.title }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if page.is_published %}
+                                    <span class="admin-badge success">已发布</span>
+                                    {% else %}
+                                    <span class="admin-badge neutral">草稿</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if page.category %}
+                                    <span class="admin-badge info">{{ page.category.name }}</span>
+                                    {% else %}
+                                    <span style="color: var(--admin-text-secondary); font-size: 13px;">未分类</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ page.view_count or 0 }}</td>
+                                <td>{{ page.updated_at.strftime('%Y-%m-%d %H:%M') if page.updated_at else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="admin-empty-state">
+                    <i class="fas fa-file-alt"></i>
+                    <h6>暂无页面</h6>
+                    <p>该用户还没有创建任何页面</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 最近的会话 -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-clock"></i>
+                    最近的会话 ({{ user_sessions|length }})
+                </h5>
+            </div>
+            <div class="admin-card-body" style="padding: 0;">
+                {% if user_sessions %}
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>IP地址</th>
+                                <th>用户代理</th>
+                                <th>创建时间</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in user_sessions %}
+                            <tr>
+                                <td>
+                                    <code style="background: var(--admin-bg-secondary); padding: 2px 6px; border-radius: 3px;">
+                                        {{ session.ip_address or '未知' }}
+                                    </code>
+                                </td>
+                                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                    title="{{ session.user_agent or '未知' }}">
+                                    {{ session.user_agent[:40] }}{% if session.user_agent and session.user_agent|length > 40 %}...{% endif %}
+                                </td>
+                                <td>{{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    {% if session.is_active %}
+                                    <span class="admin-badge success">活跃</span>
+                                    {% else %}
+                                    <span class="admin-badge neutral">已结束</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="admin-empty-state">
+                    <i class="fas fa-clock"></i>
+                    <h6>暂无会话</h6>
+                    <p>该用户还没有登录记录</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

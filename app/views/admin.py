@@ -220,7 +220,7 @@ def user_detail(user_id):
     user_sessions = UserSession.query.filter_by(user_id=user_id)\
                                    .order_by(UserSession.created_at.desc()).limit(10).all()
 
-    return render_template('admin/user_detail.html', user=user,
+    return render_template('admin/user_detail_standalone.html', user=user,
                          user_pages=user_pages, user_sessions=user_sessions)
 
 @admin.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
@@ -245,7 +245,7 @@ def edit_user(user_id):
         flash('User updated successfully!', 'success')
         return redirect(url_for('admin.users'))
 
-    return render_template('admin/edit_user.html', form=form, user=user)
+    return render_template('admin/edit_user_standalone.html', form=form, user=user)
 
 @admin.route('/users/<int:user_id>/delete', methods=['POST'])
 def delete_user(user_id):

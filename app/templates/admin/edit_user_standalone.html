@@ -1,0 +1,167 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}编辑用户 - {{ user.username }} - 管理控制台{% endblock %}
+
+{% set page_title = "编辑用户" %}
+{% set page_subtitle = "修改用户账户信息和设置" %}
+{% set page_icon = "fas fa-user-edit" %}
+
+{% block admin_content %}
+<!-- 用户信息头部 -->
+<div class="admin-card">
+    <div class="admin-card-body">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="{{ user.gravatar(48) }}" alt="{{ user.username }}"
+                     style="width: 48px; height: 48px; border-radius: 50%; border: 3px solid var(--admin-border);">
+                <div>
+                    <div style="font-weight: 600; color: var(--admin-text); font-size: 18px;">{{ user.username }}</div>
+                    <div style="font-size: 14px; color: var(--admin-text-secondary);">{{ user.email }}</div>
+                    {% if user.role %}
+                        {% if user.role.name == 'Administrator' %}
+                        <span class="admin-badge danger" style="margin-top: 4px; display: inline-block;">{{ user.role.name }}</span>
+                        {% elif user.role.name == 'Moderator' %}
+                        <span class="admin-badge warning" style="margin-top: 4px; display: inline-block;">{{ user.role.name }}</span>
+                        {% else %}
+                        <span class="admin-badge info" style="margin-top: 4px; display: inline-block;">{{ user.role.name }}</span>
+                        {% endif %}
+                    {% else %}
+                    <span class="admin-badge neutral" style="margin-top: 4px; display: inline-block;">无角色</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                {% if user.is_active %}
+                <span class="admin-badge success">活跃用户</span>
+                {% else %}
+                <span class="admin-badge danger">已禁用</span>
+                {% endif %}
+                {% if user.confirmed %}
+                <span class="admin-badge success">邮箱已验证</span>
+                {% else %}
+                <span class="admin-badge warning">邮箱未验证</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑表单 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-user-edit"></i>
+            编辑用户信息
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px), 1fr); gap: 20px;">
+                <div class="admin-form-group">
+                    <label class="admin-form-label">用户名 *</label>
+                    {{ form.username(class="admin-form-control") }}
+                    {% if form.username.errors %}
+                    <div style="color: var(--admin-danger); font-size: 12px; margin-top: 4px;">
+                        {{ form.username.errors[0] }}
+                    </div>
+                    {% endif %}
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                        用户登录时使用的唯一标识
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">邮箱地址 *</label>
+                    {{ form.email(class="admin-form-control") }}
+                    {% if form.email.errors %}
+                    <div style="color: var(--admin-danger); font-size: 12px; margin-top: 4px;">
+                        {{ form.email.errors[0] }}
+                    </div>
+                    {% endif %}
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                        用于接收通知和找回密码
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">真实姓名</label>
+                    {{ form.name(class="admin-form-control") }}
+                    {% if form.name.errors %}
+                    <div style="color: var(--admin-danger); font-size: 12px; margin-top: 4px;">
+                        {{ form.name.errors[0] }}
+                    </div>
+                    {% endif %}
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                        用户的真实姓名，用于显示
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">用户角色</label>
+                    {{ form.role_id(class="admin-form-select") }}
+                    {% if form.role_id.errors %}
+                    <div style="color: var(--admin-danger); font-size: 12px; margin-top: 4px;">
+                        {{ form.role_id.errors[0] }}
+                    </div>
+                    {% endif %}
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                        分配用户的系统权限级别
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">密码</label>
+                    {{ form.password(class="admin-form-control", placeholder="留空保持原密码不变") }}
+                    {% if form.password.errors %}
+                    <div style="color: var(--admin-danger); font-size: 12px; margin-top: 4px;">
+                        {{ form.password.errors[0] }}
+                    </div>
+                    {% endif %}
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                        留空则不修改当前密码<br>
+                        如需修改，请输入8位以上包含字母和数字的新密码
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">账户设置</label>
+                    <div style="display: flex; gap: 20px; margin-top: 8px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            {{ form.is_active(style="margin-right: 8px;") }}
+                            启用账户
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            {{ form.confirmed(style="margin-right: 8px;") }}
+                            邮箱已验证
+                        </label>
+                    </div>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 8px;">
+                        控制用户的账户状态和验证权限
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--admin-border);">
+                <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="admin-btn">
+                    <i class="fas fa-times"></i>
+                    取消
+                </a>
+                {% if user.id != current_user.id %}
+                <div style="display: flex; gap: 8px;">
+                    <form method="POST" action="{{ url_for('admin.toggle_user_status', user_id=user.id) }}"
+                          style="display: inline;" onsubmit="return confirmUserStatusToggle()">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="admin-btn {{ 'warning' if user.is_active else 'success' }}"
+                                style="margin-right: 0;">
+                            <i class="fas {{ 'fa-ban' if user.is_active else 'fa-check' }}"></i>
+                            {{ '禁用用户' if user.is_active else '启用用户' }}
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+                <button type="submit" class="admin-btn primary">
+                    <i class="fas fa-save"></i>
+                    保存更改
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
