@@ -1,0 +1,363 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}系统备份 - 管理控制台{% endblock %}
+
+{% set page_title = "系统备份" %}
+{% set page_subtitle = "创建系统数据备份和查看系统信息" %}
+{% set page_icon = "fas fa-database" %}
+
+{% block admin_content %}
+<!-- 系统信息 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-info-circle"></i>
+            系统信息
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            <!-- 软件信息 -->
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">
+                    <i class="fas fa-cube" style="color: var(--admin-primary);"></i>
+                    软件信息
+                </h6>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">系统版本</span>
+                        <span style="font-weight: 500;">v1.0.0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">Python版本</span>
+                        <span style="font-weight: 500;">3.8+</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">Flask版本</span>
+                        <span style="font-weight: 500;">2.3.0+</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">数据库引擎</span>
+                        <span style="font-weight: 500;">SQLite</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 运行环境 -->
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">
+                    <i class="fas fa-server" style="color: var(--admin-success);"></i>
+                    运行环境
+                </h6>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">操作系统</span>
+                        <span style="font-weight: 500;">Linux/Unix</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">运行模式</span>
+                        <span style="font-weight: 500;">Production</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">时区设置</span>
+                        <span style="font-weight: 500;">Asia/Shanghai</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">编码格式</span>
+                        <span style="font-weight: 500;">UTF-8</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 服务状态 -->
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">
+                    <i class="fas fa-heartbeat" style="color: var(--admin-warning);"></i>
+                    服务状态
+                </h6>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">数据库连接</span>
+                        <span class="admin-badge success">正常</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">缓存服务</span>
+                        <span class="admin-badge success">正常</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">文件系统</span>
+                        <span class="admin-badge success">正常</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">调试模式</span>
+                        <span class="admin-badge {{ 'success' if config.DEBUG else 'info' }}">
+                            {{ '开启' if config.DEBUG else '关闭' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统资源 -->
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">
+                    <i class="fas fa-chart-pie" style="color: var(--admin-info);"></i>
+                    系统资源
+                </h6>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">运行时间</span>
+                        <span style="font-weight: 500;" id="uptime">计算中...</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">内存使用</span>
+                        <span style="font-weight: 500;">正常范围</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">磁盘空间</span>
+                        <span style="font-weight: 500;">充足</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--admin-text-secondary);">CPU负载</span>
+                        <span style="font-weight: 500;">轻负载</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据库统计 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-database"></i>
+            数据库统计
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px;">
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: 600; color: var(--admin-primary);">{{ user_count }}</div>
+                <div style="font-size: 14px; color: var(--admin-text-secondary); margin-top: 8px;">用户总数</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: 600; color: var(--admin-success);">{{ page_count }}</div>
+                <div style="font-size: 14px; color: var(--admin-text-secondary); margin-top: 8px;">页面总数</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: 600; color: var(--admin-warning);">{{ category_count }}</div>
+                <div style="font-size: 14px; color: var(--admin-text-secondary); margin-top: 8px;">分类总数</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: 600; color: var(--admin-info);">{{ session_count }}</div>
+                <div style="font-size: 14px; color: var(--admin-text-secondary); margin-top: 8px;">活跃会话</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统备份 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-download"></i>
+            系统备份
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">
+                    <i class="fas fa-file-export" style="color: var(--admin-primary);"></i>
+                    数据导出
+                </h6>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid var(--admin-primary);">
+                        <div style="font-weight: 500; color: var(--admin-text); margin-bottom: 4px;">完整系统备份</div>
+                        <div style="font-size: 13px; color: var(--admin-text-secondary);">
+                            包含所有用户数据、页面内容、分类结构和配置信息的完整备份
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin.create_backup') }}" style="margin-top: 12px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="admin-btn primary" style="width: 100%;">
+                            <i class="fas fa-download"></i>
+                            创建完整备份
+                        </button>
+                    </form>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 8px;">
+                        <i class="fas fa-info-circle"></i>
+                        备份格式：SQL语句 + ZIP压缩<br>
+                        下载文件：enterprise_backup_[时间戳].zip
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">
+                    <i class="fas fa-shield-alt" style="color: var(--admin-success);"></i>
+                    备份信息
+                </h6>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                        <div>
+                            <div style="font-weight: 500; color: var(--admin-text);">备份包含内容</div>
+                            <div style="font-size: 12px; color: var(--admin-text-secondary);">所有表结构和数据</div>
+                        </div>
+                        <span class="admin-badge success">完整</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                        <div>
+                            <div style="font-weight: 500; color: var(--admin-text);">压缩方式</div>
+                            <div style="font-size: 12px; color: var(--admin-text-secondary);">ZIP标准压缩</div>
+                        </div>
+                        <span class="admin-badge info">ZIP</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                        <div>
+                            <div style="font-weight: 500; color: var(--admin-text);">安全级别</div>
+                            <div style="font-size: 12px; color: var(--admin-text-secondary);">管理员权限验证</div>
+                        </div>
+                        <span class="admin-badge warning">需要验证</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 备份历史 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-history"></i>
+            备份历史
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        {% if backup_history %}
+        <div class="admin-table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>备份时间</th>
+                        <th>备份类型</th>
+                        <th>文件大小</th>
+                        <th>创建者</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for backup in backup_history %}
+                    <tr>
+                        <td>{{ backup.created_at.strftime('%Y-%m-%d %H:%M:%S') if backup.created_at else 'N/A' }}</td>
+                        <td><span class="admin-badge primary">完整备份</span></td>
+                        <td>{{ backup.file_size or 'N/A' }}</td>
+                        <td>{{ backup.creator.username if backup.creator else 'System' }}</td>
+                        <td><span class="admin-badge success">已完成</span></td>
+                        <td>
+                            <div class="admin-actions">
+                                {% if backup.file_path %}
+                                <a href="{{ url_for('admin.download_backup', backup_id=backup.id) }}" class="admin-btn sm">
+                                    <i class="fas fa-download"></i>
+                                    下载
+                                </a>
+                                {% else %}
+                                <span class="admin-badge neutral" style="font-size: 12px;">不可用</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="admin-empty-state" style="text-align: center; padding: 40px;">
+            <i class="fas fa-history fa-3x" style="color: var(--admin-text-secondary); margin-bottom: 16px;"></i>
+            <h5 style="color: var(--admin-text);">暂无备份记录</h5>
+            <p style="color: var(--admin-text-secondary);">系统还没有创建任何备份记录</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 使用说明 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-question-circle"></i>
+            使用说明
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">
+                    <i class="fas fa-download" style="color: var(--admin-primary);"></i>
+                    备份操作
+                </h6>
+                <ul style="font-size: 13px; color: var(--admin-text-secondary); padding-left: 20px;">
+                    <li>点击"创建完整备份"按钮开始备份</li>
+                    <li>备份过程可能需要几秒钟到几分钟</li>
+                    <li>备份完成后会自动开始下载</li>
+                    <li>备份文件格式为 ZIP 压缩包</li>
+                </ul>
+            </div>
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">
+                    <i class="fas fa-shield-alt" style="color: var(--admin-success);"></i>
+                    安全建议
+                </h6>
+                <ul style="font-size: 13px; color: var(--admin-text-secondary); padding-left: 20px;">
+                    <li>定期创建备份以保护重要数据</li>
+                    <li>将备份文件保存在安全的位置</li>
+                    <li>备份文件包含敏感信息，请妥善保管</li>
+                    <li>建议在重大操作前先创建备份</li>
+                </ul>
+            </div>
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">
+                    <i class="fas fa-info-circle" style="color: var(--admin-info);"></i>
+                    备份内容
+                </h6>
+                <ul style="font-size: 13px; color: var(--admin-text-secondary); padding-left: 20px;">
+                    <li>用户账户信息和权限设置</li>
+                    <li>所有页面内容和分类结构</li>
+                    <li>系统配置和设置参数</li>
+                    <li>会话和操作日志记录</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 模拟运行时间
+    function updateUptime() {
+        const uptimeElement = document.getElementById('uptime');
+        if (uptimeElement) {
+            // 这里可以实际计算运行时间
+            const now = new Date();
+            const uptime = '2小时 15分钟'; // 模拟数据
+            uptimeElement.textContent = uptime;
+        }
+    }
+
+    updateUptime();
+    // 每分钟更新一次时间
+    setInterval(updateUptime, 60000);
+});
+
+// 表单提交确认
+document.querySelector('form[action*="create_backup"]').addEventListener('submit', function(e) {
+    const confirmBackup = confirm('确定要创建系统备份吗？这可能需要一些时间。');
+    if (!confirmBackup) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

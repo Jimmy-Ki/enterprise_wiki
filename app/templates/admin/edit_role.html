@@ -1,8 +1,12 @@
-{% extends "base.html" %}
+{% extends "admin/admin_base_standalone.html" %}
 
-{% block title %}Edit Role - {{ role.name }}{% endblock %}
+{% block title %}编辑角色 - 管理控制台{% endblock %}
 
-{% block content %}
+{% set page_title = "编辑角色" %}
+{% set page_subtitle = "修改角色名称和权限设置" %}
+{% set page_icon = "fas fa-user-edit" %}
+
+{% block admin_content %}
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">

@@ -3,9 +3,23 @@ from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from app import db, mail
 from app.models import User, Role, Page, Category, Attachment, UserSession, Permission
+import os
+import zipfile
+import tempfile
+from flask import send_file, jsonify
+from werkzeug.utils import secure_filename
 from app.decorators import admin_required
 from app.forms.admin import UserForm, RoleForm, CategoryForm
-from sqlalchemy import func
+from sqlalchemy import func, text
+
+# 简单的备份记录类（临时解决方案）
+class BackupRecord:
+    def __init__(self, id, created_at, creator, file_size=None):
+        self.id = id
+        self.created_at = created_at
+        self.creator = creator
+        self.file_size = file_size
+        self.file_path = None
 
 admin = Blueprint('admin', __name__)
 
@@ -55,7 +69,7 @@ def dashboard():
 
     page_growth = [{'date': str(row.date), 'count': row.count} for row in page_growth_raw]
 
-    return render_template('admin/dashboard.html', stats=stats,
+    return render_template('admin/dashboard_standalone.html', stats=stats,
                          recent_pages=recent_pages, recent_users=recent_users,
                          user_growth=user_growth, page_growth=page_growth)
 
@@ -75,12 +89,12 @@ def create_user():
         # Check if username already exists
         if User.query.filter_by(username=form.username.data).first():
             flash('Username already exists!', 'danger')
-            return render_template('admin/create_user.html', form=form)
+            return render_template('admin/create_user_standalone.html', form=form)
 
         # Check if email already exists
         if User.query.filter_by(email=form.email.data).first():
             flash('Email already exists!', 'danger')
-            return render_template('admin/create_user.html', form=form)
+            return render_template('admin/create_user_standalone.html', form=form)
 
         # Generate random password
         password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
@@ -168,7 +182,7 @@ def create_user():
             db.session.rollback()
             flash(f'Error creating user: {str(e)}', 'danger')
 
-    return render_template('admin/create_user.html', form=form)
+    return render_template('admin/create_user_standalone.html', form=form)
 
 @admin.route('/users')
 def users():
@@ -194,7 +208,7 @@ def users():
 
     roles = Role.query.all()
 
-    return render_template('admin/users.html', users=users, roles=roles,
+    return render_template('admin/users_standalone.html', users=users, roles=roles,
                          role_filter=role_filter, status_filter=status_filter)
 
 @admin.route('/users/<int:user_id>')
@@ -269,7 +283,7 @@ def roles():
     from app.forms.admin import RoleForm
     roles = Role.query.all()
     form = RoleForm()
-    return render_template('admin/roles.html', roles=roles, form=form)
+    return render_template('admin/roles_standalone.html', roles=roles, form=form)
 
 @admin.route('/roles/create', methods=['GET', 'POST'])
 def create_role():
@@ -372,7 +386,7 @@ def delete_role(role_id):
 def categories():
     """Category management"""
     categories = Category.query.order_by(Category.name).all()
-    return render_template('admin/categories.html', categories=categories)
+    return render_template('admin/categories_standalone.html', categories=categories)
 
 @admin.route('/categories/create', methods=['GET', 'POST'])
 def create_category():
@@ -381,6 +395,12 @@ def create_category():
     form.parent_id.choices = [(0, 'No Parent')] + [(c.id, c.name) for c in Category.query.all()]
 
     if form.validate_on_submit():
+        # Check if category name already exists
+        existing_category = Category.query.filter_by(name=form.name.data).first()
+        if existing_category:
+            flash(f'Category name "{form.name.data}" already exists! Please choose a different name.', 'danger')
+            return render_template('admin/create_category.html', form=form)
+
         category = Category(
             name=form.name.data,
             description=form.description.data,
@@ -389,10 +409,14 @@ def create_category():
             created_by=current_user.id
         )
 
-        db.session.add(category)
-        db.session.commit()
-        flash('Category created successfully!', 'success')
-        return redirect(url_for('admin.categories'))
+        try:
+            db.session.add(category)
+            db.session.commit()
+            flash('Category created successfully!', 'success')
+            return redirect(url_for('admin.categories'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating category: {str(e)}', 'danger')
 
     return render_template('admin/create_category.html', form=form)
 
@@ -411,6 +435,15 @@ def edit_category(category_id):
             flash('Circular parent-child relationship detected! This change would create an infinite loop.', 'danger')
             return render_template('admin/edit_category.html', form=form, category=category)
 
+        # Check if category name already exists (excluding current category)
+        existing_category = Category.query.filter(
+            Category.name == form.name.data,
+            Category.id != category.id
+        ).first()
+        if existing_category:
+            flash(f'Category name "{form.name.data}" already exists! Please choose a different name.', 'danger')
+            return render_template('admin/edit_category.html', form=form, category=category)
+
         category.name = form.name.data
         category.description = form.description.data
         category.parent_id = parent_id
@@ -425,6 +458,33 @@ def edit_category(category_id):
             flash(f'Error updating category: {str(e)}', 'danger')
 
     return render_template('admin/edit_category.html', form=form, category=category)
+
+@admin.route('/categories/<int:category_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_category(category_id):
+    """Delete category"""
+    category = Category.query.get_or_404(category_id)
+
+    # Check if category has pages
+    if category.pages.count() > 0:
+        flash('Cannot delete category with pages. Please move or delete the pages first.', 'danger')
+        return redirect(url_for('admin.categories'))
+
+    # Check if category has children
+    if category.children:
+        flash('Cannot delete category with subcategories. Please delete or move subcategories first.', 'danger')
+        return redirect(url_for('admin.categories'))
+
+    try:
+        db.session.delete(category)
+        db.session.commit()
+        flash('Category deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting category: {str(e)}', 'danger')
+
+    return redirect(url_for('admin.categories'))
 
 @admin.route('/pages')
 def pages():
@@ -448,7 +508,7 @@ def pages():
 
     authors = db.session.query(User.id, User.username).join(Page, User.id == Page.author_id).distinct().all()
 
-    return render_template('admin/pages.html', pages=pages, authors=authors,
+    return render_template('admin/pages_standalone.html', pages=pages, authors=authors,
                          status_filter=status_filter, author_filter=author_filter)
 
 @admin.route('/pages/<int:page_id>/toggle_status', methods=['POST'])
@@ -474,7 +534,7 @@ def sessions():
                               .order_by(UserSession.created_at.desc())\
                               .paginate(page=page, per_page=50, error_out=False)
 
-    return render_template('admin/sessions.html', sessions=sessions)
+    return render_template('admin/sessions_standalone.html', sessions=sessions)
 
 @admin.route('/sessions/<int:session_id>/revoke', methods=['POST'])
 def revoke_session(session_id):
@@ -488,11 +548,172 @@ def revoke_session(session_id):
 @admin.route('/settings')
 def settings():
     """System settings"""
-    return render_template('admin/settings.html')
+    return render_template('admin/settings_standalone.html', config=current_app.config)
+
+# 全局备份记录存储（临时解决方案）
+backup_records = []
 
 @admin.route('/backup')
+@login_required
+@admin_required
 def backup():
     """Database backup"""
-    # This would implement database backup functionality
-    flash('Backup functionality not implemented yet!', 'info')
-    return redirect(url_for('admin.dashboard'))
+    # 获取系统统计信息
+    user_count = User.query.count()
+    page_count = Page.query.count()
+    category_count = Category.query.count()
+    session_count = UserSession.query.filter_by(is_active=True).count()
+
+    return render_template('admin/backup_standalone.html',
+                         backup_history=backup_records,
+                         user_count=user_count,
+                         page_count=page_count,
+                         category_count=category_count,
+                         session_count=session_count)
+
+@admin.route('/backup/create', methods=['POST'])
+@login_required
+@admin_required
+def create_backup():
+    """Create database backup"""
+    try:
+        # 创建备份记录
+        backup_record = BackupRecord(
+            id=len(backup_records) + 1,
+            created_at=datetime.utcnow(),
+            creator=current_user
+        )
+
+        # 创建临时ZIP文件
+        temp_dir = tempfile.mkdtemp()
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_filename = f'enterprise_backup_{timestamp}.zip'
+        backup_path = os.path.join(temp_dir, backup_filename)
+
+        # 创建ZIP文件
+        with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # 获取数据库路径
+            database_path = current_app.config.get('DATABASE_PATH', 'instance/wiki.db')
+
+            if os.path.exists(database_path):
+                # 添加数据库文件到ZIP
+                zipf.write(database_path, os.path.basename(database_path))
+
+            # 创建数据库导出SQL文件
+            sql_filename = f'database_export_{timestamp}.sql'
+            sql_path = os.path.join(temp_dir, sql_filename)
+
+            # 导出数据库为SQL语句
+            with open(sql_path, 'w', encoding='utf-8') as sql_file:
+                sql_file.write('-- Enterprise Wiki Database Backup\n')
+                sql_file.write(f'-- Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n')
+                sql_file.write(f'-- Backup ID: {backup_record.id}\n\n')
+
+                # 获取所有表并生成SQL
+                inspector = db.inspect(db.engine)
+                for table_name in inspector.get_table_names():
+                    sql_file.write(f'-- Table: {table_name}\n')
+
+                    # 获取表结构
+                    columns = inspector.get_columns(table_name)
+                    create_sql = f'CREATE TABLE IF NOT EXISTS {table_name} (\n'
+                    column_defs = []
+                    for col in columns:
+                        col_def = f'    {col["name"]} {col["type"]}'
+                        if not col.get("nullable", True):
+                            col_def += " NOT NULL"
+                        if col.get("default") is not None:
+                            col_def += f" DEFAULT {col['default']}"
+                        column_defs.append(col_def)
+                    create_sql += ',\n'.join(column_defs) + '\n);'
+                    sql_file.write(create_sql + '\n\n')
+
+                    # 获取表数据
+                    result = db.session.execute(text(f'SELECT * FROM {table_name}'))
+                    rows = result.fetchall()
+
+                    if rows:
+                        columns_list = [col["name"] for col in columns]
+                        sql_file.write(f'-- Data for {table_name}\n')
+                        for row in rows:
+                            values = []
+                            for value in row:
+                                if value is None:
+                                    values.append('NULL')
+                                elif isinstance(value, str):
+                                    escaped_value = value.replace("'", "''")
+                                    values.append(f"'{escaped_value}'")
+                                else:
+                                    values.append(str(value))
+                            insert_sql = f'INSERT INTO {table_name} ({", ".join(columns_list)}) VALUES ({", ".join(values)});'
+                            sql_file.write(insert_sql + '\n')
+                        sql_file.write('\n')
+
+                sql_file.write('-- End of backup\n')
+
+            # 添加SQL文件到ZIP
+            zipf.write(sql_path, sql_filename)
+
+            # 添加备份信息文件
+            info_filename = f'backup_info_{timestamp}.txt'
+            info_path = os.path.join(temp_dir, info_filename)
+            with open(info_path, 'w', encoding='utf-8') as info_file:
+                info_file.write(f'Enterprise Wiki Backup Information\n')
+                info_file.write(f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n')
+                info_file.write(f'Backup ID: {backup_record.id}\n')
+                info_file.write(f'Created by: {current_user.username}\n\n')
+                info_file.write(f'Statistics:\n')
+                info_file.write(f'- Users: {User.query.count()}\n')
+                info_file.write(f'- Pages: {Page.query.count()}\n')
+                info_file.write(f'- Categories: {Category.query.count()}\n')
+                info_file.write(f'- Active Sessions: {UserSession.query.filter_by(is_active=True).count()}\n')
+
+            zipf.write(info_path, info_filename)
+
+        # 获取文件大小
+        file_size = os.path.getsize(backup_path)
+        backup_record.file_size = f"{file_size // 1024} KB"
+        backup_record.file_path = backup_path
+
+        # 添加到备份记录
+        backup_records.append(backup_record)
+
+        flash('Backup created successfully! Download will start automatically.', 'success')
+        return send_file(backup_path,
+                        as_attachment=True,
+                        download_name=backup_filename,
+                        mimetype='application/zip')
+
+    except Exception as e:
+        flash(f'Error creating backup: {str(e)}', 'danger')
+        return redirect(url_for('admin.backup'))
+
+@admin.route('/backup/download/<int:backup_id>')
+@login_required
+@admin_required
+def download_backup(backup_id):
+    """Download existing backup"""
+    try:
+        # 查找备份记录
+        backup_record = None
+        for record in backup_records:
+            if record.id == backup_id:
+                backup_record = record
+                break
+
+        if not backup_record or not backup_record.file_path or not os.path.exists(backup_record.file_path):
+            flash('Backup file not found.', 'danger')
+            return redirect(url_for('admin.backup'))
+
+        # 生成下载文件名
+        timestamp = backup_record.created_at.strftime('%Y%m%d_%H%M%S')
+        backup_filename = f'enterprise_backup_{timestamp}.zip'
+
+        return send_file(backup_record.file_path,
+                        as_attachment=True,
+                        download_name=backup_filename,
+                        mimetype='application/zip')
+
+    except Exception as e:
+        flash(f'Error downloading backup: {str(e)}', 'danger')
+        return redirect(url_for('admin.backup'))

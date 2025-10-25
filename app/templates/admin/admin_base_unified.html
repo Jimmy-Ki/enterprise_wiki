@@ -1,0 +1,708 @@
+{% extends "base_confluence.html" %}
+
+{% block styles %}
+<style>
+/* 统一严肃的管理界面样式 */
+:root {
+    --admin-primary: #1a3a52;
+    --admin-secondary: #2c5282;
+    --admin-dark: #172a38;
+    --admin-light: #f7fafc;
+    --admin-border: #e2e8f0;
+    --admin-text: #2d3748;
+    --admin-text-secondary: #718096;
+    --admin-sidebar-bg: #1a202c;
+    --admin-sidebar-hover: #2d3748;
+    --admin-sidebar-active: #2c5282;
+    --admin-success: #38a169;
+    --admin-warning: #d69e2e;
+    --admin-danger: #e53e3e;
+    --admin-info: #3182ce;
+}
+
+/* 重置页面布局 */
+body {
+    background: var(--admin-light);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* 主布局容器 */
+.admin-unified-layout {
+    display: flex;
+    min-height: calc(100vh - 60px);
+    margin: -16px -16px 0 -16px;
+}
+
+/* 左侧导航栏 */
+.admin-sidebar {
+    width: 260px;
+    background: var(--admin-sidebar-bg);
+    flex-shrink: 0;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+}
+
+.admin-sidebar-header {
+    padding: 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.admin-sidebar-title {
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-sidebar-subtitle {
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    margin: 4px 0 0 0;
+}
+
+/* 导航菜单 */
+.admin-nav {
+    padding: 0;
+}
+
+.admin-nav-section {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.admin-nav-section:last-child {
+    border-bottom: none;
+}
+
+.admin-nav-section-title {
+    color: rgba(255,255,255,0.5);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 16px 20px 8px 20px;
+    margin: 0;
+}
+
+.admin-nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+    transition: background-color 0.2s ease;
+}
+
+.admin-nav-item:hover {
+    background: var(--admin-sidebar-hover);
+    color: white;
+    text-decoration: none;
+    border-left-color: rgba(255,255,255,0.2);
+}
+
+.admin-nav-item.active {
+    background: var(--admin-sidebar-active);
+    color: white;
+    border-left-color: white;
+}
+
+.admin-nav-item i {
+    width: 20px;
+    margin-right: 12px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.admin-nav-badge {
+    margin-left: auto;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* 主内容区域 */
+.admin-main {
+    flex: 1;
+    background: var(--admin-light);
+    overflow-y: auto;
+}
+
+.admin-content {
+    padding: 24px;
+}
+
+/* 页面标题 */
+.admin-page-header {
+    background: white;
+    padding: 24px 32px;
+    margin: 0 0 24px 0;
+    border-bottom: 1px solid var(--admin-border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.admin-page-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--admin-text);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-page-subtitle {
+    font-size: 14px;
+    color: var(--admin-text-secondary);
+    margin: 4px 0 0 0;
+}
+
+/* 消息提示 */
+.admin-message {
+    padding: 16px 20px;
+    border-radius: 6px;
+    margin-bottom: 24px;
+    border: 1px solid;
+    font-size: 14px;
+}
+
+.admin-message.info {
+    background: #ebf8ff;
+    border-color: #90cdf4;
+    color: #2c5282;
+}
+
+.admin-message.success {
+    background: #f0fff4;
+    border-color: #9ae6b4;
+    color: #276749;
+}
+
+.admin-message.warning {
+    background: #fffbeb;
+    border-color: #fbd38d;
+    color: #b7791f;
+}
+
+.admin-message.danger {
+    background: #fff5f5;
+    border-color: #feb2b2;
+    color: #c53030;
+}
+
+/* 统一卡片样式 */
+.admin-card {
+    background: white;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.admin-card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--admin-border);
+    background: #fafbfc;
+}
+
+.admin-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--admin-text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-card-body {
+    padding: 24px;
+}
+
+/* 统计卡片 */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.admin-stat-card {
+    background: white;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.admin-stat-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--admin-primary);
+    margin-bottom: 8px;
+}
+
+.admin-stat-label {
+    font-size: 14px;
+    color: var(--admin-text-secondary);
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+.admin-stat-meta {
+    font-size: 12px;
+    color: var(--admin-text-secondary);
+}
+
+/* 表格样式 */
+.admin-table-container {
+    background: white;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.admin-table th {
+    background: #fafbfc;
+    padding: 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--admin-text);
+    border-bottom: 1px solid var(--admin-border);
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.admin-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--admin-border);
+    font-size: 14px;
+    color: var(--admin-text);
+}
+
+.admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-table tr:hover {
+    background: #f7fafc;
+}
+
+/* 标签样式 */
+.admin-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.admin-badge.success {
+    background: #f0fff4;
+    color: #276749;
+    border: 1px solid #9ae6b4;
+}
+
+.admin-badge.warning {
+    background: #fffbeb;
+    color: #b7791f;
+    border: 1px solid #fbd38d;
+}
+
+.admin-badge.danger {
+    background: #fff5f5;
+    color: #c53030;
+    border: 1px solid #feb2b2;
+}
+
+.admin-badge.info {
+    background: #ebf8ff;
+    color: #2c5282;
+    border: 1px solid #90cdf4;
+}
+
+.admin-badge.neutral {
+    background: #f7fafc;
+    color: var(--admin-text-secondary);
+    border: 1px solid var(--admin-border);
+}
+
+/* 按钮样式 */
+.admin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid var(--admin-border);
+    border-radius: 6px;
+    background: white;
+    color: var(--admin-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.admin-btn:hover {
+    background: #f7fafc;
+    color: var(--admin-text);
+    text-decoration: none;
+    border-color: #cbd5e0;
+}
+
+.admin-btn.primary {
+    background: var(--admin-primary);
+    color: white;
+    border-color: var(--admin-primary);
+}
+
+.admin-btn.primary:hover {
+    background: var(--admin-secondary);
+    border-color: var(--admin-secondary);
+    color: white;
+}
+
+.admin-btn.danger {
+    background: var(--admin-danger);
+    color: white;
+    border-color: var(--admin-danger);
+}
+
+.admin-btn.danger:hover {
+    background: #c53030;
+    border-color: #c53030;
+    color: white;
+}
+
+.admin-btn.sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.admin-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* 操作按钮组 */
+.admin-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* 表单样式 */
+.admin-form {
+    background: white;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.admin-form-group {
+    margin-bottom: 20px;
+}
+
+.admin-form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--admin-text);
+    font-size: 14px;
+}
+
+.admin-form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--admin-border);
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.admin-form-control:focus {
+    outline: none;
+    border-color: var(--admin-primary);
+    box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1);
+}
+
+.admin-form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--admin-border);
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+}
+
+/* 分页样式 */
+.admin-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    padding: 20px;
+    background: #fafbfc;
+    border-top: 1px solid var(--admin-border);
+}
+
+.admin-pagination a,
+.admin-pagination span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--admin-border);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--admin-text);
+    font-size: 14px;
+    font-weight: 500;
+    background: white;
+}
+
+.admin-pagination a:hover {
+    background: #f7fafc;
+    border-color: #cbd5e0;
+    color: var(--admin-text);
+    text-decoration: none;
+}
+
+.admin-pagination .active {
+    background: var(--admin-primary);
+    border-color: var(--admin-primary);
+    color: white;
+}
+
+.admin-pagination .disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 空状态样式 */
+.admin-empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--admin-text-secondary);
+}
+
+.admin-empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.admin-empty-state h5 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: var(--admin-text);
+}
+
+.admin-empty-state p {
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .admin-sidebar {
+        width: 220px;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-unified-layout {
+        flex-direction: column;
+    }
+
+    .admin-sidebar {
+        width: 100%;
+        order: 2;
+    }
+
+    .admin-main {
+        order: 1;
+    }
+
+    .admin-content {
+        padding: 16px;
+    }
+
+    .admin-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-table {
+        font-size: 13px;
+    }
+
+    .admin-table th,
+    .admin-table td {
+        padding: 12px 8px;
+    }
+
+    .admin-actions {
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-page-header {
+        padding: 20px 16px;
+    }
+
+    .admin-page-title {
+        font-size: 20px;
+    }
+
+    .admin-content {
+        padding: 12px;
+    }
+
+    .admin-card-body {
+        padding: 20px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-unified-layout">
+    <!-- 左侧导航栏 -->
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-header">
+            <h1 class="admin-sidebar-title">
+                <i class="fas fa-shield-alt"></i>
+                管理控制台
+            </h1>
+            <p class="admin-sidebar-subtitle">{{ current_user.username }} · 系统管理员</p>
+        </div>
+
+        <nav class="admin-nav">
+            <!-- 系统管理 -->
+            <div class="admin-nav-section">
+                <h3 class="admin-nav-section-title">系统管理</h3>
+                <a href="{{ url_for('admin.dashboard') }}" class="admin-nav-item {{ 'active' if request.endpoint == 'admin.dashboard' }}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    系统概览
+                </a>
+                <a href="{{ url_for('admin.settings') }}" class="admin-nav-item {{ 'active' if 'settings' in request.endpoint }}">
+                    <i class="fas fa-cog"></i>
+                    系统设置
+                </a>
+                <a href="{{ url_for('admin.backup') }}" class="admin-nav-item">
+                    <i class="fas fa-database"></i>
+                    数据备份
+                </a>
+            </div>
+
+            <!-- 用户管理 -->
+            <div class="admin-nav-section">
+                <h3 class="admin-nav-section-title">用户管理</h3>
+                <a href="{{ url_for('admin.users') }}" class="admin-nav-item {{ 'active' if 'users' in request.endpoint }}">
+                    <i class="fas fa-users"></i>
+                    用户账户
+                    {% if stats and stats.total_users %}
+                    <span class="admin-nav-badge">{{ stats.total_users }}</span>
+                    {% endif %}
+                </a>
+                <a href="{{ url_for('admin.roles') }}" class="admin-nav-item {{ 'active' if 'roles' in request.endpoint }}">
+                    <i class="fas fa-user-shield"></i>
+                    角色权限
+                </a>
+                <a href="{{ url_for('admin.sessions') }}" class="admin-nav-item {{ 'active' if 'sessions' in request.endpoint }}">
+                    <i class="fas fa-clock"></i>
+                    会话管理
+                    {% if stats and stats.active_sessions %}
+                    <span class="admin-nav-badge">{{ stats.active_sessions }}</span>
+                    {% endif %}
+                </a>
+            </div>
+
+            <!-- 内容管理 -->
+            <div class="admin-nav-section">
+                <h3 class="admin-nav-section-title">内容管理</h3>
+                <a href="{{ url_for('admin.pages') }}" class="admin-nav-item {{ 'active' if 'pages' in request.endpoint }}">
+                    <i class="fas fa-file-alt"></i>
+                    页面管理
+                    {% if stats and stats.total_pages %}
+                    <span class="admin-nav-badge">{{ stats.total_pages }}</span>
+                    {% endif %}
+                </a>
+                <a href="{{ url_for('admin.categories') }}" class="admin-nav-item {{ 'active' if 'categories' in request.endpoint }}">
+                    <i class="fas fa-folder-tree"></i>
+                    分类管理
+                </a>
+            </div>
+
+            <!-- 快捷链接 -->
+            <div class="admin-nav-section">
+                <h3 class="admin-nav-section-title">快捷链接</h3>
+                <a href="{{ url_for('wiki.index') }}" class="admin-nav-item">
+                    <i class="fas fa-arrow-left"></i>
+                    返回前台
+                </a>
+                <a href="{{ url_for('user.profile') }}" class="admin-nav-item">
+                    <i class="fas fa-user"></i>
+                    个人资料
+                </a>
+                <a href="{{ url_for('auth.logout') }}" class="admin-nav-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出登录
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- 主内容区域 -->
+    <main class="admin-main">
+        <!-- 页面标题栏 -->
+        <div class="admin-page-header">
+            <h1 class="admin-page-title">
+                {% if page_icon %}<i class="{{ page_icon }}"></i>{% endif %}
+                {{ page_title or '管理控制台' }}
+            </h1>
+            {% if page_subtitle %}
+            <p class="admin-page-subtitle">{{ page_subtitle }}</p>
+            {% endif %}
+        </div>
+
+        <!-- 页面内容 -->
+        <div class="admin-content">
+            <!-- 消息提示 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="admin-message {{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- 具体页面内容 -->
+            {% block admin_content %}{% endblock %}
+        </div>
+    </main>
+</div>
+{% endblock %}

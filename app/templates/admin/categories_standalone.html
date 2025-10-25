@@ -1,0 +1,392 @@
+{% extends "admin/admin_base_standalone.html" %}
+
+{% block title %}分类管理 - 管理控制台{% endblock %}
+
+{% set page_title = "分类管理" %}
+{% set page_subtitle = "管理Wiki页面分类和层级结构" %}
+{% set page_icon = "fas fa-folder" %}
+
+{% block admin_content %}
+<!-- 操作工具栏 -->
+<div class="admin-card">
+    <div class="admin-card-body">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary);">分类总数</div>
+                    <div style="font-size: 18px; font-weight: 600; color: var(--admin-text);">{{ categories | length }}</div>
+                </div>
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary);">页面总数</div>
+                    <div style="font-size: 18px; font-weight: 600; color: var(--admin-text);">
+                        {% set page_count = 0 %}
+                        {% for category in categories %}
+                            {% set page_count = page_count + category.pages.count() %}
+                        {% endfor %}
+                        {{ page_count }}
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <a href="{{ url_for('admin.create_category') }}" class="admin-btn primary">
+                    <i class="fas fa-plus"></i>
+                    创建分类
+                </a>
+                <button class="admin-btn" onclick="confirmReorderCategories()">
+                    <i class="fas fa-sort"></i>
+                    重新排序
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 分类列表 -->
+{% if categories %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px;">
+    {% for category in categories %}
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <h5 class="admin-card-title" style="margin: 0; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-folder" style="color: {{ category.color or '#4299e1' }};"></i>
+                    {{ category.name }}
+                    {% if category.description %}
+                    <i class="fas fa-info-circle" style="font-size: 12px; color: var(--admin-text-secondary); cursor: help;"
+                       title="{{ category.description }}"></i>
+                    {% endif %}
+                </h5>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    {% if category.parent %}
+                    <span class="admin-badge info" style="font-size: 11px;">
+                        {{ category.parent.name }}
+                    </span>
+                    {% endif %}
+                    <div style="width: 20px; height: 20px; border-radius: 4px; background: {{ category.color or '#4299e1' }};
+                         border: 2px solid var(--admin-border);"></div>
+                </div>
+            </div>
+        </div>
+        <div class="admin-card-body">
+            <div style="margin-bottom: 16px;">
+                {% if category.description %}
+                <p style="font-size: 14px; color: var(--admin-text-secondary); margin: 0 0 12px 0;">
+                    {{ category.description }}
+                </p>
+                {% endif %}
+
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 12px;">
+                    <div>
+                        <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 4px;">页面数量</div>
+                        <div style="font-size: 18px; font-weight: 600; color: var(--admin-text);">
+                            {{ category.pages.count() }}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 4px;">创建时间</div>
+                        <div style="font-size: 14px; color: var(--admin-text);">
+                            {{ category.created_at.strftime('%Y-%m-%d') }}
+                        </div>
+                    </div>
+                </div>
+
+                {% if category.children %}
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 6px;">子分类</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        {% for child in category.children %}
+                        <span class="admin-badge neutral" style="font-size: 11px;">
+                            {{ child.name }} ({{ child.pages.count() }})
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if category.pages.limit(3).all() %}
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 12px; color: var(--admin-text-secondary); margin-bottom: 8px;">最近页面</div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    {% for page in category.pages.limit(3).all() %}
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px;
+                                background: var(--admin-bg-secondary); border-radius: 4px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-file-alt" style="font-size: 12px; color: var(--admin-text-secondary);"></i>
+                            <a href="{{ url_for('wiki.view_page', slug=page.slug) }}"
+                               style="font-size: 13px; color: var(--admin-text); text-decoration: none;"
+                               target="_blank">
+                                {{ page.title }}
+                            </a>
+                        </div>
+                        {% if page.is_published %}
+                        <span class="admin-badge success" style="font-size: 10px;">已发布</span>
+                        {% else %}
+                        <span class="admin-badge warning" style="font-size: 10px;">草稿</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--admin-border);">
+                <div style="font-size: 12px; color: var(--admin-text-secondary);">
+                    <i class="fas fa-edit"></i>
+                    创建时间：{{ category.created_at.strftime('%Y-%m-%d') if category.created_at else 'N/A' }}
+                </div>
+                <div class="admin-actions">
+                    <a href="{{ url_for('admin.edit_category', category_id=category.id) }}" class="admin-btn sm">
+                        <i class="fas fa-edit"></i>
+                        编辑
+                    </a>
+                    <a href="{{ url_for('wiki.category_view', category_id=category.id) }}"
+                       class="admin-btn sm" title="查看分类" target="_blank">
+                        <i class="fas fa-eye"></i>
+                        查看
+                    </a>
+                    {% if category.pages.count() == 0 and not category.children %}
+                    <form method="POST" action="{{ url_for('admin.delete_category', category_id=category.id) }}"
+                          style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="admin-btn sm danger"
+                                onclick="return confirm('确定要删除分类 {{ category.name }} 吗？此操作不可撤销。')">
+                            <i class="fas fa-trash"></i>
+                            删除
+                        </button>
+                    </form>
+                    {% else %}
+                    <span class="admin-badge neutral" style="opacity: 0.5; cursor: not-allowed; font-size: 12px;">
+                        <i class="fas fa-ban"></i>
+                        无法删除
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="admin-empty-state">
+    <i class="fas fa-folder"></i>
+    <h5>暂无分类数据</h5>
+    <p>系统中还没有创建任何分类</p>
+    <a href="{{ url_for('admin.create_category') }}" class="admin-btn primary">
+        <i class="fas fa-plus me-2"></i>创建第一个分类
+    </a>
+</div>
+{% endif %}
+
+<!-- 分类统计信息 -->
+{% if categories %}
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-chart-bar"></i>
+            分类统计信息
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px;">
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: 600; color: var(--admin-primary);">{{ categories | length }}</div>
+                <div style="font-size: 14px; color: var(--admin-text-secondary); margin-top: 8px;">总分类数</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: 600; color: var(--admin-success);">
+                    {{ categories | selectattr('parent', 'equalto', none) | list | length }}
+                </div>
+                <div style="font-size: 14px; color: var(--admin-text-secondary); margin-top: 8px;">顶级分类</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: 600; color: var(--admin-warning);">
+                    {{ categories | rejectattr('parent', 'equalto', none) | list | length }}
+                </div>
+                <div style="font-size: 14px; color: var(--admin-text-secondary); margin-top: 8px;">子分类</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: 600; color: var(--admin-info);">
+                    {% set total_page_count = 0 %}
+                    {% for category in categories %}
+                        {% set total_page_count = total_page_count + category.pages.count() %}
+                    {% endfor %}
+                    {{ total_page_count }}
+                </div>
+                <div style="font-size: 14px; color: var(--admin-text-secondary); margin-top: 8px;">总页面数</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 批量操作 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-tools"></i>
+            批量操作
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div>
+                <h6 style="font-size: 14px; color: var(--admin-text); margin-bottom: 12px;">分类管理</h6>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="admin-btn sm" onclick="confirmReorderCategories()">
+                        <i class="fas fa-sort"></i>
+                        重新排序分类
+                    </button>
+                    <button class="admin-btn sm info" onclick="exportCategories()">
+                        <i class="fas fa-download"></i>
+                        导出分类结构
+                    </button>
+                </div>
+            </div>
+            <div>
+                <h6 style="font-size: 14px; color: var(--admin-text); margin-bottom: 12px;">清理操作</h6>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="admin-btn sm warning" onclick="confirmCleanupEmpty()">
+                        <i class="fas fa-broom"></i>
+                        清理空分类
+                    </button>
+                    <button class="admin-btn sm" onclick="recalculateStats()">
+                        <i class="fas fa-sync"></i>
+                        重新计算统计
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 分类层级结构 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-sitemap"></i>
+            分类层级结构
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div id="categoryTree" style="font-size: 14px;">
+            {% macro render_category_tree(categories, level=0) %}
+                {% for category in categories if category.parent is none %}
+                    <div style="margin-left: {{ level * 20 }}px; margin-bottom: 8px; padding: 8px;
+                                border-left: 3px solid {{ category.color or '#4299e1' }}; background: var(--admin-bg-secondary); border-radius: 4px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-folder" style="color: {{ category.color or '#4299e1' }};"></i>
+                                <strong>{{ category.name }}</strong>
+                                <span class="admin-badge neutral" style="font-size: 11px;">{{ category.pages.count() }} 页面</span>
+                            </div>
+                            <span style="font-size: 12px; color: var(--admin-text-secondary);">
+                                创建于 {{ category.created_at.strftime('%Y-%m-%d') }}
+                            </span>
+                        </div>
+                        {% if category.children %}
+                            <div style="margin-top: 8px;">
+                                {{ render_category_tree(category.children, level + 1) }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endmacro %}
+
+            {{ render_category_tree(categories) }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 分类管理建议 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-lightbulb"></i>
+            分类管理建议
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">
+                    <i class="fas fa-folder-tree" style="color: var(--admin-primary);"></i>
+                    结构优化
+                </h6>
+                <ul style="font-size: 13px; color: var(--admin-text-secondary); padding-left: 20px;">
+                    <li>保持分类结构简洁明了，避免过深的层级</li>
+                    <li>每个分类应该有明确的主题和用途</li>
+                    <li>合理使用颜色标识，提高视觉识别度</li>
+                    <li>定期清理无用的空分类</li>
+                </ul>
+            </div>
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">
+                    <i class="fas fa-tags" style="color: var(--admin-success);"></i>
+                    内容组织
+                </h6>
+                <ul style="font-size: 13px; color: var(--admin-text-secondary); padding-left: 20px;">
+                    <li>为新创建的页面及时分配合适的分类</li>
+                    <li>定期检查分类归属是否正确</li>
+                    <li>避免创建过于相似的重复分类</li>
+                    <li>使用描述性强的分类名称</li>
+                </ul>
+            </div>
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">
+                    <i class="fas fa-chart-line" style="color: var(--admin-info);"></i>
+                    维护建议
+                </h6>
+                <ul style="font-size: 13px; color: var(--admin-text-secondary); padding-left: 20px;">
+                    <li>定期查看分类使用统计，了解用户偏好</li>
+                    <li>根据内容增长适时调整分类结构</li>
+                    <li>为重要分类设置醒目的颜色标识</li>
+                    <li>保持分类描述信息的时效性</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmReorderCategories() {
+    if (confirm('确定要重新排序分类吗？这将影响分类的显示顺序。')) {
+        alert('分类重排序功能开发中...');
+    }
+}
+
+function confirmCleanupEmpty() {
+    if (confirm('确定要清理所有空分类吗？此操作不可撤销。')) {
+        alert('清理空分类功能开发中...');
+    }
+}
+
+function exportCategories() {
+    alert('导出分类结构功能开发中...');
+}
+
+function recalculateStats() {
+    alert('重新计算统计功能开发中...');
+}
+
+// 添加分类卡片点击效果
+document.querySelectorAll('.admin-card').forEach(card => {
+    if (card.querySelector('.admin-actions')) {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function(e) {
+            // 如果点击的是操作按钮或链接，不触发行点击
+            if (e.target.closest('a, button, form')) {
+                return;
+            }
+
+            const viewLink = this.querySelector('a[href*="category"]');
+            if (viewLink && !viewLink.parentElement.classList.contains('admin-actions')) {
+                window.open(viewLink.href, '_blank');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
