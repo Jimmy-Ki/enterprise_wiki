@@ -15,6 +15,8 @@
         --success-color: #28a745;
         --error-color: #dc3545;
         --warning-color: #ffc107;
+        --primary-color: #007bff;
+        --header-height: 60px;
     }
 
     body {
@@ -22,12 +24,23 @@
         overflow: hidden;
     }
 
-    .chat-container {
+    /* Hide sidebar for chat page */
+    body .wiki-sidebar {
+        display: none;
+    }
+
+    /* Full width for chat page */
+    body .wiki-main {
+        margin-left: 0;
+        padding: 0;
+        max-width: 100%;
         height: calc(100vh - var(--header-height));
+    }
+
+    .chat-container {
+        height: 100%;
         display: flex;
         flex-direction: column;
-        max-width: 1200px;
-        margin: 0 auto;
         background: white;
         box-shadow: 0 0 20px rgba(0,0,0,0.1);
     }
@@ -416,7 +429,7 @@
     /* Mobile responsive */
     @media (max-width: 768px) {
         .chat-container {
-            height: 100vh;
+            height: calc(100vh - var(--header-height));
         }
 
         .chat-messages {
@@ -433,6 +446,11 @@
 
         .chat-suggestions {
             padding: 0 16px 12px;
+        }
+
+        /* Hide mobile toggle button since sidebar is hidden */
+        .mobile-toggle {
+            display: none !important;
         }
     }
 </style>
