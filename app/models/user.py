@@ -44,7 +44,12 @@ class Role(db.Model):
         self.permissions = 0
 
     def has_permission(self, perm):
-        return self.permissions & perm == perm
+        # 确保permissions是整数类型
+        try:
+            permissions_int = int(self.permissions) if self.permissions is not None else 0
+            return permissions_int & perm == perm
+        except (ValueError, TypeError):
+            return False
 
     @staticmethod
     def insert_roles():
