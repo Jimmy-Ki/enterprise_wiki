@@ -39,6 +39,12 @@ class Config:
     WIKI_HOME_PAGE = 'Home'
     WIKI_PUBLIC_ACCESS = False  # Require authentication for all pages
 
+    # FastGPT settings
+    FASTGPT_BASE_URL = os.environ.get('FASTGPT_BASE_URL', 'http://10.0.0.229:30000/api')
+    FASTGPT_API_KEY = os.environ.get('FASTGPT_API_KEY', 'fastgpt-l2xX4RECkCTUJ453oq2IXG1PbxifKVYMmyEGwdvrZplKXYz1DVv9X5iu5NxSkVkI9')
+    FASTGPT_APP_ID = os.environ.get('FASTGPT_APP_ID', 'default')
+    FASTGPT_TIMEOUT = int(os.environ.get('FASTGPT_TIMEOUT', '60'))  # seconds
+
     @staticmethod
     def init_app(app):
         pass

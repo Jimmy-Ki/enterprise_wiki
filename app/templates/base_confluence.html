@@ -647,7 +647,49 @@
 
         .btn-wiki.primary:hover {
             background: #0052cc;
-            border-color: #0052cc;
+        }
+
+        /* Chat Button */
+        .chat-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-btn:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46a2 100%);
+            color: white !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .chat-btn i {
+            font-size: 16px;
+            animation: pulse 2s infinite;
+        }
+
+        .chat-btn-text {
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chat-btn-text {
+                display: none;
+            }
+
+            .chat-btn {
+                padding: 8px 12px;
+            }
         }
 
         /* Responsive */
@@ -758,6 +800,12 @@
                     </div>
                 </div>
             </div>
+
+            <!-- AI Chat -->
+            <a href="{{ url_for('chat.index') }}" class="btn-wiki chat-btn" title="AI 对话助手">
+                <i class="fas fa-robot"></i>
+                <span class="chat-btn-text">AI</span>
+            </a>
 
             <div class="dropdown">
                 <button class="btn-wiki dropdown-toggle" data-bs-toggle="dropdown">

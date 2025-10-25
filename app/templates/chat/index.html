@@ -1,0 +1,715 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}AI 对话助手 - {{ config.WIKI_TITLE }}{% endblock %}
+
+{% block styles %}
+<style>
+    :root {
+        --chat-bg: #f7f8fc;
+        --message-bg: white;
+        --user-bg: #667eea;
+        --ai-bg: #f1f3f4;
+        --border-color: #e1e5e9;
+        --text-primary: #1a1a1a;
+        --text-secondary: #666666;
+        --success-color: #28a745;
+        --error-color: #dc3545;
+        --warning-color: #ffc107;
+    }
+
+    body {
+        background: var(--chat-bg);
+        overflow: hidden;
+    }
+
+    .chat-container {
+        height: calc(100vh - var(--header-height));
+        display: flex;
+        flex-direction: column;
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+
+    .chat-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .chat-header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .chat-header .subtitle {
+        opacity: 0.9;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: var(--chat-bg);
+        scroll-behavior: smooth;
+    }
+
+    .message {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 12px;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+        flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .message.user .message-avatar {
+        background: var(--user-bg);
+        color: white;
+    }
+
+    .message.ai .message-avatar {
+        background: var(--ai-bg);
+        color: var(--text-primary);
+    }
+
+    .message-content {
+        flex: 1;
+        max-width: 70%;
+    }
+
+    .message-bubble {
+        background: var(--message-bg);
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        position: relative;
+    }
+
+    .message.user .message-bubble {
+        background: var(--user-bg);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+
+    .message.ai .message-bubble {
+        background: white;
+        border-bottom-left-radius: 4px;
+    }
+
+    .message-text {
+        line-height: 1.6;
+        margin-bottom: 8px;
+    }
+
+    .message-text p {
+        margin: 0 0 8px 0;
+    }
+
+    .message-text p:last-child {
+        margin-bottom: 0;
+    }
+
+    .message-time {
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-align: right;
+    }
+
+    .message.user .message-time {
+        text-align: left;
+    }
+
+    .message-quotes {
+        margin-top: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-left: 3px solid var(--primary-color);
+        border-radius: 4px;
+    }
+
+    .message-quotes-title {
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .quote-item {
+        margin-bottom: 8px;
+        padding: 8px;
+        background: white;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .quote-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .quote-question {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .quote-answer {
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+
+    .quote-source {
+        font-size: 11px;
+        color: #999;
+        margin-top: 4px;
+    }
+
+    .chat-input-container {
+        padding: 20px 24px;
+        border-top: 1px solid var(--border-color);
+        background: white;
+    }
+
+    .chat-input-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+    }
+
+    .chat-input {
+        flex: 1;
+        min-height: 44px;
+        max-height: 120px;
+        padding: 12px 16px;
+        border: 2px solid var(--border-color);
+        border-radius: 24px;
+        font-size: 16px;
+        line-height: 1.5;
+        resize: none;
+        outline: none;
+        transition: border-color 0.2s ease;
+        font-family: inherit;
+    }
+
+    .chat-input:focus {
+        border-color: var(--primary-color);
+    }
+
+    .chat-input::placeholder {
+        color: #999;
+    }
+
+    .chat-send-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: none;
+        background: var(--primary-color);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-size: 18px;
+    }
+
+    .chat-send-btn:hover:not(:disabled) {
+        background: #0056b3;
+        transform: scale(1.05);
+    }
+
+    .chat-send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .typing-indicator {
+        display: none;
+        padding: 12px 20px;
+        margin-bottom: 20px;
+        background: white;
+        border-radius: 12px;
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-width: 80px;
+    }
+
+    .typing-indicator.show {
+        display: block;
+    }
+
+    .typing-dots {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .typing-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #666;
+        animation: typing 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: 0s; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-10px); }
+    }
+
+    .chat-suggestions {
+        padding: 0 24px 16px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .suggestion-chip {
+        padding: 8px 16px;
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        font-size: 14px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .suggestion-chip:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+        transform: translateY(-1px);
+    }
+
+    .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #f5c6cb;
+    }
+
+    .welcome-message {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+    }
+
+    .welcome-message h2 {
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .welcome-message p {
+        max-width: 500px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    /* Scrollbar styling */
+    .chat-messages::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        .chat-container {
+            height: 100vh;
+        }
+
+        .chat-messages {
+            padding: 12px;
+        }
+
+        .message-content {
+            max-width: 85%;
+        }
+
+        .chat-input-container {
+            padding: 12px 16px;
+        }
+
+        .chat-suggestions {
+            padding: 0 16px 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Chat Header -->
+    <div class="chat-header">
+        <h1>
+            <i class="fas fa-robot"></i>
+            AI 对话助手
+        </h1>
+        <div class="subtitle">基于 FastGPT 的智能对话系统</div>
+    </div>
+
+    <!-- Chat Messages -->
+    <div class="chat-messages" id="chatMessages">
+        <!-- Welcome Message -->
+        <div class="welcome-message">
+            <h2>👋 欢迎使用 AI 对话助手</h2>
+            <p>我是您的智能助手，可以回答问题、提供信息和建议。请随时向我提问！</p>
+        </div>
+    </div>
+
+    <!-- Chat Suggestions -->
+    <div class="chat-suggestions" id="chatSuggestions">
+        <div class="suggestion-chip" onclick="sendSuggestion('你好，请介绍一下自己')">
+            🤖 介绍一下自己
+        </div>
+        <div class="suggestion-chip" onclick="sendSuggestion('什么是人工智能？')">
+            💡 什么是人工智能？
+        </div>
+        <div class="suggestion-chip" onclick="sendSuggestion('帮我写一个工作计划')">
+            📝 帮我写工作计划
+        </div>
+        <div class="suggestion-chip" onclick="sendSuggestion('推荐一些学习资源')">
+            📚 推荐学习资源
+        </div>
+    </div>
+
+    <!-- Chat Input -->
+    <div class="chat-input-container">
+        <div class="chat-input-wrapper">
+            <textarea
+                id="chatInput"
+                class="chat-input"
+                placeholder="输入您的问题..."
+                rows="1"
+                maxlength="2000"
+            ></textarea>
+            <button id="sendBtn" class="chat-send-btn" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let chatMessages = [];
+let isTyping = false;
+
+// Initialize chat
+document.addEventListener('DOMContentLoaded', function() {
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    // Auto-resize textarea
+    chatInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+
+        // Enable/disable send button
+        sendBtn.disabled = !this.value.trim();
+    });
+
+    // Handle Enter key
+    chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    // Scroll to bottom
+    scrollToBottom();
+});
+
+function scrollToBottom() {
+    const chatMessages = document.getElementById('chatMessages');
+    setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 100);
+}
+
+function showTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (!indicator) {
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'typingIndicator';
+        typingDiv.className = 'typing-indicator';
+        typingDiv.innerHTML = `
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        `;
+        document.getElementById('chatMessages').appendChild(typingDiv);
+    }
+    indicator.classList.add('show');
+    scrollToBottom();
+}
+
+function hideTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) {
+        indicator.classList.remove('show');
+    }
+}
+
+function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+
+    if (!message || isTyping) return;
+
+    isTyping = true;
+
+    // Add user message
+    addMessage('user', message);
+
+    // Clear input
+    input.value = '';
+    input.style.height = 'auto';
+    document.getElementById('sendBtn').disabled = true;
+
+    // Hide suggestions
+    document.getElementById('chatSuggestions').style.display = 'none';
+
+    // Show typing indicator
+    showTypingIndicator();
+
+    // Send to FastGPT API
+    sendToFastGPT(message);
+}
+
+function sendSuggestion(message) {
+    document.getElementById('chatInput').value = message;
+    sendMessage();
+}
+
+function addMessage(role, content, quotes = [], error = false) {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${role}`;
+
+    const time = new Date().toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    let avatarContent = '';
+    if (role === 'user') {
+        const username = '{{ current_user.username if current_user.is_authenticated else "用户" }}';
+        avatarContent = username.charAt(0).toUpperCase();
+    } else {
+        avatarContent = '🤖';
+    }
+
+    let quotesHtml = '';
+    if (quotes && quotes.length > 0) {
+        quotesHtml = `
+            <div class="message-quotes">
+                <div class="message-quotes-title">📚 参考资料</div>
+                ${quotes.map(quote => `
+                    <div class="quote-item">
+                        <div class="quote-question">Q: ${quote.q || ''}</div>
+                        <div class="quote-answer">A: ${quote.a || ''}</div>
+                        ${quote.source ? `<div class="quote-source">来源: ${quote.source}</div>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    messageDiv.innerHTML = `
+        <div class="message-avatar">${avatarContent}</div>
+        <div class="message-content">
+            <div class="message-bubble">
+                <div class="message-text">${content}</div>
+                ${quotesHtml}
+                <div class="message-time">${time}</div>
+            </div>
+        </div>
+    `;
+
+    // Remove welcome message if it exists
+    const welcomeMsg = chatMessages.querySelector('.welcome-message');
+    if (welcomeMsg) {
+        welcomeMsg.remove();
+    }
+
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+}
+
+async function sendToFastGPT(message) {
+    try {
+        const response = await fetch('/api/chat/stream', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                message: message,
+                chat_id: getOrCreateChatId()
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('网络请求失败');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let aiResponse = '';
+        let quotes = [];
+
+        hideTypingIndicator();
+
+        // Create AI message container
+        const chatMessages = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message ai';
+
+        const time = new Date().toLocaleTimeString('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        messageDiv.innerHTML = `
+            <div class="message-avatar">🤖</div>
+            <div class="message-content">
+                <div class="message-bubble">
+                    <div class="message-text" id="aiResponseText"></div>
+                    <div class="message-quotes" id="aiQuotes" style="display: none;">
+                        <div class="message-quotes-title">📚 参考资料</div>
+                    </div>
+                    <div class="message-time">${time}</div>
+                </div>
+            </div>
+        `;
+
+        chatMessages.appendChild(messageDiv);
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+
+                        if (data.choices && data.choices[0] && data.choices[0].delta) {
+                            const content = data.choices[0].delta.content;
+                            if (content) {
+                                aiResponse += content;
+                                document.getElementById('aiResponseText').innerHTML = aiResponse.replace(/\n/g, '<br>');
+                                scrollToBottom();
+                            }
+                        }
+
+                        // Handle quotes and other data
+                        if (data.responseData) {
+                            for (const item of data.responseData) {
+                                if (item.quoteList && item.quoteList.length > 0) {
+                                    quotes = quotes.concat(item.quoteList);
+                                }
+                            }
+                        }
+
+                    } catch (e) {
+                        console.error('解析响应数据失败:', e);
+                    }
+                }
+            }
+        }
+
+        // Add quotes if available
+        if (quotes.length > 0) {
+            const quotesDiv = document.getElementById('aiQuotes');
+            quotesDiv.innerHTML = `
+                <div class="message-quotes-title">📚 参考资料</div>
+                ${quotes.map(quote => `
+                    <div class="quote-item">
+                        <div class="quote-question">Q: ${quote.q || ''}</div>
+                        <div class="quote-answer">A: ${quote.a || ''}</div>
+                        ${quote.source ? `<div class="quote-source">来源: ${quote.source}</div>` : ''}
+                    </div>
+                `).join('')}
+            `;
+            quotesDiv.style.display = 'block';
+        }
+
+        scrollToBottom();
+
+    } catch (error) {
+        console.error('发送消息失败:', error);
+        hideTypingIndicator();
+        addMessage('ai', '抱歉，发送消息时出现了错误。请稍后再试。', [], true);
+    } finally {
+        isTyping = false;
+    }
+}
+
+function getOrCreateChatId() {
+    let chatId = localStorage.getItem('fastgpt_chat_id');
+    if (!chatId) {
+        chatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('fastgpt_chat_id', chatId);
+    }
+    return chatId;
+}
+</script>
+{% endblock %}
