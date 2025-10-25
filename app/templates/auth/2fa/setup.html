@@ -115,10 +115,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (codeInput) {
         codeInput.focus();
 
-        // Auto-submit when 6 digits entered
+        // Remove auto-submit to prevent validation issues
+        // User must manually click the submit button
         codeInput.addEventListener('input', function(e) {
+            // Visual feedback when 6 digits are entered
             if (e.target.value.length === 6) {
-                e.target.form.submit();
+                e.target.classList.add('is-valid');
+                document.querySelector('button[type="submit"]').classList.add('btn-success');
+                document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-check me-2"></i>验证并启用双因素认证';
+            } else {
+                e.target.classList.remove('is-valid');
+                document.querySelector('button[type="submit"]').classList.remove('btn-success');
+                document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-check me-2"></i>启用双因素认证';
             }
         });
     }
