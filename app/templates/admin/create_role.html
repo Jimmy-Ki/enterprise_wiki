@@ -1,8 +1,12 @@
-{% extends "base.html" %}
+{% extends "admin/admin_base_standalone.html" %}
 
-{% block title %}Create Role{% endblock %}
+{% block title %}创建角色 - 管理控制台{% endblock %}
 
-{% block content %}
+{% set page_title = "创建角色" %}
+{% set page_subtitle = "创建新的用户角色和权限配置" %}
+{% set page_icon = "fas fa-user-plus" %}
+
+{% block admin_content %}
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">

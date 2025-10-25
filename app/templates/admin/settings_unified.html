@@ -1,0 +1,355 @@
+{% extends "admin/admin_base_unified.html" %}
+
+{% block title %}系统设置 - 管理控制台{% endblock %}
+
+{% set page_title = "系统设置" %}
+{% set page_subtitle = "配置系统参数和功能选项" %}
+{% set page_icon = "fas fa-cog" %}
+
+{% block admin_content %}
+<!-- 基本设置 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-cog"></i>
+            基本设置
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <form>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+                <div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">站点名称</label>
+                        <input type="text" class="admin-form-control" value="Enterprise Wiki" readonly>
+                        <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                            站点显示名称，用于页面标题和邮件
+                        </div>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">站点描述</label>
+                        <textarea class="admin-form-control" rows="3" readonly>企业级知识库管理系统</textarea>
+                        <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                            站点描述信息，用于SEO和页面meta标签
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">管理员邮箱</label>
+                        <input type="email" class="admin-form-control" value="{{ current_user.email }}" readonly>
+                        <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                            系统管理员联系邮箱
+                        </div>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">时区设置</label>
+                        <select class="admin-form-select" disabled>
+                            <option selected>Asia/Shanghai</option>
+                        </select>
+                        <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                            系统默认时区，影响时间显示
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 安全设置 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-shield-alt"></i>
+            安全设置
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            <div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">密码复杂度要求</label>
+                    <select class="admin-form-select" disabled>
+                        <option selected>中等（至少8位，包含字母和数字）</option>
+                    </select>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                        用户密码的安全级别要求
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">登录失败锁定次数</label>
+                    <input type="number" class="admin-form-control" value="5" readonly>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                        连续失败后将锁定账户
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">会话超时时间（分钟）</label>
+                    <input type="number" class="admin-form-control" value="30" readonly>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 4px;">
+                        用户无操作后自动退出时间
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">安全功能开关</label>
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                            <div>
+                                <div style="font-weight: 500; color: var(--admin-text);">CSRF保护</div>
+                                <div style="font-size: 12px; color: var(--admin-text-secondary);">跨站请求伪造保护</div>
+                            </div>
+                            <span class="admin-badge success">已启用</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                            <div>
+                                <div style="font-weight: 500; color: var(--admin-text);">XSS保护</div>
+                                <div style="font-size: 12px; color: var(--admin-text-secondary);">跨站脚本攻击防护</div>
+                            </div>
+                            <span class="admin-badge success">已启用</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                            <div>
+                                <div style="font-weight: 500; color: var(--admin-text);">速率限制</div>
+                                <div style="font-size: 12px; color: var(--admin-text-secondary);">API请求频率限制</div>
+                            </div>
+                            <span class="admin-badge success">已启用</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 邮件设置 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-envelope"></i>
+            邮件服务设置
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            <div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">SMTP服务器</label>
+                    <input type="text" class="admin-form-control" value="smtp.gmail.com" readonly>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">SMTP端口</label>
+                    <input type="number" class="admin-form-control" value="587" readonly>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">发件人邮箱</label>
+                    <input type="email" class="admin-form-control" value="noreply@enterprise-wiki.com" readonly>
+                </div>
+            </div>
+            <div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">邮件配置状态</label>
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                            <div>
+                                <div style="font-weight: 500; color: var(--admin-text);">TLS加密</div>
+                                <div style="font-size: 12px; color: var(--admin-text-secondary);">传输层安全协议</div>
+                            </div>
+                            <span class="admin-badge success">已启用</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                            <div>
+                                <div style="font-weight: 500; color: var(--admin-text);">邮件发送</div>
+                                <div style="font-size: 12px; color: var(--admin-text-secondary);">注册确认和密码重置</div>
+                            </div>
+                            <span class="admin-badge info">配置中</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="admin-btn sm" disabled>
+                        <i class="fas fa-paper-plane me-2"></i>
+                        发送测试邮件
+                    </button>
+                    <div style="font-size: 12px; color: var(--admin-text-secondary); margin-top: 8px;">
+                        验证邮件配置是否正确
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 备份设置 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-database"></i>
+            备份管理设置
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            <div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">备份配置</label>
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                            <div>
+                                <div style="font-weight: 500; color: var(--admin-text);">自动备份</div>
+                                <div style="font-size: 12px; color: var(--admin-text-secondary);">定时自动备份数据</div>
+                            </div>
+                            <span class="admin-badge neutral">未启用</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                            <div>
+                                <div style="font-weight: 500; color: var(--admin-text);">备份频率</div>
+                                <div style="font-size: 12px; color: var(--admin-text-secondary);">自动备份间隔</div>
+                            </div>
+                            <span style="color: var(--admin-text-secondary);">每日</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                            <div>
+                                <div style="font-weight: 500; color: var(--admin-text);">保留期限</div>
+                                <div style="font-size: 12px; color: var(--admin-text-secondary);">备份文件保存天数</div>
+                            </div>
+                            <span style="color: var(--admin-text-secondary);">7天</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">手动操作</label>
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                        <button class="admin-btn primary" onclick="createBackup()">
+                            <i class="fas fa-download me-2"></i>
+                            创建完整备份
+                        </button>
+                        <div style="font-size: 12px; color: var(--admin-text-secondary);">
+                            手动创建数据库和文件备份
+                        </div>
+                        <button class="admin-btn" disabled>
+                            <i class="fas fa-upload me-2"></i>
+                            恢复备份
+                        </button>
+                        <div style="font-size: 12px; color: var(--admin-text-secondary);">
+                            从备份文件恢复系统
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统信息 -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-info-circle"></i>
+            系统信息
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">
+                    软件版本信息
+                </h6>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--admin-border);">
+                        <span style="color: var(--admin-text-secondary);">系统版本</span>
+                        <span style="font-weight: 500;">v1.0.0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--admin-border);">
+                        <span style="color: var(--admin-text-secondary);">Python版本</span>
+                        <span style="font-weight: 500;">3.8+</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--admin-border);">
+                        <span style="color: var(--admin-text-secondary);">Flask版本</span>
+                        <span style="font-weight: 500;">2.3.0+</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                        <span style="color: var(--admin-text-secondary);">数据库</span>
+                        <span style="font-weight: 500;">SQLite</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h6 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">
+                    运行状态
+                </h6>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                        <div>
+                            <div style="font-weight: 500; color: var(--admin-text);">缓存状态</div>
+                            <div style="font-size: 12px; color: var(--admin-text-secondary);">系统缓存运行状态</div>
+                        </div>
+                        <span class="admin-badge success">正常</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                        <div>
+                            <div style="font-weight: 500; color: var(--admin-text);">调试模式</div>
+                            <div style="font-size: 12px; color: var(--admin-text-secondary);">开发调试开关</div>
+                        </div>
+                        <span class="admin-badge {{ 'success' if config.DEBUG else 'info' }}">
+                            {{ '开启' if config.DEBUG else '关闭' }}
+                        </span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+                        <div>
+                            <div style="font-weight: 500; color: var(--admin-text);">运行时间</div>
+                            <div style="font-size: 12px; color: var(--admin-text-secondary);">系统持续运行时间</div>
+                        </div>
+                        <span style="font-weight: 500;" id="uptime">计算中...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 操作按钮 -->
+<div style="display: flex; gap: 16px; justify-content: center; padding: 32px 0;">
+    <button class="admin-btn primary" disabled>
+        <i class="fas fa-save me-2"></i>
+        保存设置
+    </button>
+    <button class="admin-btn" onclick="location.reload()">
+        <i class="fas fa-sync me-2"></i>
+        刷新页面
+    </button>
+    <button class="admin-btn" onclick="exportSettings()">
+        <i class="fas fa-download me-2"></i>
+        导出配置
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 模拟运行时间
+    document.getElementById('uptime').textContent = '2小时 15分钟';
+
+    // 每分钟更新一次时间
+    setInterval(function() {
+        const now = new Date();
+        // 这里可以计算实际运行时间
+    }, 60000);
+});
+
+function createBackup() {
+    if (confirm('确定要创建系统备份吗？这可能需要一些时间。')) {
+        alert('备份功能开发中...');
+    }
+}
+
+function exportSettings() {
+    alert('导出配置功能开发中...');
+}
+</script>
+{% endblock %}
