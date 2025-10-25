@@ -39,7 +39,7 @@ def user_profile(username):
                 page=page,
                 per_page=per_page
             )
-            current_app.logger.info(f"Comments loaded for user {username}: {comments_result.total} total")
+            current_app.logger.info(f"Comments loaded for user {username}: {comments_result.get('total', 0)} total")
         except Exception as e:
             current_app.logger.error(f"Error getting comments for user {username}: {e}")
             comments_result = {
@@ -364,12 +364,16 @@ def get_user_stats(user_id):
 
             try:
                 if comment.target_type == CommentTargetType.PAGE:
-                    if comment.target:
-                        target_name = comment.target.title
-                        target_url = f'/wiki/{comment.target.slug}'
+                    from app.models.wiki import Page
+                    target_page = Page.query.get(comment.target_id)
+                    if target_page:
+                        target_name = target_page.title
+                        target_url = f'/wiki/{target_page.slug}'
                 elif comment.target_type == CommentTargetType.ATTACHMENT:
-                    if comment.target:
-                        target_name = comment.target.filename
+                    from app.models.wiki import Attachment
+                    target_attachment = Attachment.query.get(comment.target_id)
+                    if target_attachment:
+                        target_name = target_attachment.filename
                         target_url = '#'
             except Exception as e:
                 current_app.logger.error(f"Error processing comment target: {e}")
