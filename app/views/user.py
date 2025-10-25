@@ -7,7 +7,7 @@ from app.services.comment_service import CommentService
 user = Blueprint('user', __name__)
 
 @user.route('/user/<username>')
-def profile(username):
+def user_profile(username):
     """用户主页"""
     try:
         user = User.query.filter_by(username=username).first_or_404()
@@ -176,9 +176,9 @@ def update_avatar(username):
 
 @user.route('/profile')
 @login_required
-def my_profile():
+def profile():
     """当前用户的profile页面"""
-    return redirect(url_for('user.profile', username=current_user.username))
+    return redirect(url_for('user.user_profile', username=current_user.username))
 
 @user.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
@@ -207,7 +207,7 @@ def edit_profile():
 
             db.session.commit()
             flash('Profile updated successfully!', 'success')
-            return redirect(url_for('user.profile', username=current_user.username))
+            return redirect(url_for('user.user_profile', username=current_user.username))
 
         except Exception as e:
             db.session.rollback()
@@ -242,7 +242,7 @@ def notification_settings():
             db.session.commit()
 
             flash('Notification settings updated successfully!', 'success')
-            return redirect(url_for('user.profile', username=current_user.username))
+            return redirect(url_for('user.user_profile', username=current_user.username))
 
         except Exception as e:
             db.session.rollback()
