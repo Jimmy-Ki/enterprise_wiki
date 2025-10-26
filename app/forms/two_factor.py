@@ -34,6 +34,7 @@ class TwoFactorDisableForm(FlaskForm):
 
     def validate_verification_code(self, field):
         """验证TOTP码"""
+        from flask_login import current_user
         if not current_user.verify_totp_token(field.data):
             raise ValidationError('验证码无效，请重试')
 

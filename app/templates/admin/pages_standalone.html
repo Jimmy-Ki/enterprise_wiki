@@ -88,8 +88,14 @@
                         </td>
                         <td>
                             <div style="display: flex; align-items: center;">
+                                {% if page.author %}
                                 <img src="{{ page.author.gravatar(24) }}" alt="Avatar"
                                      style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;">
+                                {% else %}
+                                <div style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px; background-color: var(--admin-border); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user" style="color: var(--admin-text-secondary); font-size: 12px;"></i>
+                                </div>
+                                {% endif %}
                                 <span style="font-size: 14px;">{{ page.author.username if page.author else '未知' }}</span>
                             </div>
                         </td>

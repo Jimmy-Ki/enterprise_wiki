@@ -53,12 +53,22 @@
                     <tr>
                         <td>
                             <div style="display: flex; align-items: center;">
+                                {% if session.user %}
                                 <img src="{{ session.user.gravatar(32) }}" alt="Avatar"
                                      style="width: 32px; height: 32px; border-radius: 50%; margin-right: 12px;">
                                 <div>
                                     <div style="font-weight: 500; color: var(--admin-text);">{{ session.user.username }}</div>
                                     <div style="font-size: 13px; color: var(--admin-text-secondary);">{{ session.user.email }}</div>
                                 </div>
+                                {% else %}
+                                <div style="width: 32px; height: 32px; border-radius: 50%; margin-right: 12px; background-color: var(--admin-border); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user" style="color: var(--admin-text-secondary);"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 500; color: var(--admin-text);">已删除用户</div>
+                                    <div style="font-size: 13px; color: var(--admin-text-secondary);">User ID: {{ session.user_id }}</div>
+                                </div>
+                                {% endif %}
                             </div>
                         </td>
                         <td>
@@ -170,7 +180,7 @@
             </div>
             <div style="text-align: center;">
                 <div style="font-size: 24px; font-weight: 600; color: var(--admin-info);">
-                    {{ sessions.items | map(attribute='user') | unique | list | length }}
+                    {{ sessions.items | selectattr('user') | map(attribute='user') | unique | list | length }}
                 </div>
                 <div style="font-size: 14px; color: var(--admin-text-secondary); margin-top: 8px;">在线用户数</div>
             </div>
