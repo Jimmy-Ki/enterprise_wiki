@@ -1,6 +1,50 @@
-# Enterprise Wiki
+# 企业知识库系统 Enterprise Wiki
 
-A comprehensive enterprise knowledge base and wiki system built with Flask and SQLite, featuring role-based permissions, markdown editing, version control, and robust security features.
+基于Flask构建的综合性企业知识库和Wiki系统，具备角色权限管理、Markdown编辑、版本控制、FastGPT API集成等强大功能。
+
+A comprehensive enterprise knowledge base and wiki system built with Flask, featuring role-based permissions, markdown editing, version control, FastGPT API integration, and robust security features.
+
+## 📁 项目结构 Project Structure
+
+```
+enterprise_wiki/
+├── app/                    # 应用核心代码
+│   ├── __init__.py         # 应用工厂和配置
+│   ├── models/            # 数据模型
+│   ├── views/             # 视图控制器
+│   ├── forms/             # 表单定义
+│   ├── templates/         # HTML模板
+│   ├── static/            # 静态资源
+│   └── utils/             # 工具函数
+├── tests/                 # 测试脚本
+│   ├── test_fastgpt_api.py # FastGPT API测试
+│   └── README.md          # 测试说明文档
+├── tools/                 # 工具脚本
+│   ├── bulk_create_articles.py # 批量创建文章
+│   ├── bulk_create_users.py    # 批量创建用户
+│   ├── fix_circular_db.py      # 数据库修复工具
+│   ├── manage_server.py        # 服务器管理工具
+│   ├── setup.py               # 安装配置脚本
+│   └── README.md              # 工具说明文档
+├── docs/                  # 文档目录
+│   ├── ARCHIVE_v1.0.0_README.md # v1.0.0归档文档
+│   ├── FASTGPT_API_INTEGRATION.md # FastGPT API集成文档
+│   ├── PROJECT_STRUCTURE.md     # 项目结构说明
+│   ├── 基于RAG的企业级智能知识管理系统开题报告.md
+│   ├── 毕业论文开题报告.md
+│   └── README.md          # 文档说明
+├── temp/                  # 临时文件
+│   ├── cookies.txt        # 测试cookie文件
+│   ├── session-cookies.txt # 会话cookie文件
+│   ├── created_articles.txt # 批量创建记录
+│   ├── created_users.txt    # 批量创建记录
+│   └── README.md          # 临时文件说明
+├── migrations/            # 数据库迁移文件
+├── config/               # 配置文件
+├── requirements.txt      # Python依赖
+├── run.py               # 应用启动文件
+└── README.md            # 项目说明文档 (本文件)
+```
 
 ## Features
 
