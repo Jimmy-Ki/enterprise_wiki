@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}{{ page.title }} - Enterprise Wiki{% endblock %}
+{% block title %}{{ page.title }} - 企业知识库{% endblock %}
 
 {% block content %}
 <!-- Breadcrumb -->
@@ -10,7 +10,7 @@
             <li class="breadcrumb-item">
                 <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
                     <i class="fas fa-home me-1"></i>
-                    <span>Spaces</span>
+                    <span>空间</span>
                 </a>
             </li>
             {% if page.category %}
@@ -35,14 +35,14 @@
             <h1 class="page-title" id="pageTitle">{{ page.title }}</h1>
             <div class="page-status-badges">
                 {% if page.is_published %}
-                <span class="status-badge published">Published</span>
+                <span class="status-badge published">已发布</span>
                 {% else %}
-                <span class="status-badge draft">Draft</span>
+                <span class="status-badge draft">草稿</span>
                 {% endif %}
                 {% if page.is_public %}
-                <span class="status-badge public">Public</span>
+                <span class="status-badge public">公开</span>
                 {% else %}
-                <span class="status-badge private">Private</span>
+                <span class="status-badge private">私有</span>
                 {% endif %}
                 {% if page.category %}
                 <span class="status-badge category">
@@ -54,7 +54,7 @@
 
         <div class="page-actions">
             <button class="btn-wiki" onclick="enableEditMode()" id="editBtn">
-                <i class="fas fa-edit me-2"></i>Edit
+                <i class="fas fa-edit me-2"></i>编辑
             </button>
 
             {% if current_user.is_authenticated %}
@@ -62,29 +62,29 @@
                     data-target-type="page"
                     data-target-id="{{ page.id }}"
                     title="关注此页面">
-                <i class="fas fa-eye me-2"></i>Watch
+                <i class="fas fa-eye me-2"></i>关注
             </button>
             {% endif %}
 
-            <button class="btn-wiki" onclick="window.location.href='{{ url_for('wiki.page_history', page_id=page.id) }}'" title="View History">
-                <i class="fas fa-history me-2"></i>History
+            <button class="btn-wiki" onclick="window.location.href='{{ url_for('wiki.page_history', page_id=page.id) }}'" title="查看历史">
+                <i class="fas fa-history me-2"></i>历史
             </button>
 
-            <button class="btn-wiki" onclick="copyToClipboard(window.location.href)" title="Copy Link">
-                <i class="fas fa-link me-2"></i>Copy Link
+            <button class="btn-wiki" onclick="copyToClipboard(window.location.href)" title="复制链接">
+                <i class="fas fa-link me-2"></i>复制链接
             </button>
 
-            <button class="btn-wiki" onclick="exportPage()" title="Export Page">
-                <i class="fas fa-download me-2"></i>Export
+            <button class="btn-wiki" onclick="exportPage()" title="导出页面">
+                <i class="fas fa-download me-2"></i>导出
             </button>
 
-            <button class="btn-wiki" onclick="printPage()" title="Print Page">
-                <i class="fas fa-print me-2"></i>Print
+            <button class="btn-wiki" onclick="printPage()" title="打印页面">
+                <i class="fas fa-print me-2"></i>打印
             </button>
 
             {% if current_user.is_authenticated and current_user.is_administrator() %}
-            <button class="btn-wiki danger" onclick="deletePage({{ page.id }})" title="Delete Page">
-                <i class="fas fa-trash me-2"></i>Delete
+            <button class="btn-wiki danger" onclick="deletePage({{ page.id }})" title="删除页面">
+                <i class="fas fa-trash me-2"></i>删除
             </button>
             {% endif %}
         </div>
@@ -93,25 +93,25 @@
     <div class="page-meta">
         <div class="meta-item">
             <i class="fas fa-user me-1"></i>
-            <span>Created by <strong>{{ page.author.username if page.author else 'Unknown' }}</strong></span>
+            <span>创建者 <strong>{{ page.author.username if page.author else '未知' }}</strong></span>
             <span class="meta-date">{{ page.created_at.strftime('%B %d, %Y') }}</span>
         </div>
         {% if page.last_editor and page.last_editor.id != page.author.id %}
         <div class="meta-item">
             <i class="fas fa-edit me-1"></i>
-            <span>Last edited by <strong>{{ page.last_editor.username }}</strong></span>
+            <span>最后编辑者 <strong>{{ page.last_editor.username }}</strong></span>
             <span class="meta-date">{{ page.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</span>
         </div>
         {% elif page.updated_at != page.created_at %}
         <div class="meta-item">
             <i class="fas fa-edit me-1"></i>
-            <span>Last edited</span>
+            <span>最后编辑</span>
             <span class="meta-date">{{ page.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</span>
         </div>
         {% endif %}
         <div class="meta-item">
             <i class="fas fa-eye me-1"></i>
-            <span>{{ page.view_count }} views</span>
+            <span>{{ page.view_count }} 次查看</span>
         </div>
     </div>
 </div>
@@ -123,12 +123,12 @@
     {% else %}
     <div class="text-center py-5">
         <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
-        <h5 class="text-muted">No content yet</h5>
+        <h5 class="text-muted">暂无内容</h5>
         <p class="text-muted">
-            This page doesn't have any content yet.
+            此页面还没有任何内容。
             {% if current_user.is_authenticated and page.can_edit(current_user) %}
             <button class="btn-wiki primary" onclick="enableEditMode()">
-                <i class="fas fa-plus me-2"></i>Add content
+                <i class="fas fa-plus me-2"></i>添加内容
             </button>
             {% endif %}
         </p>
@@ -140,46 +140,46 @@
 <div id="contentEditor" class="content-editor" style="display: none;">
     <div class="editor-toolbar">
         <div class="toolbar-group">
-            <button class="toolbar-btn" onclick="formatText('bold')" title="Bold (Ctrl+B)">
+            <button class="toolbar-btn" onclick="formatText('bold')" title="粗体 (Ctrl+B)">
                 <i class="fas fa-bold"></i>
             </button>
-            <button class="toolbar-btn" onclick="formatText('italic')" title="Italic (Ctrl+I)">
+            <button class="toolbar-btn" onclick="formatText('italic')" title="斜体 (Ctrl+I)">
                 <i class="fas fa-italic"></i>
             </button>
-            <button class="toolbar-btn" onclick="formatText('heading')" title="Heading">
+            <button class="toolbar-btn" onclick="formatText('heading')" title="标题">
                 <i class="fas fa-heading"></i>
             </button>
         </div>
 
         <div class="toolbar-group">
-            <button class="toolbar-btn" onclick="formatText('link')" title="Link (Ctrl+K)">
+            <button class="toolbar-btn" onclick="formatText('link')" title="链接 (Ctrl+K)">
                 <i class="fas fa-link"></i>
             </button>
-            <button class="toolbar-btn" onclick="formatText('image')" title="Image">
+            <button class="toolbar-btn" onclick="formatText('image')" title="图片">
                 <i class="fas fa-image"></i>
             </button>
-            <button class="toolbar-btn" onclick="formatText('code')" title="Code">
+            <button class="toolbar-btn" onclick="formatText('code')" title="代码">
                 <i class="fas fa-code"></i>
             </button>
         </div>
 
         <div class="toolbar-group">
-            <button class="toolbar-btn" onclick="formatText('ul')" title="Bullet List">
+            <button class="toolbar-btn" onclick="formatText('ul')" title="无序列表">
                 <i class="fas fa-list-ul"></i>
             </button>
-            <button class="toolbar-btn" onclick="formatText('ol')" title="Numbered List">
+            <button class="toolbar-btn" onclick="formatText('ol')" title="有序列表">
                 <i class="fas fa-list-ol"></i>
             </button>
-            <button class="toolbar-btn" onclick="formatText('quote')" title="Quote">
+            <button class="toolbar-btn" onclick="formatText('quote')" title="引用">
                 <i class="fas fa-quote-left"></i>
             </button>
         </div>
 
         <div class="toolbar-group">
-            <button class="toolbar-btn" id="previewToggle" onclick="togglePreview()" title="Toggle Preview">
+            <button class="toolbar-btn" id="previewToggle" onclick="togglePreview()" title="切换预览">
                 <i class="fas fa-eye"></i>
             </button>
-            <button class="toolbar-btn" onclick="insertFullscreen()" title="Fullscreen">
+            <button class="toolbar-btn" onclick="insertFullscreen()" title="全屏">
                 <i class="fas fa-expand"></i>
             </button>
         </div>
@@ -187,7 +187,7 @@
 
     <div class="editor-content">
         <div class="editor-pane">
-            <textarea id="markdownInput" class="editor-input" placeholder="Start writing in Markdown...">{{ page.content or '' }}</textarea>
+            <textarea id="markdownInput" class="editor-input" placeholder="开始使用Markdown编写...">{{ page.content or '' }}</textarea>
         </div>
         <div class="editor-preview" id="previewPane" style="display: none;">
             <div id="previewContent"></div>
@@ -199,17 +199,17 @@
 <div id="editorActions" class="page-actions" style="display: none; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-color);">
     <div class="d-flex align-items-center justify-content-between">
         <div>
-            <input type="text" id="changeSummary" class="form-control" placeholder="Describe what you changed..." style="width: 300px;">
+            <input type="text" id="changeSummary" class="form-control" placeholder="描述您的更改..." style="width: 300px;">
         </div>
         <div class="d-flex gap-2">
             <button class="btn-wiki" onclick="cancelEdit()">
-                <i class="fas fa-times me-2"></i>Cancel
+                <i class="fas fa-times me-2"></i>取消
             </button>
             <button class="btn-wiki" onclick="saveDraft()">
-                <i class="fas fa-save me-2"></i>Save Draft
+                <i class="fas fa-save me-2"></i>保存草稿
             </button>
             <button class="btn-wiki primary" onclick="savePage()">
-                <i class="fas fa-check me-2"></i>Save
+                <i class="fas fa-check me-2"></i>保存
             </button>
         </div>
     </div>
@@ -219,22 +219,22 @@
 <div id="fileUploadSection" class="card mt-4" style="display: none; border: 1px solid var(--border-color);">
     <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
         <h6 class="mb-0">
-            <i class="fas fa-paperclip me-2"></i>Upload Files
+            <i class="fas fa-paperclip me-2"></i>上传文件
         </h6>
     </div>
     <div class="card-body">
         <div class="file-upload-area" id="inlineFileUploadArea">
             <div class="upload-zone" id="inlineUploadZone">
                 <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
-                <h6 class="text-muted">Drop files here or click to browse</h6>
-                <p class="text-muted small">Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, PNG, JPG, GIF</p>
+                <h6 class="text-muted">拖放文件到此处或点击浏览</h6>
+                <p class="text-muted small">支持的格式：PDF、DOC、DOCX、XLS、XLSX、PPT、PPTX、TXT、PNG、JPG、GIF</p>
                 <input type="file" id="inlineFileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif" style="display: none;">
                 <button type="button" class="btn-wiki small" id="inlineBrowseFilesBtn">
-                    <i class="fas fa-folder-open me-1"></i>Browse Files
+                    <i class="fas fa-folder-open me-1"></i>浏览文件
                 </button>
             </div>
             <div id="inlineFileList" class="file-list mt-3" style="display: none;">
-                <h6 class="mb-3">Uploaded Files:</h6>
+                <h6 class="mb-3">已上传文件：</h6>
                 <div class="list-group" id="inlineFileListContainer"></div>
             </div>
         </div>
@@ -246,7 +246,7 @@
 <div class="card mt-4" style="border: 1px solid var(--border-color);">
     <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
         <h6 class="mb-0">
-            <i class="fas fa-paperclip me-2"></i>Attachments ({{ attachments|length }})
+            <i class="fas fa-paperclip me-2"></i>附件 ({{ attachments|length }})
         </h6>
     </div>
     <div class="card-body">
@@ -294,7 +294,7 @@
 <!-- Page Summary -->
 {% if page.summary %}
 <div class="alert alert-light mt-4" style="background: var(--sidebar-bg); border: 1px solid var(--border-color);">
-    <h6><i class="fas fa-info-circle me-2"></i>Summary</h6>
+    <h6><i class="fas fa-info-circle me-2"></i>摘要</h6>
     <p class="mb-0">{{ page.summary }}</p>
 </div>
 {% endif %}
@@ -374,7 +374,7 @@ function enableEditMode() {
 
     // Update button
     const editBtn = document.getElementById('editBtn');
-    editBtn.innerHTML = '<i class="fas fa-times me-2"></i>Cancel';
+    editBtn.innerHTML = '<i class="fas fa-times me-2"></i>取消';
     editBtn.onclick = cancelEdit;
 
     // Focus editor
@@ -393,7 +393,7 @@ function cancelEdit() {
     // Check for unsaved changes
     const currentContent = editor ? editor.getValue() : document.getElementById('markdownInput').value;
     if (currentContent !== window.wikiState.originalContent) {
-        if (!confirm('You have unsaved changes. Are you sure you want to cancel?')) {
+        if (!confirm('您有未保存的更改。确定要取消吗？')) {
             return;
         }
     }
@@ -408,7 +408,7 @@ function cancelEdit() {
 
     // Update button
     const editBtn = document.getElementById('editBtn');
-    editBtn.innerHTML = '<i class="fas fa-edit me-2"></i>Edit';
+    editBtn.innerHTML = '<i class="fas fa-edit me-2"></i>编辑';
     editBtn.onclick = enableEditMode;
 
     // Remove editing class
@@ -456,20 +456,20 @@ function savePage() {
 
             // Update button
             const editBtn = document.getElementById('editBtn');
-            editBtn.innerHTML = '<i class="fas fa-edit me-2"></i>Edit';
+            editBtn.innerHTML = '<i class="fas fa-edit me-2"></i>编辑';
             editBtn.onclick = enableEditMode;
 
-            showToast('Page saved successfully!', 'success');
+            showToast('页面保存成功！', 'success');
 
             // Re-enable click-to-edit
             enableClickToEdit();
         } else {
-            showToast(data.error || 'Error saving page', 'error');
+            showToast(data.error || '保存页面时出错', 'error');
         }
     })
     .catch(error => {
         console.error('Error saving page:', error);
-        showToast('Error saving page', 'error');
+        showToast('保存页面时出错', 'error');
     });
 }
 
@@ -498,14 +498,14 @@ function saveDraft() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast('Draft saved', 'success');
+            showToast('草稿已保存', 'success');
         } else {
-            showToast('Error saving draft', 'error');
+            showToast('保存草稿时出错', 'error');
         }
     })
     .catch(error => {
         console.error('Error saving draft:', error);
-        showToast('Error saving draft', 'error');
+        showToast('保存草稿时出错', 'error');
     });
 }
 
@@ -518,43 +518,43 @@ function formatText(format) {
 
     switch(format) {
         case 'bold':
-            text = editor.getSelection() || 'bold text';
+            text = editor.getSelection() || '粗体文本';
             replaceText = `**${text}**`;
             break;
         case 'italic':
-            text = editor.getSelection() || 'italic text';
+            text = editor.getSelection() || '斜体文本';
             replaceText = `*${text}*`;
             break;
         case 'heading':
-            text = editor.getSelection() || 'Heading';
+            text = editor.getSelection() || '标题';
             replaceText = `## ${text}`;
             break;
         case 'link':
-            const url = prompt('Enter URL:');
+            const url = prompt('请输入URL：');
             if (url) {
-                text = editor.getSelection() || 'link text';
+                text = editor.getSelection() || '链接文本';
                 replaceText = `[${text}](${url})`;
             }
             break;
         case 'image':
-            const imageUrl = prompt('Enter image URL:');
+            const imageUrl = prompt('请输入图片URL：');
             if (imageUrl) {
-                const alt = prompt('Enter alt text:', 'image');
+                const alt = prompt('请输入替代文本：', '图片');
                 replaceText = `![${alt}](${imageUrl})`;
             }
             break;
         case 'code':
-            text = editor.getSelection() || 'code';
+            text = editor.getSelection() || '代码';
             replaceText = `\`${text}\``;
             break;
         case 'ul':
-            replaceText = '- List item';
+            replaceText = '- 列表项';
             break;
         case 'ol':
-            replaceText = '1. List item';
+            replaceText = '1. 列表项';
             break;
         case 'quote':
-            text = editor.getSelection() || 'Quote';
+            text = editor.getSelection() || '引用';
             replaceText = `> ${text}`;
             break;
     }
@@ -601,7 +601,7 @@ function autoSave() {
     }));
 
     // Show save indicator
-    showToast('Draft auto-saved', 'info');
+    showToast('草稿已自动保存', 'info');
 }
 
 function initializeInlineFileUpload() {
@@ -667,12 +667,12 @@ function validateInlineFile(file) {
     const maxSize = 10 * 1024 * 1024; // 10MB
 
     if (!allowedTypes.includes(file.type)) {
-        showToast('File type not supported: ' + file.name, 'error');
+        showToast('不支持的文件类型：' + file.name, 'error');
         return false;
     }
 
     if (file.size > maxSize) {
-        showToast('File too large (max 10MB): ' + file.name, 'error');
+        showToast('文件过大（最大10MB）：' + file.name, 'error');
         return false;
     }
 
@@ -712,15 +712,15 @@ function uploadInlineFile(file) {
                 download_url: data.download_url
             });
             updateInlineFileItem(fileId, file, data);
-            showToast('File uploaded successfully: ' + file.name, 'success');
+            showToast('文件上传成功：' + file.name, 'success');
         } else {
-            throw new Error(data.error || 'Upload failed');
+            throw new Error(data.error || '上传失败');
         }
     })
     .catch(error => {
         console.error('Upload error:', error);
         removeInlineFileItem(fileId);
-        showToast('Failed to upload file: ' + file.name, 'error');
+        showToast('文件上传失败：' + file.name, 'error');
     });
 }
 
@@ -800,7 +800,7 @@ function formatInlineFileSize(bytes) {
 }
 
 function deletePage(pageId) {
-    if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
+    if (confirm('确定要删除此页面吗？此操作无法撤销。')) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/delete/${pageId}`;
@@ -839,7 +839,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedDraft) {
         try {
             const draft = JSON.parse(savedDraft);
-            if (confirm(`Restore unsaved draft from ${new Date(draft.timestamp).toLocaleString()}?`)) {
+            if (confirm(`是否恢复来自 ${new Date(draft.timestamp).toLocaleString()} 的未保存草稿？`)) {
                 if (editor) {
                     editor.setValue(draft.content);
                 } else {

@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}{{ page.title }} - History - Enterprise Wiki{% endblock %}
+{% block title %}{{ page.title }} - 历史记录 - 企业知识库{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -8,27 +8,27 @@
         <div class="page-title-section">
             <h1 class="page-title">
                 <i class="fas fa-history me-2"></i>{{ page.title }}
-                <small class="text-muted">Version History</small>
+                <small class="text-muted">版本历史</small>
             </h1>
             <p class="page-breadcrumb">
                 <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
-                    <i class="fas fa-home me-1"></i>Home
+                    <i class="fas fa-home me-1"></i>首页
                 </a>
                 <span class="breadcrumb-separator">/</span>
                 <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="breadcrumb-link">
                     {{ page.title }}
                 </a>
                 <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-current">History</span>
+                <span class="breadcrumb-current">历史记录</span>
             </p>
         </div>
         <div class="page-actions">
             <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="btn-wiki">
-                <i class="fas fa-arrow-left me-2"></i>Back to Page
+                <i class="fas fa-arrow-left me-2"></i>返回页面
             </a>
             {% if current_user.is_authenticated and page.can_edit(current_user) %}
             <a href="{{ url_for('wiki.edit_page', page_id=page.id) }}" class="btn-wiki primary">
-                <i class="fas fa-edit me-2"></i>Edit Page
+                <i class="fas fa-edit me-2"></i>编辑页面
             </a>
             {% endif %}
         </div>
@@ -66,7 +66,7 @@
     <div class="content-card">
         <div class="card-header">
             <h5 class="mb-0">
-                <i class="fas fa-history me-2"></i>Version History
+                <i class="fas fa-history me-2"></i>版本历史
                 <span class="badge bg-secondary ms-2">{{ versions|length }}</span>
             </h5>
         </div>
@@ -88,13 +88,13 @@
                                         <p class="text-muted small mb-2">
                                             <i class="fas fa-user-edit me-1"></i>
                                             {% if version.editor and version.editor != version.author %}
-                                                {{ version.editor.username }} edited {{ version.author.username }}'s version
+                                                {{ version.editor.username }} 编辑了 {{ version.author.username }} 的版本
                                             {% elif version.editor %}
                                                 {{ version.editor.username }}
                                             {% else %}
-                                                {{ version.author.username if version.author else 'Unknown' }}
+                                                {{ version.author.username if version.author else '未知用户' }}
                                             {% endif %}
-                                            • <i class="fas fa-clock me-1"></i>{{ version.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                            • <i class="fas fa-clock me-1"></i>{{ version.created_at.strftime('%Y年%m月%d日 %H:%M') }}
                                         </p>
                                         {% if version.change_summary %}
                                         <p class="mb-2">
@@ -106,13 +106,13 @@
                                     <div class="col-md-4 text-end">
                                         <div class="btn-group" role="group">
                                             <a href="{{ url_for('wiki.view_version', version_id=version.id) }}"
-                                               class="btn-wiki small" title="View this version">
+                                               class="btn-wiki small" title="查看此版本">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             {% if current_user.is_authenticated and page.can_edit(current_user) %}
                                             <button class="btn-wiki small"
                                                     onclick="restoreVersion({{ version.id }})"
-                                                    title="Restore this version">
+                                                    title="恢复此版本">
                                                 <i class="fas fa-undo"></i>
                                             </button>
                                             {% endif %}
@@ -120,10 +120,10 @@
                                     </div>
                                 </div>
 
-                                <!-- Content Preview -->
+                                <!-- 内容预览 -->
                                 {% if version.content %}
                                 <div class="content-preview">
-                                    <p class="text-muted small mb-2">Content Preview:</p>
+                                    <p class="text-muted small mb-2">内容预览：</p>
                                     <div class="border rounded p-2 bg-light" style="max-height: 150px; overflow-y: auto;">
                                         {% set content_preview = (version.content|striptags)[:200] %}
                                         <small class="text-muted">{{ content_preview }}{% if version.content|striptags|length > 200 %}...{% endif %}</small>
@@ -139,8 +139,8 @@
             {% else %}
             <div class="text-center py-5">
                 <i class="fas fa-history fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">No Version History</h5>
-                <p class="text-muted">This page doesn't have any version history yet.</p>
+                <h5 class="text-muted">暂无版本历史</h5>
+                <p class="text-muted">此页面还没有版本历史记录。</p>
             </div>
             {% endif %}
         </div>
@@ -214,7 +214,7 @@
 {% block scripts %}
 <script>
 function restoreVersion(versionId) {
-    if (confirm('Are you sure you want to restore this version? This will create a new version with the restored content.')) {
+    if (confirm('确定要恢复此版本吗？这将使用恢复的内容创建一个新版本。')) {
         fetch(`/wiki/restore-version/${versionId}`, {
             method: 'POST',
             headers: {
@@ -227,12 +227,12 @@ function restoreVersion(versionId) {
             if (data.success) {
                 window.location.reload();
             } else {
-                alert('Error restoring version: ' + data.message);
+                alert('恢复版本时出错：' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error restoring version');
+            alert('恢复版本时出错');
         });
     }
 }

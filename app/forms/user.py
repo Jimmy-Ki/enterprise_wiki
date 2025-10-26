@@ -4,21 +4,21 @@ from wtforms.validators import DataRequired, Email, Length, Optional
 
 class ProfileForm(FlaskForm):
     """用户资料编辑表单"""
-    name = StringField('Name', validators=[
+    name = StringField('姓名', validators=[
         Optional(),
-        Length(min=1, max=64, message='Name must be between 1 and 64 characters')
+        Length(min=1, max=64, message='姓名长度必须在1到64个字符之间')
     ])
 
-    email = EmailField('Email', validators=[
-        DataRequired(message='Email is required'),
-        Email(message='Please enter a valid email address'),
-        Length(max=120, message='Email must be less than 120 characters')
+    email = EmailField('邮箱', validators=[
+        DataRequired(message='邮箱为必填项'),
+        Email(message='请输入有效的邮箱地址'),
+        Length(max=120, message='邮箱长度不能超过120个字符')
     ])
 
 class NotificationSettingsForm(FlaskForm):
     """通知设置表单"""
-    email_notifications = BooleanField('Email Notifications', default=True)
-    watch_notifications = BooleanField('Watch Notifications', default=True)
-    mention_notifications = BooleanField('Mention Notifications', default=True)
-    comment_notifications = BooleanField('Comment Notifications', default=True)
-    daily_digest = BooleanField('Daily Digest', default=False)
+    email_notifications = BooleanField('邮件通知', default=True)
+    watch_notifications = BooleanField('关注通知', default=True)
+    mention_notifications = BooleanField('提及通知', default=True)
+    comment_notifications = BooleanField('评论通知', default=True)
+    daily_digest = BooleanField('每日摘要', default=False)

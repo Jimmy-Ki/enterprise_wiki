@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}Edit Profile - {{ current_user.name or current_user.username }}{% endblock %}
+{% block title %}编辑个人资料 - {{ current_user.name or current_user.username }}{% endblock %}
 
 {% block content %}
 <!-- Breadcrumb -->
@@ -10,16 +10,16 @@
             <li class="breadcrumb-item">
                 <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
                     <i class="fas fa-home me-1"></i>
-                    <span>Spaces</span>
+                    <span>空间</span>
                 </a>
             </li>
             <li class="breadcrumb-item">
                 <a href="{{ url_for('user.profile', username=current_user.username) }}" class="breadcrumb-link">
-                    <span>Profile</span>
+                    <span>个人资料</span>
                 </a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
-                <span class="breadcrumb-current">Edit Profile</span>
+                <span class="breadcrumb-current">编辑个人资料</span>
             </li>
         </ol>
     </nav>
@@ -29,23 +29,23 @@
 <div class="page-header">
     <div class="page-header-top">
         <div class="page-title-section">
-            <h1 class="page-title">Edit Profile</h1>
+            <h1 class="page-title">编辑个人资料</h1>
             <div class="page-status-badges">
                 <span class="status-badge draft">
-                    <i class="fas fa-user-edit me-1"></i>Profile Settings
+                    <i class="fas fa-user-edit me-1"></i>个人资料设置
                 </span>
             </div>
         </div>
 
         <div class="page-actions">
             <a href="{{ url_for('user.profile', username=current_user.username) }}" class="btn-wiki">
-                <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                <i class="fas fa-arrow-left me-2"></i>返回个人资料
             </a>
         </div>
     </div>
 
     <div class="page-description">
-        <p>Update your profile information. Changes will be reflected across the system.</p>
+        <p>更新您的个人资料信息。更改将在整个系统中生效。</p>
     </div>
 </div>
 
@@ -59,7 +59,7 @@
             <div class="row mb-4">
                 <div class="col-md-6">
                     <h5 class="mb-3">
-                        <i class="fas fa-user me-2"></i>Basic Information
+                        <i class="fas fa-user me-2"></i>基本信息
                     </h5>
 
                     <div class="mb-3">
@@ -72,7 +72,7 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        <div class="form-text">Your display name (optional, max 64 characters)</div>
+                        <div class="form-text">您的显示名称（可选，最多64个字符）</div>
                     </div>
 
                     <div class="mb-3">
@@ -85,33 +85,33 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        <div class="form-text">Your email address. A confirmation email will be sent if changed.</div>
+                        <div class="form-text">您的邮箱地址。更改后将发送确认邮件。</div>
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <h5 class="mb-3">
-                        <i class="fas fa-info-circle me-2"></i>Current Information
+                        <i class="fas fa-info-circle me-2"></i>当前信息
                     </h5>
 
                     <div class="mb-3">
-                        <label class="form-label">Username</label>
+                        <label class="form-label">用户名</label>
                         <input type="text" class="form-control" value="{{ current_user.username }}" readonly>
-                        <div class="form-text">Username cannot be changed</div>
+                        <div class="form-text">用户名无法更改</div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Current Role</label>
+                        <label class="form-label">当前角色</label>
                         <div>
-                            <span class="badge bg-primary">{{ current_user.role.name if current_user.role else 'User' }}</span>
+                            <span class="badge bg-primary">{{ current_user.role.name if current_user.role else '用户' }}</span>
                         </div>
-                        <div class="form-text">Your current system role</div>
+                        <div class="form-text">您当前的系统角色</div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Member Since</label>
+                        <label class="form-label">注册时间</label>
                         <input type="text" class="form-control"
-                               value="{{ current_user.get_safe_datetime('member_since').strftime('%B %d, %Y') if current_user.get_safe_datetime('member_since') else 'Unknown' }}"
+                               value="{{ current_user.get_safe_datetime('member_since').strftime('%Y年%m月%d日') if current_user.get_safe_datetime('member_since') else '未知' }}"
                                readonly>
                     </div>
                 </div>
@@ -122,15 +122,15 @@
                 <div class="text-muted">
                     <small>
                         <i class="fas fa-info-circle me-1"></i>
-                        Email changes require confirmation
+                        邮箱更改需要确认
                     </small>
                 </div>
                 <div>
                     <a href="{{ url_for('user.profile', username=current_user.username) }}" class="btn-wiki me-2">
-                        Cancel
+                        取消
                     </a>
                     <button type="submit" class="btn-wiki primary">
-                        <i class="fas fa-save me-2"></i>Save Changes
+                        <i class="fas fa-save me-2"></i>保存更改
                     </button>
                 </div>
             </div>
@@ -142,28 +142,28 @@
 <div class="content-card">
     <div class="card-body">
         <h5 class="mb-3">
-            <i class="fas fa-tools me-2"></i>Quick Actions
+            <i class="fas fa-tools me-2"></i>快速操作
         </h5>
 
         <div class="row">
             <div class="col-md-6 mb-2">
                 <a href="{{ url_for('auth.change_password') }}" class="btn-wiki w-100">
-                    <i class="fas fa-key me-2"></i>Change Password
+                    <i class="fas fa-key me-2"></i>修改密码
                 </a>
             </div>
             <div class="col-md-6 mb-2">
                 <a href="{{ url_for('auth.sessions') }}" class="btn-wiki w-100">
-                    <i class="fas fa-desktop me-2"></i>Manage Sessions
+                    <i class="fas fa-desktop me-2"></i>管理会话
                 </a>
             </div>
             <div class="col-md-6 mb-2">
                 <a href="{{ url_for('user.notification_settings') }}" class="btn-wiki w-100">
-                    <i class="fas fa-bell me-2"></i>Notification Settings
+                    <i class="fas fa-bell me-2"></i>通知设置
                 </a>
             </div>
             <div class="col-md-6 mb-2">
                 <button class="btn-wiki w-100" data-bs-toggle="modal" data-bs-target="#avatarModal">
-                    <i class="fas fa-camera me-2"></i>Change Avatar
+                    <i class="fas fa-camera me-2"></i>更改头像
                 </button>
             </div>
         </div>
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     form.addEventListener('submit', function(e) {
         if (emailInput.value !== currentEmail) {
-            if (!confirm('You are changing your email address. A confirmation email will be sent to the new address. Continue?')) {
+            if (!confirm('您正在更改邮箱地址。确认邮件将发送到新地址。是否继续？')) {
                 e.preventDefault();
             }
         }

@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}Login - Enterprise Wiki{% endblock %}
+{% block title %}登录 - 企业知识库{% endblock %}
 
 {% block content %}
 <div class="auth-container">
@@ -10,8 +10,8 @@
             <div class="auth-logo">
                 <i class="fas fa-book-open fa-3x text-primary mb-3"></i>
             </div>
-            <h1 class="auth-title">Welcome back</h1>
-            <p class="auth-subtitle">Sign in to Enterprise Wiki to continue</p>
+            <h1 class="auth-title">欢迎回来</h1>
+            <p class="auth-subtitle">登录企业知识库以继续</p>
         </div>
 
         <!-- Login Form -->
@@ -32,12 +32,12 @@
 
                 <!-- Email Field -->
                 <div class="form-group mb-4">
-                    <label for="email" class="form-label">Email address</label>
+                    <label for="email" class="form-label">电子邮箱</label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="fas fa-envelope"></i>
                         </span>
-                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="Enter your email") }}
+                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="请输入电子邮箱") }}
                     </div>
                     {% if form.email.errors %}
                         <div class="invalid-feedback d-block">
@@ -50,12 +50,12 @@
 
                 <!-- Password Field -->
                 <div class="form-group mb-4">
-                    <label for="password" class="form-label">Password</label>
+                    <label for="password" class="form-label">密码</label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="fas fa-lock"></i>
                         </span>
-                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="Enter your password") }}
+                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="请输入密码") }}
                         <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -78,7 +78,7 @@
                 <!-- Submit Button -->
                 <button type="submit" class="btn-wiki btn-primary w-100 mb-3">
                     <i class="fas fa-sign-in-alt me-2"></i>
-                    Sign in
+                    登录
                 </button>
             </form>
 
@@ -87,13 +87,13 @@
                 <div class="text-center">
                     <a href="{{ url_for('auth.password_reset_request') }}" class="auth-link">
                         <i class="fas fa-key me-1"></i>
-                        Forgot your password?
+                        忘记密码？
                     </a>
                 </div>
                 <div class="text-center mt-3">
-                    <span class="text-muted">Don't have an account?</span>
+                    <span class="text-muted">还没有账号？</span>
                     <a href="{{ url_for('auth.register') }}" class="auth-link">
-                        Sign up
+                        注册
                     </a>
                 </div>
             </div>
@@ -106,23 +106,23 @@
             <div class="card-body">
                 <h6 class="card-title">
                     <i class="fas fa-info-circle me-2 text-primary"></i>
-                    Demo Accounts
+                    演示账号
                 </h6>
                 <div class="row">
                     <div class="col-md-6">
                         <small class="text-muted d-block">
-                            <strong>Admin:</strong> admin@company.com / admin123
+                            <strong>管理员:</strong> admin@company.com / admin123
                         </small>
                         <small class="text-muted d-block">
-                            <strong>Editor:</strong> user@company.com / password123
+                            <strong>编辑者:</strong> user@company.com / password123
                         </small>
                     </div>
                     <div class="col-md-6">
                         <small class="text-muted d-block">
-                            <strong>Viewer:</strong> Read-only access
+                            <strong>查看者:</strong> 只读访问权限
                         </small>
                         <small class="text-muted d-block">
-                            <strong>Editor:</strong> Create & edit content
+                            <strong>编辑者:</strong> 创建和编辑内容
                         </small>
                     </div>
                 </div>

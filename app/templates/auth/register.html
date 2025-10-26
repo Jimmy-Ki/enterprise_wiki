@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}Register - Enterprise Wiki{% endblock %}
+{% block title %}注册 - 企业知识库{% endblock %}
 
 {% block content %}
 <div class="auth-container">
@@ -10,8 +10,8 @@
             <div class="auth-logo">
                 <i class="fas fa-book-open fa-3x text-primary mb-3"></i>
             </div>
-            <h1 class="auth-title">Create your account</h1>
-            <p class="auth-subtitle">Join Enterprise Wiki to start collaborating</p>
+            <h1 class="auth-title">创建您的账户</h1>
+            <p class="auth-subtitle">加入企业知识库，开始协作</p>
         </div>
 
         <!-- Registration Form -->
@@ -32,12 +32,12 @@
 
                 <!-- Username Field -->
                 <div class="form-group mb-3">
-                    <label for="username" class="form-label">Username</label>
+                    <label for="username" class="form-label">用户名</label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="fas fa-user"></i>
                         </span>
-                        {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), placeholder="Choose a username") }}
+                        {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), placeholder="请输入用户名") }}
                     </div>
                     {% if form.username.errors %}
                         <div class="invalid-feedback d-block">
@@ -46,17 +46,17 @@
                             {% endfor %}
                         </div>
                     {% endif %}
-                    <small class="text-muted">Username must be unique and contain only letters, numbers, dots, and underscores.</small>
+                    <small class="text-muted">用户名必须唯一，只能包含字母、数字、点和下划线。</small>
                 </div>
 
                 <!-- Email Field -->
                 <div class="form-group mb-3">
-                    <label for="email" class="form-label">Email address</label>
+                    <label for="email" class="form-label">邮箱地址</label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="fas fa-envelope"></i>
                         </span>
-                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="Enter your email") }}
+                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="请输入邮箱地址") }}
                     </div>
                     {% if form.email.errors %}
                         <div class="invalid-feedback d-block">
@@ -70,12 +70,12 @@
                 <!-- Password Fields -->
                 <!-- Password Field -->
                 <div class="form-group mb-3">
-                    <label for="password" class="form-label">Password</label>
+                    <label for="password" class="form-label">密码</label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="fas fa-lock"></i>
                         </span>
-                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="Create password") }}
+                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="请创建密码") }}
                         <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -91,12 +91,12 @@
 
                 <!-- Confirm Password Field -->
                 <div class="form-group mb-3">
-                    <label for="password2" class="form-label">Confirm Password</label>
+                    <label for="password2" class="form-label">确认密码</label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="fas fa-lock"></i>
                         </span>
-                        {{ form.password2(class="form-control" + (" is-invalid" if form.password2.errors else ""), placeholder="Confirm password") }}
+                        {{ form.password2(class="form-control" + (" is-invalid" if form.password2.errors else ""), placeholder="请再次输入密码") }}
                         <button class="btn btn-outline-secondary" type="button" id="togglePassword2">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -113,16 +113,16 @@
                 <!-- Submit Button -->
                 <button type="submit" class="btn-wiki btn-primary w-100 mb-3">
                     <i class="fas fa-user-plus me-2"></i>
-                    Create account
+                    创建账户
                 </button>
             </form>
 
             <!-- Links -->
             <div class="auth-links">
                 <div class="text-center">
-                    <span class="text-muted">Already have an account?</span>
+                    <span class="text-muted">已有账户？</span>
                     <a href="{{ url_for('auth.login') }}" class="auth-link">
-                        Sign in
+                        立即登录
                     </a>
                 </div>
             </div>
@@ -135,27 +135,27 @@
             <div class="card-body">
                 <h6 class="card-title">
                     <i class="fas fa-info-circle me-2 text-primary"></i>
-                    Account Benefits
+                    账户特权
                 </h6>
                 <div class="row">
                     <div class="col-md-6">
                         <small class="text-muted d-block">
                             <i class="fas fa-check text-success me-1"></i>
-                            Create and edit pages
+                            创建和编辑页面
                         </small>
                         <small class="text-muted d-block">
                             <i class="fas fa-check text-success me-1"></i>
-                            Upload files & images
+                            上传文件和图片
                         </small>
                     </div>
                     <div class="col-md-6">
                         <small class="text-muted d-block">
                             <i class="fas fa-check text-success me-1"></i>
-                            Collaborate with team
+                            团队协作
                         </small>
                         <small class="text-muted d-block">
                             <i class="fas fa-check text-success me-1"></i>
-                            Version history tracking
+                            版本历史跟踪
                         </small>
                     </div>
                 </div>
@@ -244,32 +244,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Client-side validation
             if (!username || !email || !password || !confirmPassword) {
-                showToast('Please fill in all required fields', 'warning');
+                showToast('请填写所有必填字段', 'warning');
                 return;
             }
 
             // Basic email validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
-                showToast('Please enter a valid email address', 'warning');
+                showToast('请输入有效的邮箱地址', 'warning');
                 return;
             }
 
             // Password validation
             if (password.length < 8) {
-                showToast('Password must be at least 8 characters long', 'warning');
+                showToast('密码长度至少为8个字符', 'warning');
                 return;
             }
 
             if (password !== confirmPassword) {
-                showToast('Passwords do not match', 'warning');
+                showToast('两次输入的密码不匹配', 'warning');
                 return;
             }
 
             // Show loading state
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...';
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>正在创建账户...';
             }
 
             // Prepare form data (excluding CSRF token and submit button)
@@ -304,21 +304,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 1500);
                 } else {
                     // Show error message
-                    showToast(data.error || 'Registration failed', 'danger');
+                    showToast(data.error || '注册失败', 'danger');
                     // Reset button state
                     if (submitBtn) {
                         submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Create Account';
+                        submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>创建账户';
                     }
                 }
             })
             .catch(error => {
                 console.error('Registration error:', error);
-                showToast('Registration failed. Please try again.', 'danger');
+                showToast('注册失败，请重试。', 'danger');
                 // Reset button state
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Create Account';
+                    submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>创建账户';
                 }
             });
         });

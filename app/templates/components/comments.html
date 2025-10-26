@@ -2,7 +2,7 @@
 <div class="comments-section" id="comments-section">
     <div class="comments-header">
         <h3 class="comments-title">
-            <i class="fas fa-comments me-2"></i>Comments
+            <i class="fas fa-comments me-2"></i>评论
         </h3>
         <span class="comments-count" id="comments-count">0</span>
     </div>
@@ -20,59 +20,59 @@
                     <!-- 富文本编辑器工具栏 -->
                     <div class="comment-editor-toolbar">
                         <div class="btn-group me-2" role="group">
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="bold" title="Bold (Ctrl+B)">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="bold" title="粗体 (Ctrl+B)">
                                 <i class="fas fa-bold"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="italic" title="Italic (Ctrl+I)">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="italic" title="斜体 (Ctrl+I)">
                                 <i class="fas fa-italic"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="underline" title="Underline">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="underline" title="下划线">
                                 <i class="fas fa-underline"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="strikeThrough" title="Strikethrough">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="strikeThrough" title="删除线">
                                 <i class="fas fa-strikethrough"></i>
                             </button>
                         </div>
 
                         <div class="btn-group me-2" role="group">
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="insertUnorderedList" title="Bullet List">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="insertUnorderedList" title="无序列表">
                                 <i class="fas fa-list-ul"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="insertOrderedList" title="Numbered List">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="insertOrderedList" title="有序列表">
                                 <i class="fas fa-list-ol"></i>
                             </button>
                         </div>
 
                         <div class="btn-group me-2" role="group">
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="createLink" title="Insert Link">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="createLink" title="插入链接">
                                 <i class="fas fa-link"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="insertImage" title="Insert Image">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="insertImage" title="插入图片">
                                 <i class="fas fa-image"></i>
                             </button>
                         </div>
 
                         <div class="btn-group me-2" role="group">
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="blockquote" title="Blockquote">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="blockquote" title="引用">
                                 <i class="fas fa-quote-left"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="code" title="Code">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="code" title="代码">
                                 <i class="fas fa-code"></i>
                             </button>
                         </div>
 
                         <!-- 表情符号按钮 -->
                         <div class="btn-group me-2" role="group">
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn emoji-picker-btn" title="Insert Emoji">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn emoji-picker-btn" title="插入表情">
                                 <i class="fas fa-smile"></i>
                             </button>
                         </div>
 
                         <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="undo" title="Undo">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="undo" title="撤销">
                                 <i class="fas fa-undo"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="redo" title="Redo">
+                            <button type="button" class="btn btn-outline-secondary btn-sm toolbar-btn" data-command="redo" title="重做">
                                 <i class="fas fa-redo"></i>
                             </button>
                         </div>
@@ -80,7 +80,7 @@
 
                     <!-- 富文本编辑器 -->
                     <div class="comment-editor" id="main-comment-editor" contenteditable="true"
-                         data-placeholder="Share your thoughts... Use @username to mention users">
+                         data-placeholder="分享您的想法...使用@username提及用户">
                     </div>
 
                     <!-- 隐藏的textarea用于表单提交 -->
@@ -92,34 +92,34 @@
                     <div class="comment-meta">
                         <small class="text-muted">
                             <i class="fas fa-info-circle me-1"></i>
-                            <code>@username</code> to mention users • Supports Markdown
+                            <code>@username</code> 提及用户 • 支持Markdown
                         </small>
                     </div>
                 </div>
             </div>
             <div class="comment-actions">
                 <button type="button" class="btn btn-outline-secondary btn-sm comment-preview-toggle">
-                    <i class="fas fa-eye me-1"></i>Preview
+                    <i class="fas fa-eye me-1"></i>预览
                 </button>
                 <button type="button" class="btn btn-outline-secondary btn-sm comment-markdown-toggle">
                     <i class="fas fa-code me-1"></i>Markdown
                 </button>
                 <button type="submit" class="btn btn-primary" id="main-comment-submit">
-                    <i class="fas fa-paper-plane me-2"></i>Post Comment
+                    <i class="fas fa-paper-plane me-2"></i>发表评论
                 </button>
             </div>
         </form>
 
         <!-- 预览区域 -->
         <div class="comment-preview" id="main-comment-preview" style="display: none;">
-            <h6>Preview:</h6>
+            <h6>预览：</h6>
             <div id="main-comment-preview-content"></div>
         </div>
 
         <!-- 表情符号选择器 -->
         <div class="emoji-picker" id="emoji-picker" style="display: none;">
             <div class="emoji-picker-header">
-                <span class="emoji-picker-title">Select Emoji</span>
+                <span class="emoji-picker-title">选择表情</span>
                 <button type="button" class="btn-close emoji-picker-close">&times;</button>
             </div>
             <div class="emoji-picker-tabs">
@@ -141,7 +141,7 @@
     {% else %}
     <div class="alert alert-info">
         <i class="fas fa-info-circle me-2"></i>
-        Please <a href="{{ url_for('auth.login') }}">sign in</a> to participate in the discussion.
+        请<a href="{{ url_for('auth.login') }}">登录</a>参与讨论。
     </div>
     {% endif %}
 
@@ -149,7 +149,7 @@
     <div class="comments-list" id="comments-list">
         <div class="comments-loading">
             <div class="comments-spinner"></div>
-            <div>Loading comments...</div>
+            <div>加载评论中...</div>
         </div>
     </div>
 
