@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Release 创建助手</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: #0366d6; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .section { background: #f6f8fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .step { background: white; padding: 15px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #0366d6; }
+        .code { background: #f1f3f4; padding: 15px; border-radius: 4px; font-family: monospace; margin: 10px 0; }
+        .button { background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        .button:hover { background: #218838; }
+        .copy-btn { background: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .release-content { background: white; border: 1px solid #ddd; padding: 20px; border-radius: 6px; }
+        .release-preview { max-height: 400px; overflow-y: auto; border: 1px solid #e1e4e8; padding: 15px; border-radius: 6px; background: #fafbfc; }
+        .github-link { display: inline-block; background: #24292e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; margin: 10px; }
+        .github-link:hover { background: #0366d6; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎉 GitHub Release 创建助手</h1>
+        <p>企业知识库系统 v1.0.0 - 快速创建指南</p>
+    </div>
+
+    <div class="section">
+        <h2>📋 创建步骤</h2>
+
+        <div class="step">
+            <h3>步骤 1: 打开 GitHub Release 页面</h3>
+            <p>点击下面的按钮直接跳转到 Release 创建页面：</p>
+            <a href="https://github.com/Jimmy-Ki/enterprise_wiki/releases/new" target="_blank" class="github-link">
+                🚀 打开 GitHub Release 创建页面
+            </a>
+        </div>
+
+        <div class="step">
+            <h3>步骤 2: 填写基本信息</h3>
+            <ul>
+                <li><strong>Tag:</strong> 选择或输入 <code>v1.0.0</code></li>
+                <li><strong>Target:</strong> 选择 <code>main</code> 分支</li>
+                <li><strong>Title:</strong> 输入标题</li>
+                <li><strong>Description:</strong> 粘贴下面的内容</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>步骤 3: 复制 Release 信息</h3>
+            <button class="copy-btn" onclick="copyTitle()">📋 复制标题</button>
+            <button class="copy-btn" onclick="copyContent()">📋 复制内容</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📝 Release 信息</h2>
+
+        <h3>标题：</h3>
+        <div class="code" id="release-title">
+企业知识库系统 v1.0.0 正式发布
+        </div>
+
+        <h3>内容：</h3>
+        <div class="release-content">
+            <div class="release-preview" id="release-content"># 🎉 企业知识库系统 v1.0.0 正式发布
+
+## ✨ 主要特性
+
+### 📚 知识库管理
+- 完整的Wiki系统，支持Markdown编辑、实时预览、版本控制
+- 文件附件管理，支持多种格式文件上传
+- 强大的全文搜索和语义搜索功能
+- 层级化的文档分类体系
+
+### 👥 用户与权限管理
+- 基于角色的访问控制(RBAC)
+- 多层级组织架构管理
+- 双因素认证(2FA)安全保护
+- 用户会话监控和管理
+
+### 🤖 FastGPT API集成
+- 完整的FastGPT API文件库接口
+- 三个核心接口：文件列表、文件内容、阅读链接
+- Bearer Token认证机制
+
+### 🔧 系统功能
+- 响应式设计，支持多设备访问
+- 完整的管理控制台
+- 数据安全保护(CSRF、XSS、SQL注入防护)
+- Redis缓存优化
+
+## 🚀 快速开始
+
+### 环境要求
+- Python 3.8+
+- Flask 2.0+
+- Redis 6.0+ (可选)
+
+### 安装部署
+1. 克隆仓库: `git clone https://github.com/Jimmy-Ki/enterprise_wiki.git`
+2. 创建虚拟环境: `python3 -m venv venv`
+3. 安装依赖: `pip install -r requirements.txt`
+4. 初始化数据库: `flask db upgrade`
+5. 启动应用: `python3 run.py`
+
+### 默认账户
+- 管理员: admin@company.com / admin123456
+- API测试: fastgpt_test / test123456
+
+## 📁 项目结构
+- `app/` - 应用核心代码
+- `tests/` - 测试脚本
+- `tools/` - 工具脚本
+- `docs/` - 文档目录
+- `temp/` - 临时文件
+
+## 🔐 安全特性
+- CSRF保护、XSS防护、SQL注入防护
+- 会话管理和细粒度权限控制
+
+## 📖 完整文档
+- 系统文档、API集成文档、项目结构说明
+- v1.0.0归档文档包含完整的技术规格
+
+---
+
+**注意**: 这是生产就绪版本，包含完整功能实现和详细文档。</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>✅ 完成检查清单</h2>
+        <div style="background: white; padding: 20px; border-radius: 6px;">
+            <p>✅ 选择 Tag: <code>v1.0.0</code></p>
+            <p>✅ 选择 Target: <code>main</code></p>
+            <p>✅ 填写标题</p>
+            <p>✅ 粘贴内容</p>
+            <p>✅ 检查预览效果</p>
+            <p>🎯 点击 "Publish release"</p>
+        </div>
+    </div>
+
+    <script>
+        function copyTitle() {
+            const title = document.getElementById('release-title').innerText;
+            navigator.clipboard.writeText(title).then(() => {
+                alert('✅ 标题已复制到剪贴板！');
+            });
+        }
+
+        function copyContent() {
+            const content = document.getElementById('release-content').innerText;
+            navigator.clipboard.writeText(content).then(() => {
+                alert('✅ Release 内容已复制到剪贴板！');
+            });
+        }
+
+        // 自动滚动到步骤
+        window.onload = function() {
+            document.querySelector('.step').scrollIntoView({ behavior: 'smooth' });
+        };
+    </script>
+</body>
+</html>

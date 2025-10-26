@@ -51,18 +51,137 @@ env/
 .idea/
 *.swp
 *.swo
+*.sublime-*
 
 # OS generated files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Log files
 *.log
+logs/
 
 # Cache directories
 .cache/
 *.cache
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Temporary files
 *.tmp
 *.temp
+temp/*.log
+temp/debug.*
+
+# Project specific files
+# ====================
+
+# Search index
+search_index/
+elasticsearch/
+
+# Redis dump
+dump.rdb
+
+# Session files (keep temp/ directory but ignore sensitive session data)
+temp/session_*.log
+temp/auth_*.tmp
+
+# Test output
+test_output/
+test_reports/
+.coverage.*
+nosetests.xml
+
+# Backup files
+*.bak
+*.backup
+*.old
+*_backup.*
+
+# Archive files (keep one, ignore others)
+*.tar.gz
+*.zip
+*.rar
+!enterprise_wiki_archive_*.tar.gz
+
+# Local configuration
+config/local.py
+config/development.py
+config/production.py.local
+
+# Local scripts
+scripts/local_*
+scripts/dev_*
+
+# Documentation build
+docs/_build/
+docs/.doctrees/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# celerybeat schedule
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Application specific
+# =====================
+# Upload directories
+app/static/uploads/*
+app/static/avatars/*
+app/static/temp/*
+
+# Runtime files
+*.pid
+*.sock
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+ssl/
+
+# Local development
+.local/
+local_data/
+dev_data/
+
+# Tool output
+tools/output/
+tools/reports/
+tools/logs/
+
+# Test data (keep structure, ignore actual data)
+tests/data/*
+!tests/data/.gitkeep
