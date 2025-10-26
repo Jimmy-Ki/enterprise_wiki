@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}My Sessions - Enterprise Wiki{% endblock %}
+{% block title %}我的会话 - 企业知识库{% endblock %}
 
 {% block styles %}
 <style>
@@ -27,18 +27,18 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>
-                <i class="fas fa-desktop me-2"></i>Active Sessions
+                <i class="fas fa-desktop me-2"></i>活跃会话
             </h1>
             <div class="d-flex align-items-center">
                 <span class="badge bg-success me-2">
-                    <i class="fas fa-circle me-1"></i>{{ sessions|length }} Active
+                    <i class="fas fa-circle me-1"></i>{{ sessions|length }} 个活跃
                 </span>
                 {% if sessions|length > 1 %}
                 <form method="POST" action="{{ url_for('auth.revoke_all_sessions') }}" class="d-inline">
                     <button type="submit" class="btn btn-outline-warning btn-sm"
-                            title="Revoke all sessions except current"
-                            onclick="return confirm('Are you sure you want to revoke all other sessions? This will log out all other devices.')">
-                        <i class="fas fa-ban me-1"></i>Revoke All Others
+                            title="撤销除当前会话外的所有会话"
+                            onclick="return confirm('确定要撤销所有其他会话吗？这将使所有其他设备登出。')">
+                        <i class="fas fa-ban me-1"></i>撤销其他会话
                     </button>
                 </form>
                 {% endif %}
@@ -49,7 +49,7 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-list me-2"></i>Session List
+                    <i class="fas fa-list me-2"></i>会话列表
                 </h5>
             </div>
             <div class="card-body p-0">
@@ -57,12 +57,12 @@
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th width="20%">Device & Location</th>
-                                <th width="35%">Browser</th>
-                                <th width="15%">Created</th>
-                                <th width="15%">Last Activity</th>
-                                <th width="10%">Status</th>
-                                <th width="5%">Actions</th>
+                                <th width="20%">设备与位置</th>
+                                <th width="35%">浏览器</th>
+                                <th width="15%">创建时间</th>
+                                <th width="15%">最后活动</th>
+                                <th width="10%">状态</th>
+                                <th width="5%">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -72,66 +72,66 @@
                                     <div class="d-flex align-items-center">
                                         <i class="fas fa-desktop me-2 text-muted"></i>
                                         <div>
-                                            <div class="fw-medium">{{ session.ip_address or 'Unknown' }}</div>
+                                            <div class="fw-medium">{{ session.ip_address or '未知' }}</div>
                                             <small class="text-muted">
                                                 {% if session.session_token == request.cookies.get('session') %}
-                                                    Current Device
+                                                    当前设备
                                                 {% else %}
-                                                    Other Device
+                                                    其他设备
                                                 {% endif %}
                                             </small>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="text-truncate" style="max-width: 300px;" title="{{ session.user_agent or 'Unknown' }}">
+                                    <div class="text-truncate" style="max-width: 300px;" title="{{ session.user_agent or '未知' }}">
                                         {% if session.user_agent %}
                                             {% if 'Chrome' in session.user_agent %}
-                                                <i class="fab fa-chrome me-1 text-primary"></i>Chrome
+                                                <i class="fab fa-chrome me-1 text-primary"></i>Chrome浏览器
                                             {% elif 'Firefox' in session.user_agent %}
-                                                <i class="fab fa-firefox me-1 text-danger"></i>Firefox
+                                                <i class="fab fa-firefox me-1 text-danger"></i>Firefox浏览器
                                             {% elif 'Safari' in session.user_agent %}
-                                                <i class="fab fa-safari me-1 text-info"></i>Safari
+                                                <i class="fab fa-safari me-1 text-info"></i>Safari浏览器
                                             {% elif 'Edge' in session.user_agent %}
-                                                <i class="fab fa-edge me-1 text-primary"></i>Edge
+                                                <i class="fab fa-edge me-1 text-primary"></i>Edge浏览器
                                             {% else %}
-                                                <i class="fas fa-globe me-1 text-muted"></i>Browser
+                                                <i class="fas fa-globe me-1 text-muted"></i>浏览器
                                             {% endif %}
                                             <br>
                                             <small class="text-muted">{{ session.user_agent[:50] }}{% if session.user_agent|length > 50 %}...{% endif %}</small>
                                         {% else %}
-                                            <i class="fas fa-question-circle me-1 text-muted"></i>Unknown
+                                            <i class="fas fa-question-circle me-1 text-muted"></i>未知
                                         {% endif %}
                                     </div>
                                 </td>
                                 <td>
                                     <div>
                                         <div>{{ session.created_at.strftime('%m-%d %H:%M') }}</div>
-                                        <small class="text-muted">{{ session.created_at.strftime('%Y') }}</small>
+                                        <small class="text-muted">{{ session.created_at.strftime('%Y年') }}</small>
                                     </div>
                                 </td>
                                 <td>
                                     <div>
                                         <div>{{ session.expires_at.strftime('%m-%d %H:%M') }}</div>
-                                        <small class="text-muted">Expires</small>
+                                        <small class="text-muted">过期</small>
                                     </div>
                                 </td>
                                 <td>
                                     {% if session.is_active %}
                                         {% if session.session_token == request.cookies.get('session') %}
-                                            <span class="badge bg-primary">Current</span>
+                                            <span class="badge bg-primary">当前</span>
                                         {% else %}
-                                            <span class="badge bg-success">Active</span>
+                                            <span class="badge bg-success">活跃</span>
                                         {% endif %}
                                     {% else %}
-                                        <span class="badge bg-secondary">Inactive</span>
+                                        <span class="badge bg-secondary">非活跃</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if session.is_active and session.session_token != request.cookies.get('session') %}
                                     <form method="POST" action="{{ url_for('auth.revoke_session', session_id=session.id) }}" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Revoke Session"
-                                                onclick="return confirm('Are you sure you want to revoke this session? This will log out that device.')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="撤销会话"
+                                                onclick="return confirm('确定要撤销这个会话吗？这将使该设备登出。')">
                                             <i class="fas fa-ban"></i>
                                         </button>
                                     </form>
@@ -151,9 +151,9 @@
             <div class="d-flex align-items-start">
                 <i class="fas fa-info-circle me-3 mt-1"></i>
                 <div>
-                    <strong>Security Tip:</strong> If you see any sessions you don't recognize, revoke them immediately to secure your account.
+                    <strong>安全提示：</strong> 如果您看到任何不认识的会话，请立即撤销它们以确保账户安全。
                     <br>
-                    <small class="text-muted">Regularly review your active sessions and log out from devices you no longer use.</small>
+                    <small class="text-muted">定期查看您的活跃会话，并从您不再使用的设备登出。</small>
                 </div>
             </div>
         </div>
@@ -163,10 +163,10 @@
             <div class="card">
                 <div class="card-body">
                     <i class="fas fa-desktop fa-3x text-muted mb-3"></i>
-                    <h4>No Active Sessions</h4>
-                    <p class="text-muted">You don't have any active sessions at the moment.</p>
+                    <h4>无活跃会话</h4>
+                    <p class="text-muted">您当前没有任何活跃会话。</p>
                     <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        <i class="fas fa-sign-in-alt me-2"></i>登录
                     </a>
                 </div>
             </div>
@@ -181,47 +181,47 @@
         <div class="card">
             <div class="card-header">
                 <h6 class="mb-0">
-                    <i class="fas fa-shield-alt me-2"></i>Session Security
+                    <i class="fas fa-shield-alt me-2"></i>会话安全
                 </h6>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6>About Sessions</h6>
+                        <h6>关于会话</h6>
                         <p class="text-muted small mb-3">
-                            Sessions keep you logged in across different devices and browsers. Each session represents an active login on your account.
+                            会话让您在不同设备和浏览器上保持登录状态。每个会话代表您账户的一次活跃登录。
                         </p>
 
-                        <h6>Security Best Practices</h6>
+                        <h6>安全最佳实践</h6>
                         <ul class="text-muted small mb-0">
-                            <li>Regularly review your active sessions</li>
-                            <li>Revoke sessions from devices you no longer use</li>
-                            <li>Always log out from shared or public devices</li>
-                            <li>Use strong, unique passwords for your account</li>
+                            <li>定期查看您的活跃会话</li>
+                            <li>撤销您不再使用的设备上的会话</li>
+                            <li>始终从共享或公共设备登出</li>
+                            <li>为您的账户使用强且唯一的密码</li>
                         </ul>
                     </div>
                     <div class="col-md-6">
-                        <h6>Session Features</h6>
+                        <h6>会话功能</h6>
                         <div class="d-grid gap-2">
                             <div class="d-flex align-items-center p-2 bg-light rounded">
                                 <i class="fas fa-clock me-3 text-primary"></i>
                                 <div>
-                                    <small class="fw-medium">Auto-expiry</small>
-                                    <div class="text-muted small">Sessions expire after 24 hours of inactivity</div>
+                                    <small class="fw-medium">自动过期</small>
+                                    <div class="text-muted small">会话在24小时不活动后过期</div>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center p-2 bg-light rounded">
                                 <i class="fas fa-globe me-3 text-success"></i>
                                 <div>
-                                    <small class="fw-medium">Multi-device Support</small>
-                                    <div class="text-muted small">Stay logged in across multiple devices</div>
+                                    <small class="fw-medium">多设备支持</small>
+                                    <div class="text-muted small">在多个设备上保持登录状态</div>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center p-2 bg-light rounded">
                                 <i class="fas fa-ban me-3 text-danger"></i>
                                 <div>
-                                    <small class="fw-medium">Instant Revocation</small>
-                                    <div class="text-muted small">Revoke access instantly when needed</div>
+                                    <small class="fw-medium">即时撤销</small>
+                                    <div class="text-muted small">在需要时立即撤销访问权限</div>
                                 </div>
                             </div>
                         </div>
@@ -235,29 +235,29 @@
         <div class="card">
             <div class="card-header">
                 <h6 class="mb-0">
-                    <i class="fas fa-tools me-2"></i>Quick Actions
+                    <i class="fas fa-tools me-2"></i>快速操作
                 </h6>
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
                     <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-key me-2"></i>Change Password
+                        <i class="fas fa-key me-2"></i>修改密码
                     </a>
                     {% if sessions|length > 1 %}
                     <form method="POST" action="{{ url_for('auth.revoke_all_sessions') }}">
                         <button type="submit" class="btn btn-outline-warning"
-                                onclick="return confirm('This will log out all other devices. Continue?')">
-                            <i class="fas fa-ban me-2"></i>Sign Out All Others
+                                onclick="return confirm('这将使所有其他设备登出。继续吗？')">
+                            <i class="fas fa-ban me-2"></i>登出其他设备
                         </button>
                     </form>
                     {% endif %}
                     <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
-                        <i class="fas fa-sign-out-alt me-2"></i>Sign Out Everywhere
+                        <i class="fas fa-sign-out-alt me-2"></i>全部登出
                     </a>
                     <div class="text-center text-muted mt-3">
                         <small>
                             <i class="fas fa-info-circle me-1"></i>
-                            Sessions are securely encrypted and monitored
+                            会话已安全加密并受到监控
                         </small>
                     </div>
                 </div>

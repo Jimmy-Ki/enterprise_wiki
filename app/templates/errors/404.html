@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}Page Not Found - Enterprise Wiki{% endblock %}
+{% block title %}页面未找到 - 企业知识库{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -8,7 +8,7 @@
         <div class="card border-warning">
             <div class="card-header bg-warning text-dark text-center">
                 <h1 class="mb-0">
-                    <i class="fas fa-search me-3"></i>404 - Page Not Found
+                    <i class="fas fa-search me-3"></i>404 - 页面未找到
                 </h1>
             </div>
             <div class="card-body text-center py-5">
@@ -16,11 +16,11 @@
                     <i class="fas fa-map-signs fa-5x text-warning"></i>
                 </div>
 
-                <h2 class="mb-3">Oops! The page you're looking for doesn't exist.</h2>
+                <h2 class="mb-3">糟糕！您要查找的页面不存在。</h2>
 
                 <p class="text-muted mb-4">
-                    The page you requested could not be found. It might have been moved, deleted, or never existed.
-                    Let's help you find what you're looking for!
+                    您请求的页面无法找到。它可能已被移动、删除或从未存在。
+                    让我们帮助您找到您要查找的内容！
                 </p>
 
                 <!-- Search Suggestions -->
@@ -29,11 +29,11 @@
                         <div class="card bg-light">
                             <div class="card-body">
                                 <h5 class="card-title">
-                                    <i class="fas fa-search me-2"></i>Search for what you need
+                                    <i class="fas fa-search me-2"></i>搜索您需要的内容
                                 </h5>
                                 <form method="GET" action="{{ url_for('wiki.search') }}">
                                     <div class="input-group">
-                                        <input type="text" name="q" class="form-control" placeholder="Search for pages..." autofocus>
+                                        <input type="text" name="q" class="form-control" placeholder="搜索页面..." autofocus>
                                         <button type="submit" class="btn btn-primary">
                                             <i class="fas fa-search"></i>
                                         </button>
@@ -50,10 +50,10 @@
                         <div class="card h-100">
                             <div class="card-body text-center">
                                 <i class="fas fa-home fa-2x text-primary mb-3"></i>
-                                <h5 class="card-title">Home</h5>
-                                <p class="card-text">Go back to the main page and browse categories</p>
+                                <h5 class="card-title">首页</h5>
+                                <p class="card-text">返回主页并浏览分类</p>
                                 <a href="{{ url_for('wiki.index') }}" class="btn btn-primary">
-                                    <i class="fas fa-home me-2"></i>Go Home
+                                    <i class="fas fa-home me-2"></i>返回首页
                                 </a>
                             </div>
                         </div>
@@ -62,10 +62,10 @@
                         <div class="card h-100">
                             <div class="card-body text-center">
                                 <i class="fas fa-folder fa-2x text-success mb-3"></i>
-                                <h5 class="card-title">Categories</h5>
-                                <p class="card-text">Browse content by category</p>
+                                <h5 class="card-title">分类</h5>
+                                <p class="card-text">按分类浏览内容</p>
                                 <a href="#" onclick="showCategories()" class="btn btn-success">
-                                    <i class="fas fa-folder me-2"></i>Browse Categories
+                                    <i class="fas fa-folder me-2"></i>浏览分类
                                 </a>
                             </div>
                         </div>
@@ -74,10 +74,10 @@
                         <div class="card h-100">
                             <div class="card-body text-center">
                                 <i class="fas fa-clock fa-2x text-info mb-3"></i>
-                                <h5 class="card-title">Recent Pages</h5>
-                                <p class="card-text">View recently updated content</p>
+                                <h5 class="card-title">最近页面</h5>
+                                <p class="card-text">查看最近更新的内容</p>
                                 <a href="#" onclick="showRecentPages()" class="btn btn-info">
-                                    <i class="fas fa-clock me-2"></i>Recent Pages
+                                    <i class="fas fa-clock me-2"></i>最近页面
                                 </a>
                             </div>
                         </div>

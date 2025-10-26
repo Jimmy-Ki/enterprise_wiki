@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}Notification Settings - {{ current_user.name or current_user.username }}{% endblock %}
+{% block title %}通知设置 - {{ current_user.name or current_user.username }}{% endblock %}
 
 {% block content %}
 <!-- Breadcrumb -->
@@ -10,16 +10,16 @@
             <li class="breadcrumb-item">
                 <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
                     <i class="fas fa-home me-1"></i>
-                    <span>Spaces</span>
+                    <span>空间</span>
                 </a>
             </li>
             <li class="breadcrumb-item">
                 <a href="{{ url_for('user.profile', username=current_user.username) }}" class="breadcrumb-link">
-                    <span>Profile</span>
+                    <span>个人资料</span>
                 </a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
-                <span class="breadcrumb-current">Notification Settings</span>
+                <span class="breadcrumb-current">通知设置</span>
             </li>
         </ol>
     </nav>
@@ -30,24 +30,24 @@
     <div class="page-header-top">
         <div class="page-title-section">
             <h1 class="page-title">
-                <i class="fas fa-bell me-2"></i>Notification Settings
+                <i class="fas fa-bell me-2"></i>通知设置
             </h1>
             <div class="page-status-badges">
                 <span class="status-badge category">
-                    <i class="fas fa-cog me-1"></i>Preferences
+                    <i class="fas fa-cog me-1"></i>偏好设置
                 </span>
             </div>
         </div>
 
         <div class="page-actions">
             <a href="{{ url_for('user.profile', username=current_user.username) }}" class="btn-wiki">
-                <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                <i class="fas fa-arrow-left me-2"></i>返回个人资料
             </a>
         </div>
     </div>
 
     <div class="page-description">
-        <p>Manage your notification preferences. Control how and when you receive notifications from the Enterprise Wiki system.</p>
+        <p>管理您的通知偏好设置。控制您如何以及何时接收企业知识库系统的通知。</p>
     </div>
 </div>
 
@@ -61,15 +61,15 @@
             <div class="row mb-4">
                 <div class="col-md-8">
                     <h5 class="mb-4">
-                        <i class="fas fa-envelope me-2"></i>Email Notifications
+                        <i class="fas fa-envelope me-2"></i>邮件通知
                     </h5>
 
                     <div class="mb-4">
                         <div class="form-check form-switch mb-3">
                             {{ form.email_notifications(class="form-check-input" + (" is-invalid" if form.email_notifications.errors else ""), id="email_notifications") }}
                             <label class="form-check-label" for="email_notifications">
-                                <strong>Enable Email Notifications</strong>
-                                <div class="form-text">Receive email notifications for important updates and mentions</div>
+                                <strong>启用邮件通知</strong>
+                                <div class="form-text">接收重要更新和提及的邮件通知</div>
                             </label>
                         </div>
                     </div>
@@ -78,32 +78,32 @@
                         <div class="form-check form-switch mb-3">
                             {{ form.watch_notifications(class="form-check-input" + (" is-invalid" if form.watch_notifications.errors else ""), id="watch_notifications") }}
                             <label class="form-check-label" for="watch_notifications">
-                                <strong>Watch Notifications</strong>
-                                <div class="form-text">Get notified when pages or categories you're watching are updated</div>
+                                <strong>关注通知</strong>
+                                <div class="form-text">当您关注的页面或分类被更新时收到通知</div>
                             </label>
                         </div>
 
                         <div class="form-check form-switch mb-3">
                             {{ form.mention_notifications(class="form-check-input" + (" is-invalid" if form.mention_notifications.errors else ""), id="mention_notifications") }}
                             <label class="form-check-label" for="mention_notifications">
-                                <strong>Mention Notifications</strong>
-                                <div class="form-text">Get notified when someone mentions you in comments</div>
+                                <strong>提及通知</strong>
+                                <div class="form-text">当有人在评论中提及您时收到通知</div>
                             </label>
                         </div>
 
                         <div class="form-check form-switch mb-3">
                             {{ form.comment_notifications(class="form-check-input" + (" is-invalid" if form.comment_notifications.errors else ""), id="comment_notifications") }}
                             <label class="form-check-label" for="comment_notifications">
-                                <strong>Comment Notifications</strong>
-                                <div class="form-text">Get notified when someone replies to your comments</div>
+                                <strong>评论通知</strong>
+                                <div class="form-text">当有人回复您的评论时收到通知</div>
                             </label>
                         </div>
 
                         <div class="form-check form-switch mb-3">
                             {{ form.daily_digest(class="form-check-input" + (" is-invalid" if form.daily_digest.errors else ""), id="daily_digest") }}
                             <label class="form-check-label" for="daily_digest">
-                                <strong>Daily Digest</strong>
-                                <div class="form-text">Receive a daily summary of all notifications (experimental)</div>
+                                <strong>每日摘要</strong>
+                                <div class="form-text">接收所有通知的每日摘要（实验性功能）</div>
                             </label>
                         </div>
                     </div>
@@ -113,16 +113,16 @@
                     <div class="content-card bg-light">
                         <div class="card-body">
                             <h6 class="mb-3">
-                                <i class="fas fa-info-circle me-2"></i>Notification Info
+                                <i class="fas fa-info-circle me-2"></i>通知信息
                             </h6>
                             <p class="small text-muted mb-2">
-                                <strong>Watch Notifications:</strong> Sent when pages or categories you follow are updated, edited, or have new comments.
+                                <strong>关注通知：</strong>当您关注的页面或分类被更新、编辑或有新评论时发送。
                             </p>
                             <p class="small text-muted mb-2">
-                                <strong>Mention Notifications:</strong> Sent when someone uses @username to mention you in a comment.
+                                <strong>提及通知：</strong>当有人在评论中使用@用户名提及您时发送。
                             </p>
                             <p class="small text-muted mb-0">
-                                <strong>Comment Notifications:</strong> Sent when someone replies to your comments on pages or attachments.
+                                <strong>评论通知：</strong>当有人回复您在页面或附件上的评论时发送。
                             </p>
                         </div>
                     </div>
@@ -132,15 +132,15 @@
             <!-- Current Watched Items -->
             <div class="mb-4">
                 <h5 class="mb-3">
-                    <i class="fas fa-eye me-2"></i>Currently Watching
+                    <i class="fas fa-eye me-2"></i>当前关注项目
                 </h5>
 
                 <div id="watched-items">
                     <div class="text-center py-3">
                         <div class="spinner-border spinner-border-sm text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                            <span class="visually-hidden">加载中...</span>
                         </div>
-                        <p class="text-muted mt-2">Loading your watched items...</p>
+                        <p class="text-muted mt-2">正在加载您关注的项目...</p>
                     </div>
                 </div>
             </div>
@@ -150,15 +150,15 @@
                 <div class="text-muted">
                     <small>
                         <i class="fas fa-shield-alt me-1"></i>
-                        Your notification preferences are private and secure
+                        您的通知偏好设置是私密且安全的
                     </small>
                 </div>
                 <div>
                     <a href="{{ url_for('user.profile', username=current_user.username) }}" class="btn-wiki me-2">
-                        Cancel
+                        取消
                     </a>
                     <button type="submit" class="btn-wiki primary">
-                        <i class="fas fa-save me-2"></i>Save Settings
+                        <i class="fas fa-save me-2"></i>保存设置
                     </button>
                 </div>
             </div>
@@ -293,8 +293,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 container.innerHTML = `
                     <div class="text-center py-4 text-muted">
                         <i class="fas fa-eye fa-2x mb-2"></i>
-                        <p>You're not watching any pages or categories yet.</p>
-                        <small>Visit a page or category and click the "Watch" button to receive notifications.</small>
+                        <p>您还没有关注任何页面或分类。</p>
+                        <small>访问页面或分类并点击"关注"按钮以接收通知。</small>
                     </div>
                 `;
                 return;
@@ -302,23 +302,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let html = '';
             data.watches.forEach(watch => {
-                const targetType = watch.target_type === 'page' ? 'Page' : 'Category';
+                const targetType = watch.target_type === 'page' ? '页面' : '分类';
                 const targetInfo = watch.target_info;
 
                 html += `
                     <div class="watch-item">
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="flex-grow-1">
-                                <a href="${targetType === 'Page' ? '/wiki/' + targetInfo.slug : '#'}" class="watch-item-title">
-                                    ${targetType === 'Page' ? targetInfo.title : targetInfo.name}
+                                <a href="${targetType === '页面' ? '/wiki/' + targetInfo.slug : '#'}" class="watch-item-title">
+                                    ${targetType === '页面' ? targetInfo.title : targetInfo.name}
                                 </a>
                                 <div class="d-flex gap-2 mt-1">
                                     <span class="watch-item-type">${targetType}</span>
-                                    <small class="text-muted">Watching since ${new Date(watch.created_at).toLocaleDateString()}</small>
+                                    <small class="text-muted">关注时间：${new Date(watch.created_at).toLocaleDateString('zh-CN')}</small>
                                 </div>
                             </div>
                             <button class="btn-wiki small unwatch-btn" data-target-type="${watch.target_type}" data-target-id="${watch.target_id}">
-                                <i class="fas fa-eye-slash me-1"></i>Unwatch
+                                <i class="fas fa-eye-slash me-1"></i>取消关注
                             </button>
                         </div>
                     </div>
@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const targetType = this.dataset.targetType;
                     const targetId = this.dataset.targetId;
 
-                    if (confirm('Are you sure you want to stop watching this item?')) {
+                    if (confirm('确定要停止关注这个项目吗？')) {
                         try {
                             const response = await fetch(`/api/watch/${targetType}/${targetId}`, {
                                 method: 'DELETE'
@@ -341,13 +341,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             if (response.ok) {
                                 this.closest('.watch-item').remove();
-                                showToast('Stopped watching item', 'success');
+                                showToast('已停止关注项目', 'success');
                             } else {
-                                showToast('Failed to unwatch item', 'danger');
+                                showToast('取消关注失败', 'danger');
                             }
                         } catch (error) {
                             console.error('Error unwatching item:', error);
-                            showToast('An error occurred', 'danger');
+                            showToast('发生错误', 'danger');
                         }
                     }
                 });
@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading watched items:', error);
             document.getElementById('watched-items').innerHTML = `
                 <div class="alert alert-danger">
-                    Failed to load watched items. Please refresh the page.
+                    加载关注项目失败。请刷新页面。
                 </div>
             `;
         }

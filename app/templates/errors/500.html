@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}Server Error - Enterprise Wiki{% endblock %}
+{% block title %}服务器错误 - Enterprise Wiki{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -8,7 +8,7 @@
         <div class="card border-danger">
             <div class="card-header bg-danger text-white text-center">
                 <h1 class="mb-0">
-                    <i class="fas fa-exclamation-triangle me-3"></i>500 - Internal Server Error
+                    <i class="fas fa-exclamation-triangle me-3"></i>500 - 内部服务器错误
                 </h1>
             </div>
             <div class="card-body text-center py-5">
@@ -16,11 +16,11 @@
                     <i class="fas fa-server fa-5x text-danger"></i>
                 </div>
 
-                <h2 class="mb-3">Oops! Something went wrong on our end.</h2>
+                <h2 class="mb-3">糟糕！我们的系统出现了问题。</h2>
 
                 <p class="text-muted mb-4">
-                    We're sorry, but something unexpected happened and we couldn't complete your request.
-                    Our team has been notified and is working to fix this issue.
+                    很抱歉，发生了意外情况，我们无法完成您的请求。
+                    我们的团队已收到通知，正在努力解决此问题。
                 </p>
 
                 <!-- What happened -->
@@ -29,21 +29,21 @@
                         <div class="card bg-light">
                             <div class="card-body">
                                 <h5 class="card-title">
-                                    <i class="fas fa-info-circle me-2"></i>What just happened?
+                                    <i class="fas fa-info-circle me-2"></i>发生了什么？
                                 </h5>
                                 <div class="row text-start">
                                     <div class="col-md-6">
                                         <ul class="list-unstyled mb-0">
-                                            <li><i class="fas fa-check text-success me-2"></i>The error has been logged</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>Our team has been notified</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>Your data is safe</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>错误已被记录</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>我们的团队已收到通知</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>您的数据是安全的</li>
                                         </ul>
                                     </div>
                                     <div class="col-md-6">
                                         <ul class="list-unstyled mb-0">
-                                            <li><i class="fas fa-clock text-warning me-2"></i>We're working on a fix</li>
-                                            <li><i class="fas fa-sync text-info me-2"></i>Try refreshing in a moment</li>
-                                            <li><i class="fas fa-life-ring text-primary me-2"></i>Contact support if needed</li>
+                                            <li><i class="fas fa-clock text-warning me-2"></i>我们正在努力修复</li>
+                                            <li><i class="fas fa-sync text-info me-2"></i>请稍后刷新重试</li>
+                                            <li><i class="fas fa-life-ring text-primary me-2"></i>如需帮助请联系支持团队</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -56,7 +56,7 @@
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-heartbeat me-2"></i>System Status
+                            <i class="fas fa-heartbeat me-2"></i>系统状态
                         </h5>
                     </div>
                     <div class="card-body">
@@ -65,28 +65,28 @@
                                 <div class="status-item">
                                     <i class="fas fa-database fa-2x text-warning mb-2"></i>
                                     <h6>Database</h6>
-                                    <span class="badge bg-warning">Checking...</span>
+                                    <span class="badge bg-warning">检查中...</span>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="status-item">
                                     <i class="fas fa-server fa-2x text-success mb-2"></i>
                                     <h6>Server</h6>
-                                    <span class="badge bg-success">Online</span>
+                                    <span class="badge bg-success">在线</span>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="status-item">
                                     <i class="fas fa-network-wired fa-2x text-info mb-2"></i>
                                     <h6>Network</h6>
-                                    <span class="badge bg-info">Stable</span>
+                                    <span class="badge bg-info">稳定</span>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="status-item">
                                     <i class="fas fa-hdd fa-2x text-success mb-2"></i>
                                     <h6>Storage</h6>
-                                    <span class="badge bg-success">Healthy</span>
+                                    <span class="badge bg-success">正常</span>
                                 </div>
                             </div>
                         </div>
@@ -96,25 +96,25 @@
                 <!-- Action Buttons -->
                 <div class="d-flex justify-content-center gap-2 flex-wrap">
                     <button onclick="location.reload()" class="btn btn-primary">
-                        <i class="fas fa-sync-alt me-2"></i>Try Again
+                        <i class="fas fa-sync-alt me-2"></i>重试
                     </button>
                     <a href="{{ url_for('wiki.index') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-home me-2"></i>Go Home
+                        <i class="fas fa-home me-2"></i>回到首页
                     </a>
                     <a href="javascript:history.back()" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                        <i class="fas fa-arrow-left me-2"></i>返回上一页
                     </button>
                     <button onclick="reportIssue()" class="btn btn-outline-info">
-                        <i class="fas fa-bug me-2"></i>Report Issue
+                        <i class="fas fa-bug me-2"></i>报告问题
                     </button>
                 </div>
 
                 <!-- Auto-refresh notification -->
                 <div class="alert alert-info mt-4" role="alert">
                     <i class="fas fa-clock me-2"></i>
-                    <strong>Auto-refresh:</strong> This page will automatically check for recovery in
-                    <span id="countdown">30</span> seconds.
-                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="cancelAutoRefresh()">Cancel</button>
+                    <strong>自动刷新：</strong> 此页面将在
+                    <span id="countdown">30</span> 秒后自动检查恢复情况。
+                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="cancelAutoRefresh()">取消</button>
                 </div>
             </div>
         </div>
@@ -123,25 +123,25 @@
         <div class="card mt-4">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-bug me-2"></i>Error Report
+                    <i class="fas fa-bug me-2"></i>错误报告
                 </h5>
             </div>
             <div class="card-body">
-                <p class="mb-3">Help us fix this issue by providing more details:</p>
+                <p class="mb-3">请提供更多详细信息帮助我们修复此问题：</p>
                 <form onsubmit="submitErrorReport(event)">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">What were you trying to do?</label>
-                            <textarea class="form-control" name="action" rows="3" placeholder="e.g., Creating a new page, uploading a file, etc."></textarea>
+                            <label class="form-label">您当时正在尝试做什么？</label>
+                            <textarea class="form-control" name="action" rows="3" placeholder="例如：创建新页面、上传文件等"></textarea>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Any additional details?</label>
-                            <textarea class="form-control" name="details" rows="3" placeholder="Any other information that might help us diagnose the issue..."></textarea>
+                            <label class="form-label">是否有其他详细信息？</label>
+                            <textarea class="form-control" name="details" rows="3" placeholder="任何其他可能帮助我们诊断问题的信息..."></textarea>
                         </div>
                     </div>
                     <div class="text-center">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane me-2"></i>Submit Report
+                            <i class="fas fa-paper-plane me-2"></i>提交报告
                         </button>
                     </div>
                 </form>

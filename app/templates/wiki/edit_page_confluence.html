@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}{{ page.title }} - Edit - Enterprise Wiki{% endblock %}
+{% block title %}{{ page.title }} - 编辑 - Enterprise Wiki{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -11,19 +11,19 @@
             </h1>
             <p class="page-breadcrumb">
                 <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
-                    <i class="fas fa-home me-1"></i>Home
+                    <i class="fas fa-home me-1"></i>首页
                 </a>
                 <span class="breadcrumb-separator">/</span>
                 <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="breadcrumb-link">
                     {{ page.title }}
                 </a>
                 <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-current">Edit</span>
+                <span class="breadcrumb-current">编辑</span>
             </p>
         </div>
         <div class="page-actions">
             <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="btn-wiki">
-                <i class="fas fa-times me-2"></i>Cancel
+                <i class="fas fa-times me-2"></i>取消
             </a>
         </div>
     </div>
@@ -38,14 +38,14 @@
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="fas fa-file-alt me-2"></i>Page Content
+                        <i class="fas fa-file-alt me-2"></i>页面内容
                     </h5>
                     <div class="editor-toolbar">
                         <button type="button" class="btn-wiki small" id="togglePreview">
-                            <i class="fas fa-eye me-1"></i>Preview
+                            <i class="fas fa-eye me-1"></i>预览
                         </button>
                         <button type="button" class="btn-wiki small" id="toggleFullscreen">
-                            <i class="fas fa-expand me-1"></i>Fullscreen
+                            <i class="fas fa-expand me-1"></i>全屏
                         </button>
                     </div>
                 </div>
@@ -56,7 +56,7 @@
                     <div class="col-md-8">
                         <div class="form-group">
                             {{ form.title.label(class="form-label required") }}
-                            {{ form.title(class="form-control form-control-lg" + (" is-invalid" if form.title.errors else ""), placeholder="Enter page title...") }}
+                            {{ form.title(class="form-control form-control-lg" + (" is-invalid" if form.title.errors else ""), placeholder="请输入页面标题...") }}
                             {% if form.title.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in form.title.errors %}
@@ -84,7 +84,7 @@
                 <!-- Summary Input -->
                 <div class="form-group mb-4">
                     {{ form.summary.label(class="form-label") }}
-                    {{ form.summary(class="form-control" + (" is-invalid" if form.summary.errors else ""), placeholder="Brief description of the page (optional)...") }}
+                    {{ form.summary(class="form-control" + (" is-invalid" if form.summary.errors else ""), placeholder="页面简要描述（可选）...") }}
                     {% if form.summary.errors %}
                         <div class="invalid-feedback">
                             {% for error in form.summary.errors %}
@@ -92,13 +92,13 @@
                             {% endfor %}
                         </div>
                     {% endif %}
-                    <small class="form-text text-muted">Brief description of the page (optional, max 500 characters)</small>
+                    <small class="form-text text-muted">页面简要描述（可选，最多500个字符）</small>
                 </div>
 
                 <!-- Change Summary Input -->
                 <div class="form-group mb-4">
                     {{ form.change_summary.label(class="form-label") }}
-                    {{ form.change_summary(class="form-control" + (" is-invalid" if form.change_summary.errors else ""), placeholder="Describe what you changed in this edit...") }}
+                    {{ form.change_summary(class="form-control" + (" is-invalid" if form.change_summary.errors else ""), placeholder="描述您在此编辑中更改的内容...") }}
                     {% if form.change_summary.errors %}
                         <div class="invalid-feedback">
                             {% for error in form.change_summary.errors %}
@@ -106,7 +106,7 @@
                             {% endfor %}
                         </div>
                     {% endif %}
-                    <small class="form-text text-muted">Describe what you changed in this edit (optional, max 255 characters)</small>
+                    <small class="form-text text-muted">描述您在此编辑中更改的内容（可选，最多255个字符）</small>
                 </div>
 
                 <!-- Markdown Editor -->
@@ -115,51 +115,51 @@
                     <div class="editor-container" id="markdownEditor">
                         <div class="editor-toolbar">
                             <div class="btn-group">
-                                <button type="button" class="btn-wiki small" data-command="bold" title="Bold (Ctrl+B)">
+                                <button type="button" class="btn-wiki small" data-command="bold" title="粗体 (Ctrl+B)">
                                     <i class="fas fa-bold"></i>
                                 </button>
-                                <button type="button" class="btn-wiki small" data-command="italic" title="Italic (Ctrl+I)">
+                                <button type="button" class="btn-wiki small" data-command="italic" title="斜体 (Ctrl+I)">
                                     <i class="fas fa-italic"></i>
                                 </button>
-                                <button type="button" class="btn-wiki small" data-command="heading" title="Heading">
+                                <button type="button" class="btn-wiki small" data-command="heading" title="标题">
                                     <i class="fas fa-heading"></i>
                                 </button>
                                 <div class="divider"></div>
-                                <button type="button" class="btn-wiki small" data-command="link" title="Link">
+                                <button type="button" class="btn-wiki small" data-command="link" title="链接">
                                     <i class="fas fa-link"></i>
                                 </button>
-                                <button type="button" class="btn-wiki small" data-command="image" title="Image">
+                                <button type="button" class="btn-wiki small" data-command="image" title="图片">
                                     <i class="fas fa-image"></i>
                                 </button>
-                                <button type="button" class="btn-wiki small" data-command="code" title="Code">
+                                <button type="button" class="btn-wiki small" data-command="code" title="代码">
                                     <i class="fas fa-code"></i>
                                 </button>
                                 <div class="divider"></div>
-                                <button type="button" class="btn-wiki small" data-command="ul" title="Unordered List">
+                                <button type="button" class="btn-wiki small" data-command="ul" title="无序列表">
                                     <i class="fas fa-list-ul"></i>
                                 </button>
-                                <button type="button" class="btn-wiki small" data-command="ol" title="Ordered List">
+                                <button type="button" class="btn-wiki small" data-command="ol" title="有序列表">
                                     <i class="fas fa-list-ol"></i>
                                 </button>
-                                <button type="button" class="btn-wiki small" data-command="quote" title="Quote">
+                                <button type="button" class="btn-wiki small" data-command="quote" title="引用">
                                     <i class="fas fa-quote-left"></i>
                                 </button>
                                 <div class="divider"></div>
-                                <button type="button" class="btn-wiki small" data-command="preview" title="Toggle Preview">
+                                <button type="button" class="btn-wiki small" data-command="preview" title="切换预览">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button type="button" class="btn-wiki small" data-command="fullscreen" title="Fullscreen">
+                                <button type="button" class="btn-wiki small" data-command="fullscreen" title="全屏">
                                     <i class="fas fa-expand"></i>
                                 </button>
                             </div>
                         </div>
                         <div class="editor-content">
                             <div class="editor-pane">
-                                {{ form.content(class="editor-input", id="contentInput", rows=20, placeholder="Start writing your page content in Markdown...") }}
+                                {{ form.content(class="editor-input", id="contentInput", rows=20, placeholder="开始使用Markdown编写您的页面内容...") }}
                             </div>
                             <div class="editor-pane editor-preview" id="previewPane">
                                 <div class="preview-content" id="previewContent">
-                                    <p class="text-muted">Preview will appear here as you type...</p>
+                                    <p class="text-muted">预览将在您输入时显示在这里...</p>
                                 </div>
                             </div>
                         </div>
@@ -180,7 +180,7 @@
         <div class="content-card">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-cog me-2"></i>Publishing Options
+                    <i class="fas fa-cog me-2"></i>发布选项
                 </h5>
             </div>
             <div class="card-body">
@@ -190,14 +190,14 @@
                             {{ form.is_published(class="form-check-input") }}
                             {{ form.is_published.label(class="form-check-label") }}
                         </div>
-                        <small class="form-text text-muted">Published pages are visible to other users</small>
+                        <small class="form-text text-muted">已发布的页面对其他用户可见</small>
                     </div>
                     <div class="col-md-6">
                         <div class="form-check form-switch">
                             {{ form.is_public(class="form-check-input") }}
                             {{ form.is_public.label(class="form-check-label") }}
                         </div>
-                        <small class="form-text text-muted">Public pages can be viewed without logging in</small>
+                        <small class="form-text text-muted">公开页面无需登录即可查看</small>
                     </div>
                 </div>
             </div>
@@ -207,31 +207,31 @@
         <div class="content-card">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-info-circle me-2"></i>Page Information
+                    <i class="fas fa-info-circle me-2"></i>页面信息
                 </h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <strong>Created:</strong><br>
-                            <small class="text-muted">{{ page.created_at.strftime('%Y-%m-%d %H:%M') }} by {{ page.author.username if page.author else 'Unknown' }}</small>
+                            <strong>创建时间：</strong><br>
+                            <small class="text-muted">{{ page.created_at.strftime('%Y-%m-%d %H:%M') }} 创建者：{{ page.author.username if page.author else '未知' }}</small>
                         </div>
                         <div class="mb-3">
-                            <strong>Last Modified:</strong><br>
+                            <strong>最后修改：</strong><br>
                             <small class="text-muted">{{ page.updated_at.strftime('%Y-%m-%d %H:%M') }}</small>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <strong>View Count:</strong><br>
-                            <small class="text-muted">{{ page.view_count }} views</small>
+                            <strong>查看次数：</strong><br>
+                            <small class="text-muted">{{ page.view_count }} 次查看</small>
                         </div>
                         <div class="mb-3">
-                            <strong>Revisions:</strong><br>
-                            <small class="text-muted">{{ page.versions.count() }} versions</small>
+                            <strong>版本历史：</strong><br>
+                            <small class="text-muted">{{ page.versions.count() }} 个版本</small>
                             <a href="{{ url_for('wiki.page_history', page_id=page.id) }}" class="btn-wiki small ms-2">
-                                <i class="fas fa-history me-1"></i>View History
+                                <i class="fas fa-history me-1"></i>查看历史
                             </a>
                         </div>
                     </div>
@@ -243,22 +243,22 @@
         <div class="content-card">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-paperclip me-2"></i>File Attachments
+                    <i class="fas fa-paperclip me-2"></i>文件附件
                 </h5>
             </div>
             <div class="card-body">
                 <div class="file-upload-area" id="fileUploadArea">
                     <div class="upload-zone" id="uploadZone">
                         <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                        <h6 class="text-muted">Drop files here or click to browse</h6>
-                        <p class="text-muted small">Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, PNG, JPG, GIF</p>
+                        <h6 class="text-muted">拖放文件到此处或点击浏览</h6>
+                        <p class="text-muted small">支持的格式：PDF、DOC、DOCX、XLS、XLSX、PPT、PPTX、TXT、PNG、JPG、GIF</p>
                         <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif" style="display: none;">
                         <button type="button" class="btn-wiki small" id="browseFilesBtn">
-                            <i class="fas fa-folder-open me-1"></i>Browse Files
+                            <i class="fas fa-folder-open me-1"></i>浏览文件
                         </button>
                     </div>
                     <div id="fileList" class="file-list mt-3" style="display: none;">
-                        <h6 class="mb-3">Attached Files:</h6>
+                        <h6 class="mb-3">已附加文件：</h6>
                         <div class="list-group" id="fileListContainer"></div>
                     </div>
                 </div>
@@ -271,15 +271,15 @@
                 <div class="row">
                     <div class="col-md-6">
                         <button type="submit" class="btn-wiki primary" id="saveButton">
-                            <i class="fas fa-save me-2"></i>Save Changes
+                            <i class="fas fa-save me-2"></i>保存更改
                         </button>
                         <button type="submit" name="save_draft" value="true" class="btn-wiki">
-                            <i class="fas fa-save me-2"></i>Save Draft
+                            <i class="fas fa-save me-2"></i>保存草稿
                         </button>
                     </div>
                     <div class="col-md-6 text-md-end">
                         <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="btn-wiki secondary">
-                            <i class="fas fa-times me-2"></i>Cancel
+                            <i class="fas fa-times me-2"></i>取消
                         </a>
                     </div>
                 </div>
@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (content.trim()) {
             previewContent.innerHTML = marked.parse(content);
         } else {
-            previewContent.innerHTML = '<p class="text-muted">Preview will appear here as you type...</p>';
+            previewContent.innerHTML = '<p class="text-muted">预览将在您输入时显示在这里...</p>';
         }
     }
 
@@ -598,31 +598,31 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleCommand(command) {
         switch(command) {
             case 'bold':
-                insertText('**', '**', 'bold text');
+                insertText('**', '**', '粗体文本');
                 break;
             case 'italic':
-                insertText('*', '*', 'italic text');
+                insertText('*', '*', '斜体文本');
                 break;
             case 'heading':
-                insertText('## ', '', 'Heading');
+                insertText('## ', '', '标题');
                 break;
             case 'link':
-                insertText('[', '](url)', 'link text');
+                insertText('[', '](url)', '链接文本');
                 break;
             case 'image':
-                insertText('![', '](image-url)', 'alt text');
+                insertText('![', '](image-url)', '替代文本');
                 break;
             case 'code':
-                insertText('`', '`', 'code');
+                insertText('`', '`', '代码');
                 break;
             case 'ul':
-                insertText('- ', '', 'list item');
+                insertText('- ', '', '列表项');
                 break;
             case 'ol':
-                insertText('1. ', '', 'numbered item');
+                insertText('1. ', '', '编号项');
                 break;
             case 'quote':
-                insertText('> ', '', 'quote');
+                insertText('> ', '', '引用');
                 break;
             case 'preview':
                 togglePreview();
@@ -669,14 +669,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!title) {
             e.preventDefault();
-            showToast('Please enter a page title', 'warning');
+            showToast('请输入页面标题', 'warning');
             document.getElementById('title').focus();
             return;
         }
 
         if (!content) {
             e.preventDefault();
-            showToast('Please enter page content', 'warning');
+            showToast('请输入页面内容', 'warning');
             contentInput.focus();
             return;
         }
@@ -763,12 +763,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxSize = 10 * 1024 * 1024; // 10MB
 
         if (!allowedTypes.includes(file.type)) {
-            showToast('File type not supported: ' + file.name, 'error');
+            showToast('不支持的文件类型：' + file.name, 'error');
             return false;
         }
 
         if (file.size > maxSize) {
-            showToast('File too large (max 10MB): ' + file.name, 'error');
+            showToast('文件过大（最大10MB）：' + file.name, 'error');
             return false;
         }
 
@@ -805,15 +805,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     url: data.url
                 });
                 updateFileItem(fileId, file, data);
-                showToast('File uploaded successfully: ' + file.name, 'success');
+                showToast('文件上传成功：' + file.name, 'success');
             } else {
-                throw new Error(data.error || 'Upload failed');
+                throw new Error(data.error || '上传失败');
             }
         })
         .catch(error => {
             console.error('Upload error:', error);
             removeFileItem(fileId);
-            showToast('Failed to upload file: ' + file.name, 'error');
+            showToast('文件上传失败：' + file.name, 'error');
         });
     }
 

@@ -1,6 +1,6 @@
 {% extends "base_confluence.html" %}
 
-{% block title %}Access Denied - Enterprise Wiki{% endblock %}
+{% block title %}访问被拒绝 - Enterprise Wiki{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -8,7 +8,7 @@
         <div class="card border-danger">
             <div class="card-header bg-danger text-white text-center">
                 <h1 class="mb-0">
-                    <i class="fas fa-exclamation-triangle me-3"></i>403 - Access Denied
+                    <i class="fas fa-exclamation-triangle me-3"></i>403 - 访问被拒绝
                 </h1>
             </div>
             <div class="card-body text-center py-5">
@@ -16,11 +16,11 @@
                     <i class="fas fa-lock fa-5x text-danger"></i>
                 </div>
 
-                <h2 class="mb-3">Oops! You don't have permission to access this page.</h2>
+                <h2 class="mb-3">糟糕！您没有权限访问此页面。</h2>
 
                 <p class="text-muted mb-4">
-                    This page requires special permissions that you don't currently have.
-                    If you believe this is an error, please contact your system administrator.
+                    此页面需要您当前没有的特殊权限。
+                    如果您认为这是一个错误，请联系您的系统管理员。
                 </p>
 
                 <!-- Possible Solutions -->
@@ -29,28 +29,28 @@
                         <div class="card bg-light">
                             <div class="card-body">
                                 <h5 class="card-title">
-                                    <i class="fas fa-lightbulb me-2"></i>What can you do?
+                                    <i class="fas fa-lightbulb me-2"></i>您可以做什么？
                                 </h5>
                                 <div class="list-group list-group-flush text-start">
                                     <div class="list-group-item">
                                         <i class="fas fa-sign-in-alt me-2 text-primary"></i>
                                         {% if current_user.is_anonymous %}
-                                        <strong>Log in</strong> with an account that has appropriate permissions
+                                        <strong>登录</strong>具有适当权限的账户
                                         {% else %}
-                                        <strong>Log out</strong> and try again with a different account
+                                        <strong>登出</strong>并使用不同的账户重试
                                         {% endif %}
                                     </div>
                                     <div class="list-group-item">
                                         <i class="fas fa-user me-2 text-success"></i>
-                                        Contact an administrator to request the necessary permissions
+                                        联系管理员请求必要的权限
                                     </div>
                                     <div class="list-group-item">
                                         <i class="fas fa-home me-2 text-info"></i>
-                                        Return to the <a href="{{ url_for('wiki.index') }}">home page</a> and navigate to a page you can access
+                                        返回<a href="{{ url_for('wiki.index') }}">首页</a>并导航到您可以访问的页面
                                     </div>
                                     <div class="list-group-item">
                                         <i class="fas fa-search me-2 text-warning"></i>
-                                        Use the <a href="{{ url_for('wiki.search') }}">search function</a> to find content you can access
+                                        使用<a href="{{ url_for('wiki.search') }}">搜索功能</a>查找您可以访问的内容
                                     </div>
                                 </div>
                             </div>
@@ -62,10 +62,10 @@
                 {% if current_user.is_authenticated %}
                 <div class="alert alert-info" role="alert">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>Your current status:</strong><br>
-                    Username: {{ current_user.username }}<br>
-                    Role: {{ current_user.role.name if current_user.role else 'No role assigned' }}<br>
-                    Email Confirmed: {% if current_user.confirmed %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-warning">No</span>{% endif %}
+                    <strong>您当前的状态：</strong><br>
+                    用户名：{{ current_user.username }}<br>
+                    角色：{{ current_user.role.name if current_user.role else '未分配角色' }}<br>
+                    邮箱已确认：{% if current_user.confirmed %}<span class="badge bg-success">是</span>{% else %}<span class="badge bg-warning">否</span>{% endif %}
                 </div>
                 {% endif %}
 
@@ -73,18 +73,18 @@
                 <div class="d-flex justify-content-center gap-2">
                     {% if current_user.is_anonymous %}
                     <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                        <i class="fas fa-sign-in-alt me-2"></i>登录
                     </a>
                     {% else %}
                     <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        <i class="fas fa-sign-out-alt me-2"></i>登出
                     </a>
                     {% endif %}
                     <a href="{{ url_for('wiki.index') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-home me-2"></i>Go Home
+                        <i class="fas fa-home me-2"></i>回到首页
                     </a>
                     <a href="javascript:history.back()" class="btn btn-outline-info">
-                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                        <i class="fas fa-arrow-left me-2"></i>返回上一页
                     </a>
                 </div>
             </div>
@@ -94,33 +94,33 @@
         <div class="card mt-4">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-question-circle me-2"></i>Need Help?
+                    <i class="fas fa-question-circle me-2"></i>需要帮助？
                 </h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6>Permission Levels</h6>
+                        <h6>权限级别</h6>
                         <ul class="list-unstyled">
-                            <li><strong>Viewer:</strong> Can read public and authenticated content</li>
-                            <li><strong>Editor:</strong> Can create and edit own content</li>
-                            <li><strong>Moderator:</strong> Can edit all content and moderate</li>
-                            <li><strong>Administrator:</strong> Full system access</li>
+                            <li><strong>查看者：</strong> 可以阅读公开和需要认证的内容</li>
+                            <li><strong>编辑者：</strong> 可以创建和编辑自己的内容</li>
+                            <li><strong>审核者：</strong> 可以编辑所有内容并进行审核</li>
+                            <li><strong>管理员：</strong> 完整的系统访问权限</li>
                         </ul>
                     </div>
                     <div class="col-md-6">
-                        <h6>Common Issues</h6>
+                        <h6>常见问题</h6>
                         <ul class="list-unstyled">
-                            <li>• Not logged in with the correct account</li>
-                            <li>• Your account doesn't have the required role</li>
-                            <li>• The page is restricted to specific users</li>
-                            <li>• Your account may be inactive or locked</li>
+                            <li>• 没有用正确的账户登录</li>
+                            <li>• 您的账户没有所需的角色</li>
+                            <li>• 页面仅限于特定用户访问</li>
+                            <li>• 您的账户可能未激活或被锁定</li>
                         </ul>
                     </div>
                 </div>
                 <div class="text-center mt-3">
                     <button class="btn btn-outline-secondary btn-sm" onclick="reportIssue()">
-                        <i class="fas fa-bug me-2"></i>Report Issue
+                        <i class="fas fa-bug me-2"></i>报告问题
                     </button>
                 </div>
             </div>
@@ -140,13 +140,13 @@ function reportIssue() {
         username: '{{ current_user.username if current_user.is_authenticated else "Anonymous" }}'
     };
 
-    const subject = encodeURIComponent('Access Denied Issue - Enterprise Wiki');
+    const subject = encodeURIComponent('访问被拒绝问题 - Enterprise Wiki');
     const body = encodeURIComponent(
-        `I'm experiencing an access denied issue.\n\n` +
+        `我遇到了访问被拒绝的问题。\n\n` +
         `URL: ${issueDetails.url}\n` +
-        `Time: ${issueDetails.timestamp}\n` +
-        `User: ${issueDetails.username}\n\n` +
-        `Please help me resolve this issue.`
+        `时间: ${issueDetails.timestamp}\n` +
+        `用户: ${issueDetails.username}\n\n` +
+        `请帮助我解决此问题。`
     );
 
     // Open email client with pre-filled details
@@ -156,7 +156,7 @@ function reportIssue() {
 // Auto-redirect to login if not authenticated and no action taken in 30 seconds
 {% if current_user.is_anonymous %}
 setTimeout(() => {
-    if (confirm('Would you like to login to access this page?')) {
+    if (confirm('您是否要登录以访问此页面？')) {
         window.location.href = '{{ url_for("auth.login", next=request.url) }}';
     }
 }, 30000);
