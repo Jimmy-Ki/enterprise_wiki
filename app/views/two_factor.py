@@ -138,16 +138,16 @@ def disable():
     form = TwoFactorDisableForm()
 
     if form.validate_on_submit():
-        # 验证密码和TOTP码
-        if current_user.verify_totp_token(form.verification_code.data):
-            # 禁用2FA
-            current_user.disable_two_factor()
-            db.session.commit()
+        # 表单验证已经包含了密码和TOTP码验证
+        current_app.logger.info(f"2FA Disable: User {current_user.id} successfully passed form validation")
 
-            flash('双因素认证已禁用', 'success')
-            return redirect(url_for('user.profile'))
-        else:
-            flash('验证码无效，请重试', 'danger')
+        # 禁用2FA
+        current_user.disable_two_factor()
+        db.session.commit()
+
+        current_app.logger.info(f"2FA Disable: User {current_user.id} two-factor authentication disabled")
+        flash('双因素认证已禁用', 'success')
+        return redirect(url_for('user.profile'))
 
     return render_template('auth/2fa/disable.html', form=form)
 
