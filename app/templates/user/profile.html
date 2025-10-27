@@ -1,139 +1,489 @@
 {% extends "base_confluence.html" %}
 
+{% block title %}
+    {% if current_user and current_user.username == user.username %}
+        个人资料设置{% else %}{{ user.name or user.username }} - 个人资料{% endif %}
+{% endblock %}
+
 {% block styles %}
 <style>
-    /* 头像编辑按钮样式 */
-    .current-avatar-container {
-        position: relative;
-        display: inline-block;
+    /* Hide sidebar for this specific page */
+    .wiki-sidebar {
+        display: none !important;
     }
 
-    .user-avatar-large.editable {
-        cursor: pointer;
-        transition: transform 0.2s ease;
-        border: 3px solid transparent;
+    /* Adjust main content area */
+    .wiki-main {
+        margin-left: 0 !important;
+        max-width: 100% !important;
     }
 
-    .user-avatar-large.editable:hover {
-        transform: scale(1.05);
-        border-color: var(--primary-color);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    /* Center the content container */
+    .wiki-container {
+        justify-content: center;
     }
 
-    .avatar-edit-btn {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(0, 0, 0, 0.7);
-        border: 2px solid white;
+    /* Profile页面样式 */
+    .profile-tabs {
+        margin-bottom: 24px;
+    }
+
+    .profile-tabs .nav-link {
+        color: #64748b;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 12px 16px;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+    .profile-tabs .nav-link:hover {
+        color: var(--primary-color);
+        border-bottom-color: #a0aec0;
+        background: none;
+    }
+
+    .profile-tabs .nav-link.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+        background: none;
+    }
+
+    .profile-tabs .nav-link i {
+        margin-right: 8px;
+    }
+
+    /* 用户信息卡片 */
+    .user-info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        cursor: pointer;
-    }
-
-    .current-avatar-container:hover .avatar-edit-btn {
-        opacity: 1;
-    }
-
-    /* 头像编辑模态框 */
-    .avatar-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    }
-
-    .avatar-modal-content {
-        background: white;
+        padding: 24px;
         border-radius: 12px;
-        padding: 30px;
-        max-width: 500px;
-        width: 90%;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        margin-bottom: 24px;
+        text-align: center;
     }
 
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
+    .user-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+        margin-bottom: 16px;
     }
 
-    .modal-title {
+    .user-name {
         font-size: 20px;
         font-weight: 600;
-        color: var(--text-primary);
+        margin-bottom: 8px;
     }
 
-    .modal-body {
-        text-align: center;
+    .user-email {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 16px;
     }
 
-    .avatar-edit-section {
-        margin: 20px 0;
-        padding: 20px;
-        text-align: center;
-        background: #f8f9fa;
+    .user-role {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    /* Dashboard样式 */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 16px;
+        padding: 24px;
         border: 1px solid #e9ecef;
-        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         transition: all 0.3s ease;
-    }
-
-    .avatar-edit-tabs {
-        display: flex;
-        margin-bottom: 20px;
-        border-bottom: 1px solid #e9ecef;
-    }
-
-    .avatar-edit-tab {
-        padding: 10px 20px;
-        border: none;
-        background: none;
+        position: relative;
+        overflow: hidden;
         cursor: pointer;
-        border-bottom: 2px solid transparent;
-        transition: all 0.3s ease;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary-color), #6c5ce7);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-bottom: 16px;
+        color: white;
+        position: relative;
+    }
+
+    .stat-icon-wrapper.pages {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-icon-wrapper.comments {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .stat-icon-wrapper.views {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .stat-icon-wrapper.edits {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .stat-icon-wrapper.attachments {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .stat-icon-wrapper.mentions {
+        background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    }
+
+    .stat-info {
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 4px;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-sublabel {
+        font-size: 12px;
+        color: #94a3b8;
+    }
+
+    /* 活动列表样式 */
+    .activity-list {
+        padding: 24px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 16px 0;
+        border-bottom: 1px solid #f1f3f4;
+        transition: all 0.2s ease;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-item:hover {
+        background: #f8f9fa;
+        margin: 0 -20px;
+        padding-left: 20px;
+        padding-right: 20px;
+        border-radius: 8px;
+    }
+
+    .activity-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        font-size: 14px;
+        color: white;
+    }
+
+    .activity-icon.success {
+        background: #10b981;
+    }
+
+    .activity-icon.info {
+        background: #3b82f6;
+    }
+
+    .activity-icon.primary {
+        background: #8b5cf6;
+    }
+
+    .activity-content {
         flex: 1;
     }
 
-    .avatar-edit-tab.active {
+    .activity-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #2c3e50;
+        margin-bottom: 4px;
+    }
+
+    .activity-title a {
+        color: #2c3e50;
+        text-decoration: none;
+    }
+
+    .activity-title a:hover {
         color: var(--primary-color);
-        border-bottom-color: var(--primary-color);
     }
 
-    .avatar-edit-tab:hover {
-        color: var(--primary-color);
-        border-bottom-color: #e9ecef;
+    .activity-time {
+        font-size: 12px;
+        color: #94a3b8;
     }
 
-    .avatar-edit-content {
-        display: none;
-        margin-top: 20px;
+    /* 页面列表样式 */
+    .page-list {
+        padding: 24px;
+        max-height: 500px;
+        overflow-y: auto;
     }
 
-    .avatar-actions {
-        margin-top: 20px;
+    .page-item {
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 16px;
+        transition: all 0.2s ease;
+        background: #ffffff;
+        cursor: pointer;
+    }
+
+    .page-item:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-item-content {
+        padding: 20px;
         display: flex;
-        justify-content: center;
-        gap: 12px;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .page-item-header {
+        flex: 1;
+    }
+
+    .page-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        text-decoration: none;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .page-title:hover {
+        color: var(--primary-color);
+    }
+
+    .page-meta {
+        display: flex;
+        gap: 16px;
+    }
+
+    .meta-item {
+        font-size: 12px;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .meta-item i {
+        font-size: 10px;
+    }
+
+    .page-status {
+        margin-left: 16px;
+    }
+
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge.published {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-badge.draft {
+        background: #f8f9fa;
+        color: #6c757d;
+        border: 1px solid #e9ecef;
+    }
+
+    /* 评论列表样式 */
+    .comment-item {
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 16px;
+        transition: all 0.2s ease;
+        background: #ffffff;
+        cursor: pointer;
+    }
+
+    .comment-item:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .comment-content {
+        padding: 20px;
+    }
+
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .comment-type {
+        font-size: 14px;
+        font-weight: 500;
+        color: #2c3e50;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .comment-text {
+        color: #495057;
+        line-height: 1.6;
+        margin-bottom: 12px;
+    }
+
+    .comment-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    /* 表单样式 */
+    .form-section {
+        margin-bottom: 32px;
+    }
+
+    .form-section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .form-text {
+        color: #6b7280;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+
+    /* 开关按钮样式 */
+    .form-switch {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .form-switch:last-child {
+        border-bottom: none;
+    }
+
+    .switch-info {
+        flex: 1;
+    }
+
+    .switch-title {
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 4px;
+    }
+
+    .switch-description {
+        font-size: 14px;
+        color: #6b7280;
     }
 
     /* 响应式设计 */
     @media (max-width: 768px) {
-        .avatar-modal-content {
+        .profile-tabs {
+            flex-wrap: wrap;
+        }
+
+        .profile-tabs .nav-link {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .user-info-card {
+            padding: 20px;
+        }
+
+        .user-avatar-large {
+            width: 60px;
+            height: 60px;
+        }
+
+        .user-name {
+            font-size: 18px;
+        }
+
+        .dashboard-grid {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-number {
+            font-size: 28px;
+        }
+
+        .stat-card {
             padding: 20px;
         }
     }
@@ -145,98 +495,828 @@
     <div class="col-lg-8">
         <!-- 用户信息卡片 -->
         <div class="user-info-card">
-            <div class="avatar-section">
-                <div class="current-avatar-container">
-                    <img id="currentAvatar" src="{{ user.get_avatar() or '/static/img/default-avatar.png' }}"
-                         alt="{{ user.username }}"
-                         class="user-avatar-large {{ 'editable' if current_user and current_user.username == user.username else '' }}"
-                         title="{{ '点击修改头像' if current_user and current_user.username == user.username else '' }}">
-                </div>
-
-                {% if current_user and current_user.username == user.username %}
-                <button id="editAvatarBtn" class="avatar-edit-btn" title="修改头像">
-                    <i class="fas fa-edit"></i>
-                </button>
-                {% endif %}
-            </div>
-
-            <div class="user-info">
-                <div class="user-name">{{ user.name or user.username }}</div>
-                <div class="user-email">{{ user.email }}</div>
-                <div class="user-role">{{ user.role.name if user.role else '用户' }}</div>
-            </div>
+            <img src="{{ user.get_avatar() or '/static/img/default-avatar.png' }}"
+                 alt="{{ user.username }}"
+                 class="user-avatar-large">
+            <div class="user-name">{{ user.name or user.username }}</div>
+            <div class="user-email">{{ user.email }}</div>
+            <div class="user-role">{{ user.role.name if user.role else '用户' }}</div>
         </div>
 
-        <!-- 头像编辑模态框 -->
-        <div id="avatarEditModal" class="avatar-modal">
-            <div class="avatar-modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">修改头像</h5>
-                    <button type="button" class="btn-close" onclick="closeAvatarModal()" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted">请选择修改方式：</p>
+        <!-- 选项卡导航 -->
+        <ul class="nav nav-tabs profile-tabs" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">
+                    <i class="fas fa-tachometer-alt"></i>仪表盘
+                </button>
+            </li>
+            {% if current_user and current_user.username == user.username %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="profile-info-tab" data-bs-toggle="tab" data-bs-target="#profile-info" type="button" role="tab">
+                    <i class="fas fa-user"></i>个人信息
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="account-settings-tab" data-bs-toggle="tab" data-bs-target="#account-settings" type="button" role="tab">
+                    <i class="fas fa-cog"></i>账户设置
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" data-bs-target="#notifications" type="button" role="tab">
+                    <i class="fas fa-bell"></i>通知设置
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="privacy-tab" data-bs-toggle="tab" data-bs-target="#privacy" type="button" role="tab">
+                    <i class="fas fa-shield-alt"></i>隐私与安全
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="preferences-tab" data-bs-toggle="tab" data-bs-target="#preferences" type="button" role="tab">
+                    <i class="fas fa-palette"></i>偏好设置
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="change-password-tab" data-bs-toggle="tab" data-bs-target="#change-password" type="button" role="tab">
+                    <i class="fas fa-key"></i>修改密码
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sessions-tab" data-bs-toggle="tab" data-bs-target="#sessions" type="button" role="tab">
+                    <i class="fas fa-desktop"></i>活动会话
+                </button>
+            </li>
+            {% endif %}
+        </ul>
 
-                    <div class="avatar-edit-tabs">
-                        <button class="avatar-edit-tab active" onclick="showEditSection('upload')">
-                            <i class="fas fa-upload me-1"></i>
-                            上传图片
-                        </button>
-                        <button class="avatar-edit-tab" onclick="showEditSection('url')">
-                            <i class="fas fa-link me-1"></i>
-                            使用链接
-                        </button>
+        <!-- 选项卡内容 -->
+        <div class="tab-content" id="profileTabsContent">
+            <!-- Dashboard部分 - 对所有访问者可见 -->
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                <!-- 统计卡片 -->
+                <div class="dashboard-grid">
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
+                        <div class="stat-icon-wrapper pages">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-number">{{ stats.authored_pages }}</div>
+                            <div class="stat-label">页面</div>
+                            <div class="stat-sublabel">{{ stats.published_pages }} 已发布</div>
+                        </div>
                     </div>
 
-                    <!-- 上传区域 -->
-                    <div id="uploadEditSection" class="avatar-edit-content">
-                        <div class="avatar-edit-upload-zone">
-                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                            <h5>拖放图片到此处或点击选择</h5>
-                            <input type="file" id="avatarFileInput" accept=".jpg,.jpeg,.png,.gif" style="display: none;">
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
+                        <div class="stat-icon-wrapper comments">
+                            <i class="fas fa-comments"></i>
                         </div>
-
-                        <div class="avatar-actions">
-                            <button class="btn btn-success" onclick="confirmEdit()">
-                                <i class="fas fa-check me-1"></i>
-                                桮认上传
-                            </button>
-                            <button class="btn btn-secondary" onclick="cancelEdit()">
-                                <i class="fas fa-times me-1"></i>
-                                取消
-                            </button>
+                        <div class="stat-info">
+                            <div class="stat-number">{{ stats.total_comments }}</div>
+                            <div class="stat-label">评论</div>
+                            <div class="stat-sublabel">{{ stats.weekly_comments }} 本周</div>
                         </div>
                     </div>
 
-                    <!-- URL输入区域 -->
-                    <div id="urlEditSection" class="avatar-edit-content" style="display: none;">
-                        <div class="mb-3">
-                            <label for="avatarUrlInput" class="form-label">头像链接</label>
-                            <input type="url" id="avatarUrlInput" class="form-control"
-                                   placeholder="请输入头像URL地址..."
-                                   value="{{ user.avatar or '' }}">
-                            <small class="form-text text-muted">支持图片链接地址（如：https://example.com/avatar.jpg）</small>
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
+                        <div class="stat-icon-wrapper views">
+                            <i class="fas fa-eye"></i>
                         </div>
+                        <div class="stat-info">
+                            <div class="stat-number">{{ stats.total_views }}</div>
+                            <div class="stat-label">总查看数</div>
+                            {% if stats.most_viewed_page %}
+                            <div class="stat-sublabel">{{ stats.most_viewed_page.views }} 最多</div>
+                            {% endif %}
+                        </div>
+                    </div>
 
-                        <div class="avatar-actions">
-                            <button class="btn btn-success" onclick="confirmEdit()">
-                                <i class="fas fa-check me-1"></i>
-                                保存
-                            </button>
-                            <button class="btn btn-secondary" onclick="cancelEdit()">
-                                <i class="fas fa-times me-1"></i>
-                                取消
-                            </button>
-                            {% if user.avatar %}
-                            <button class="btn btn-outline-danger" onclick="removeAvatar()">
-                                <i class="fas fa-trash me-1"></i>
-                                删除当前
-                            </button>
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
+                        <div class="stat-icon-wrapper edits">
+                            <i class="fas fa-edit"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-number">{{ stats.edited_pages }}</div>
+                            <div class="stat-label">编辑页面</div>
+                            <div class="stat-sublabel">{{ stats.recent_page_updates }} 本周</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
+                        <div class="stat-icon-wrapper attachments">
+                            <i class="fas fa-paperclip"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-number">{{ stats.uploaded_attachments }}</div>
+                            <div class="stat-label">Attachments</div>
+                            <div class="stat-sublabel">Files uploaded</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="location.href='{{ url_for('wiki.index') }}'">
+                        <div class="stat-icon-wrapper mentions">
+                            <i class="fas fa-at"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-number">{{ stats.received_mentions }}</div>
+                            <div class="stat-label">Mentions</div>
+                            {% if current_user and current_user.username == user.username and mentions_count > 0 %}
+                            <div class="stat-sublabel">{{ mentions_count }} unread</div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
+
+                <!-- 内容网格 -->
+                <div class="row">
+                    <!-- Recent Pages -->
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="section-title">
+                                    <i class="fas fa-clock me-2"></i>Recent Pages
+                                </h5>
+                            </div>
+                            <div class="page-list">
+                                {% if stats.recently_updated_pages %}
+                                {% for page in stats.recently_updated_pages %}
+                                <div class="page-item" onclick="location.href='{{ page.url }}'">
+                                    <div class="page-item-content">
+                                        <div class="page-item-header">
+                                            <a href="{{ page.url }}" class="page-title">{{ page.title }}</a>
+                                            <div class="page-meta">
+                                                <span class="meta-item">
+                                                    <i class="fas fa-calendar"></i>
+                                                    {{ page.updated_at|timeago }}
+                                                </span>
+                                                <span class="meta-item">
+                                                    <i class="fas fa-eye"></i>
+                                                    {{ page.view_count }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="page-status">
+                                            {% if page.is_published %}
+                                            <span class="status-badge published">Published</span>
+                                            {% else %}
+                                            <span class="status-badge draft">Draft</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                                    <p>No pages created yet</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="section-title">
+                                    <i class="fas fa-stream me-2"></i>Recent Activity
+                                </h5>
+                            </div>
+                            <div class="activity-list">
+                                {% if stats.recent_activities %}
+                                {% for activity in stats.recent_activities[:8] %}
+                                <div class="activity-item">
+                                    <div class="activity-icon {{ activity.color }}">
+                                        <i class="fas {{ activity.icon }}"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-title">
+                                            {% if activity.target %}
+                                            <a href="{{ activity.target }}">{{ activity.title }}</a>
+                                            {% else %}
+                                            {{ activity.title }}
+                                            {% endif %}
+                                        </div>
+                                        <div class="activity-time">
+                                            {{ activity.timestamp|timeago if activity.timestamp else 'Unknown time' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                                    <p>No recent activity</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Comments (if user has comments) -->
+                {% if comments and comments.comments %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="section-title">
+                            <i class="fas fa-comments me-2"></i>Recent Comments
+                            <span class="badge bg-secondary ms-2">{{ comments.total }}</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        {% for comment in comments.comments[:5] %}
+                        <div class="comment-item" onclick="location.href='{{ comment.target_url or "#" }}'">
+                            <div class="comment-content">
+                                <div class="comment-header">
+                                    <div class="comment-type">
+                                        {% if comment.target_type == 'page' %}
+                                        <i class="fas fa-file-alt me-2 text-primary"></i>
+                                        Comment on Page
+                                        {% elif comment.target_type == 'attachment' %}
+                                        <i class="fas fa-paperclip me-2 text-success"></i>
+                                        Comment on Attachment
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ comment.created_at|timeago if comment.created_at else 'Unknown time' }}
+                                        {% if comment.is_edited %}
+                                        <span class="text-muted">(edited)</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
+
+                                <div class="comment-text">
+                                    {{ comment.content_html|safe|truncate(150) if comment.content_html else (comment.content|truncate(150)) }}
+                                </div>
+
+                                <div class="comment-footer">
+                                    <span>Click to view full comment</span>
+                                    <span>•</span>
+                                    <span>{{ comment.target_name or 'Unknown target' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        {% if comments.total > 5 %}
+                        <div class="text-center p-3">
+                            <a href="{{ url_for('wiki.index') }}" class="btn btn-outline-primary btn-sm">
+                                View All {{ comments.total }} Comments
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
+
+            {% if current_user and current_user.username == user.username %}
+            <!-- 以下设置选项卡仅对自己可见 -->
+
+            <!-- 个人信息部分 -->
+            <div class="tab-pane fade" id="profile-info" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user me-2"></i>Personal Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="profileInfoForm">
+                            <div class="form-section">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Display Name</label>
+                                    <input type="text" class="form-control" id="name"
+                                           value="{{ current_user.name or '' }}"
+                                           placeholder="Enter your display name">
+                                    <div class="form-text">This is how your name will appear throughout the system.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="email"
+                                           value="{{ current_user.email or '' }}"
+                                           placeholder="Enter your email address">
+                                    <div class="form-text">Used for notifications and account recovery.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="avatar" class="form-label">Avatar URL</label>
+                                    <input type="url" class="form-control" id="avatar"
+                                           value="{{ current_user.avatar or '' }}"
+                                           placeholder="https://example.com/avatar.jpg">
+                                    <div class="form-text">Optional: URL to your profile picture.</div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="resetProfileForm()">
+                                    <i class="fas fa-undo me-2"></i>Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 账户设置部分 -->
+            <div class="tab-pane fade" id="account-settings" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>Account Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-section">
+                            <h6 class="mb-3">Account Status</h6>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Your account is <strong>Active</strong> and in good standing.
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Member Since</label>
+                                        <p class="form-control-plaintext">
+                                            {{ current_user.member_since.strftime('%B %d, %Y') if current_user.member_since else 'Unknown' }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Last Login</label>
+                                        <p class="form-control-plaintext">
+                                            {{ current_user.last_seen.strftime('%B %d, %Y at %I:%M %p') if current_user.last_seen else 'Never' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h6 class="mb-3">Account Actions</h6>
+                            <div class="d-grid gap-2" style="max-width: 400px;">
+                                <button class="btn btn-outline-warning" onclick="confirmAccountDeactivation()">
+                                    <i class="fas fa-pause me-2"></i>Deactivate Account
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="confirmAccountDeletion()">
+                                    <i class="fas fa-trash me-2"></i>Delete Account
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 通知设置部分 -->
+            <div class="tab-pane fade" id="notifications" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bell me-2"></i>Notification Preferences
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="notificationsForm">
+                            <div class="form-section">
+                                <h6 class="mb-3">Email Notifications</h6>
+
+                                <div class="form-switch">
+                                    <div class="switch-info">
+                                        <div class="switch-title">Comment Notifications</div>
+                                        <div class="switch-description">Get notified when someone replies to your comments</div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="commentNotif" checked>
+                                    </div>
+                                </div>
+
+                                <div class="form-switch">
+                                    <div class="switch-info">
+                                        <div class="switch-title">Mention Notifications</div>
+                                        <div class="switch-description">Get notified when someone mentions you</div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="mentionNotif" checked>
+                                    </div>
+                                </div>
+
+                                <div class="form-switch">
+                                    <div class="switch-info">
+                                        <div class="switch-title">Page Watch Notifications</div>
+                                        <div class="switch-description">Get notified when watched pages are updated</div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="watchNotif" checked>
+                                    </div>
+                                </div>
+
+                                <div class="form-switch">
+                                    <div class="switch-info">
+                                        <div class="switch-title">Daily Digest</div>
+                                        <div class="switch-description">Receive a daily summary of activity</div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="dailyDigest">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Preferences
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 隐私与安全部分 -->
+            <div class="tab-pane fade" id="privacy" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>Privacy & Security
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-section">
+                            <h6 class="mb-3">Profile Visibility</h6>
+
+                            <div class="form-switch">
+                                <div class="switch-info">
+                                    <div class="switch-title">Public Profile</div>
+                                    <div class="switch-description">Allow other users to see your profile and activity</div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="publicProfile" checked>
+                                </div>
+                            </div>
+
+                            <div class="form-switch">
+                                <div class="switch-info">
+                                    <div class="switch-title">Show Activity Status</div>
+                                    <div class="switch-description">Show when you were last active</div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="showActivity" checked>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h6 class="mb-3">Two-Factor Authentication</h6>
+
+                            <!-- 2FA Status Display -->
+                            <div class="card mb-3" id="twoFactorStatus">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            {% if current_user.two_factor_enabled %}
+                                                <div class="me-3">
+                                                    <i class="fas fa-shield-check fa-2x text-success"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-1 text-success">2FA Enabled</h6>
+                                                    <p class="mb-0 text-muted small">
+                                                        Your account is protected with two-factor authentication
+                                                        {% if current_user.two_factor_setup_date %}
+                                                        since {{ current_user.two_factor_setup_date.strftime('%B %d, %Y') }}
+                                                        {% endif %}
+                                                    </p>
+                                                </div>
+                                            {% else %}
+                                                <div class="me-3">
+                                                    <i class="fas fa-shield-alt fa-2x text-warning"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-1 text-warning">2FA Disabled</h6>
+                                                    <p class="mb-0 text-muted small">
+                                                        Add an extra layer of security to your account
+                                                    </p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            {% if current_user.two_factor_enabled %}
+                                                <div class="dropdown">
+                                                    <button class="btn btn-outline-success dropdown-toggle" type="button" id="twoFactorDropdown" data-bs-toggle="dropdown">
+                                                        <i class="fas fa-cog me-1"></i>Manage
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="{{ url_for('two_factor.disable') }}">
+                                                            <i class="fas fa-times me-2 text-danger"></i>Disable 2FA
+                                                        </a></li>
+                                                        <li><a class="dropdown-item" href="#" onclick="showBackupCodes()">
+                                                            <i class="fas fa-key me-2 text-info"></i>View Backup Codes
+                                                        </a></li>
+                                                        <li><a class="dropdown-item" href="{{ url_for('two_factor.setup') }}">
+                                                            <i class="fas fa-sync me-2 text-primary"></i>Regenerate Codes
+                                                        </a></li>
+                                                    </ul>
+                                                </div>
+                                            {% else %}
+                                                <a href="{{ url_for('two_factor.setup') }}" class="btn btn-primary">
+                                                    <i class="fas fa-plus me-2"></i>Enable 2FA
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2FA Info Cards -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-mobile-alt me-2 text-primary"></i>Authentication Apps
+                                            </h6>
+                                            <p class="card-text small text-muted">
+                                                Use apps like Microsoft Authenticator, Google Authenticator, or Authy to generate verification codes.
+                                            </p>
+                                            <div class="d-flex gap-2 flex-wrap">
+                                                <span class="badge bg-light text-dark">Microsoft</span>
+                                                <span class="badge bg-light text-dark">Google</span>
+                                                <span class="badge bg-light text-dark">Authy</span>
+                                                <span class="badge bg-light text-dark">1Password</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-key me-2 text-success"></i>Backup Codes
+                                            </h6>
+                                            <p class="card-text small text-muted">
+                                                Save your backup codes securely. They can be used to access your account if you lose your authentication device.
+                                            </p>
+                                            {% if current_user.two_factor_enabled %}
+                                                <button class="btn btn-sm btn-outline-success" onclick="showBackupCodes()">
+                                                    <i class="fas fa-eye me-1"></i>View Codes
+                                                </button>
+                                            {% else %}
+                                                <span class="text-muted small">Enable 2FA to generate backup codes</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section mt-4">
+                            <h6 class="mb-3">Other Security Options</h6>
+                            <div class="d-grid gap-2" style="max-width: 400px;">
+                                <a href="{{ url_for('user.profile') }}#sessions" class="btn btn-outline-secondary">
+                                    <i class="fas fa-desktop me-2"></i>Manage Active Sessions
+                                </a>
+                                <a href="{{ url_for('user.profile') }}#change-password" class="btn btn-outline-primary">
+                                    <i class="fas fa-key me-2"></i>Change Password
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 偏好设置部分 -->
+            <div class="tab-pane fade" id="preferences" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-palette me-2"></i>Display Preferences
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="preferencesForm">
+                            <div class="form-section">
+                                <h6 class="mb-3">Theme</h6>
+
+                                <div class="mb-3">
+                                    <label for="theme" class="form-label">Color Scheme</label>
+                                    <select class="form-select" id="theme">
+                                        <option value="light" selected>Light Theme</option>
+                                        <option value="dark">Dark Theme</option>
+                                        <option value="auto">Auto (System Preference)</option>
+                                    </select>
+                                    <div class="form-text">Choose your preferred color scheme.</div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h6 class="mb-3">Language & Region</h6>
+
+                                <div class="mb-3">
+                                    <label for="language" class="form-label">Language</label>
+                                    <select class="form-select" id="language">
+                                        <option value="en" selected>English</option>
+                                        <option value="zh">中文</option>
+                                        <option value="es">Español</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="timezone" class="form-label">Timezone</label>
+                                    <select class="form-select" id="timezone">
+                                        <option value="UTC">UTC</option>
+                                        <option value="America/New_York" selected>Eastern Time</option>
+                                        <option value="America/Chicago">Central Time</option>
+                                        <option value="America/Denver">Mountain Time</option>
+                                        <option value="America/Los_Angeles">Pacific Time</option>
+                                        <option value="Asia/Shanghai">China Standard Time</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Preferences
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 修改密码部分 -->
+            <div class="tab-pane fade" id="change-password" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-key me-2"></i>Change Password
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" id="changePasswordForm" action="{{ url_for('auth.change_password') }}">
+                            {{ csrf_token() }}
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="old_password" class="form-label">Current Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="old_password"
+                                                   name="old_password" placeholder="Enter current password" required>
+                                            <button class="btn btn-outline-secondary" type="button" id="toggleOldPassword">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="password" class="form-label">New Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="password"
+                                                   name="password" placeholder="Enter new password" required>
+                                            <button class="btn btn-outline-secondary" type="button" id="toggleNewPassword">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <!-- Password Strength Indicator -->
+                                        <div class="progress mt-2" style="height: 4px;">
+                                            <div class="progress-bar" id="passwordStrength" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        <small class="form-text text-muted" id="passwordStrengthText">Enter a password to see its strength</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="password2" class="form-label">Confirm New Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="password2"
+                                                   name="password2" placeholder="Confirm new password" required>
+                                            <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary" id="changePasswordBtn">
+                                    <i class="fas fa-save me-2"></i>Change Password
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="resetPasswordForm()">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Password Guidelines -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>Password Security Guidelines
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6>Create a Strong Password:</h6>
+                                <ul class="mb-0">
+                                    <li>At least 8 characters long</li>
+                                    <li>Include both uppercase and lowercase letters</li>
+                                    <li>Add numbers and special characters</li>
+                                    <li>Avoid common words or personal information</li>
+                                    <li>Don't reuse passwords from other accounts</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-lightbulb me-2"></i>
+                                    <strong>Tip:</strong> Use a passphrase or combine unrelated words for better memorability.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 活动会话部分 -->
+            <div class="tab-pane fade" id="sessions" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="mb-0">
+                        <i class="fas fa-desktop me-2"></i>Active Sessions
+                    </h4>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-success me-2">
+                            <i class="fas fa-circle me-1"></i><span id="sessionCount">0</span> Active
+                        </span>
+                        <button class="btn btn-outline-warning btn-sm" id="revokeAllBtn" style="display: none;"
+                                title="Revoke all sessions except current"
+                                onclick="revokeAllSessions()">
+                            <i class="fas fa-ban me-1"></i>Revoke All Others
+                        </button>
+                    </div>
+                </div>
+
+                <div id="sessionsContent">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading your active sessions...</p>
+                    </div>
+                </div>
+
+                <!-- Session Security Info -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>Session Security
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Security Best Practices</h6>
+                                <ul class="text-muted small mb-0">
+                                    <li>Regularly review your active sessions</li>
+                                    <li>Revoke sessions from devices you no longer use</li>
+                                    <li>Always log out from shared or public devices</li>
+                                    <li>Use strong, unique passwords for your account</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Session Features</h6>
+                                <div class="d-grid gap-2">
+                                    <div class="d-flex align-items-center p-2 bg-light rounded">
+                                        <i class="fas fa-clock me-3 text-primary"></i>
+                                        <div>
+                                            <small class="fw-medium">Auto-expiry</small>
+                                            <div class="text-muted small">Sessions expire after 24 hours of inactivity</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center p-2 bg-light rounded">
+                                        <i class="fas fa-globe me-3 text-success"></i>
+                                        <div>
+                                            <small class="fw-medium">Multi-device Support</small>
+                                            <div class="text-muted small">Stay logged in across multiple devices</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -244,149 +1324,650 @@
 
 {% block scripts %}
 <script>
-// 简单的头像编辑功能
-let currentEditSection = null;
+document.addEventListener('DOMContentLoaded', function() {
+    // 处理锚点链接，自动切换到相应选项卡
+    function handleHashChange() {
+        const hash = window.location.hash.substring(1); // 移除#号
+        if (hash === 'change-password') {
+            const tab = document.getElementById('change-password-tab');
+            if (tab) {
+                const tabTrigger = new bootstrap.Tab(tab);
+                tabTrigger.show();
+            }
+        } else if (hash === 'sessions') {
+            const tab = document.getElementById('sessions-tab');
+            if (tab) {
+                const tabTrigger = new bootstrap.Tab(tab);
+                tabTrigger.show();
+            }
+        }
+    }
 
-function showEditSection(section) {
-    // 更新标签状态
-    document.querySelectorAll('.avatar-edit-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.textContent.trim().includes(section));
+    // 页面加载时检查锚点
+    handleHashChange();
+
+    // 监听锚点变化
+    window.addEventListener('hashchange', handleHashChange);
+
+    {% if current_user and current_user.username == user.username %}
+    // 个人信息表单提交
+    document.getElementById('profileInfoForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            avatar: document.getElementById('avatar').value
+        };
+
+        try {
+            const response = await fetch('/api/user/profile', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                showToast('Profile information updated successfully!', 'success');
+            } else {
+                throw new Error('Failed to update profile');
+            }
+        } catch (error) {
+            showToast('Failed to update profile information', 'danger');
+        }
     });
 
-    // 显示对应的编辑区域
-    document.getElementById('uploadEditSection').style.display = section === 'upload' ? 'block' : 'none';
-    document.getElementById('urlEditSection').style.display = section === 'url' ? 'block' : 'none';
+    // 通知设置表单提交
+    document.getElementById('notificationsForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
 
-    currentEditSection = section;
-}
+        const formData = {
+            email_notifications: document.getElementById('commentNotif').checked,
+            mention_notifications: document.getElementById('mentionNotif').checked,
+            watch_notifications: document.getElementById('watchNotif').checked,
+            daily_digest: document.getElementById('dailyDigest').checked
+        };
 
-function closeAvatarModal() {
-    const modal = document.getElementById('avatarEditModal');
-    modal.style.display = 'none';
-}
+        try {
+            const response = await fetch('/api/user/notification-settings', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(formData)
+            });
 
-function confirmEdit() {
-    if (currentEditSection === 'upload') {
-        uploadNewAvatar();
-    } else if (currentEditSection === 'url') {
-        updateAvatarUrl();
-    }
-}
+            if (response.ok) {
+                showToast('Notification preferences updated!', 'success');
+            } else {
+                throw new Error('Failed to update notifications');
+            }
+        } catch (error) {
+            showToast('Failed to update notification preferences', 'danger');
+        }
+    });
 
-function cancelEdit() {
-    // 重置编辑区域
-    showEditSection(currentEditSection);
-}
+    // 偏好设置表单提交
+    document.getElementById('preferencesForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
 
-function uploadNewAvatar() {
-    const fileInput = document.getElementById('avatarFileInput');
-    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-        showToast('请先选择图片文件', 'error');
-        return;
-    }
+        const formData = {
+            theme: document.getElementById('theme').value,
+            language: document.getElementById('language').value,
+            timezone: document.getElementById('timezone').value
+        };
 
-    const file = fileInput.files[0];
+        try {
+            const response = await fetch('/api/user/preferences', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(formData)
+            });
 
-    // 验证文件
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    if (!validTypes.includes(file.type)) {
-        showToast('请选择有效的图片文件（JPG、PNG、GIF）', 'error');
-        return;
-    }
+            if (response.ok) {
+                showToast('Preferences updated successfully!', 'success');
+            } else {
+                throw new Error('Failed to update preferences');
+            }
+        } catch (error) {
+            showToast('Failed to update preferences', 'danger');
+        }
+    });
 
-    // 验证文件大小（最大2MB）
-    const maxSize = 2 * 1024 * 1024;
-    if (file.size > maxSize) {
-        showToast('图片文件过大，最大支持2MB', 'error');
-        return;
-    }
+    // 密码可见性切换
+    document.getElementById('toggleOldPassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('old_password');
+        const icon = this.querySelector('i');
 
-    // 显示进度
-    window.uploadManager.show();
-
-    const formData = new FormData();
-    formData.append('avatar_url', '');
-    formData.append('avatar_file', file);
-
-    fetch('/api/user/{{ user.username }}/upload-avatar', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        window.uploadManager.hide();
-
-        if (data.success) {
-            showToast('头像上传成功！', 'success');
-            document.getElementById('currentAvatar').src = data.avatar_url;
-            closeAvatarModal();
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.className = 'fas fa-eye-slash';
         } else {
-            showToast(data.error || '头像上传失败', 'error');
+            passwordInput.type = 'password';
+            icon.className = 'fas fa-eye';
         }
-    })
-    .catch(error => {
-        window.uploadManager.hide();
-        showToast('上传失败，请稍后重试', 'error');
     });
+
+    document.getElementById('toggleNewPassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            passwordInput.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    });
+
+    document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password2');
+        const icon = this.querySelector('i');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            passwordInput.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    });
+
+    // 密码强度检测
+    document.getElementById('password').addEventListener('input', function() {
+        const password = this.value;
+        const strengthBar = document.getElementById('passwordStrength');
+        const strengthText = document.getElementById('passwordStrengthText');
+
+        let strength = 0;
+        let feedback = '';
+
+        if (password.length >= 8) strength += 25;
+        if (password.match(/[a-z]/)) strength += 25;
+        if (password.match(/[A-Z]/)) strength += 25;
+        if (password.match(/[0-9]/)) strength += 12.5;
+        if (password.match(/[^a-zA-Z0-9]/)) strength += 12.5;
+
+        strengthBar.style.width = strength + '%';
+
+        if (strength === 0) {
+            strengthBar.className = 'progress-bar';
+            feedback = 'Enter a password to see its strength';
+        } else if (strength < 30) {
+            strengthBar.className = 'progress-bar bg-danger';
+            feedback = 'Weak password';
+        } else if (strength < 60) {
+            strengthBar.className = 'progress-bar bg-warning';
+            feedback = 'Fair password';
+        } else if (strength < 80) {
+            strengthBar.className = 'progress-bar bg-info';
+            feedback = 'Good password';
+        } else {
+            strengthBar.className = 'progress-bar bg-success';
+            feedback = 'Strong password';
+        }
+
+        strengthText.textContent = feedback;
+    });
+
+    // 修改密码表单提交
+    document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const oldPassword = document.getElementById('old_password').value;
+        const newPassword = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('password2').value;
+
+        if (newPassword !== confirmPassword) {
+            showToast('New passwords do not match', 'danger');
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            showToast('Password must be at least 8 characters long', 'danger');
+            return;
+        }
+
+        const submitBtn = document.getElementById('changePasswordBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Changing...';
+
+        try {
+            const response = await fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: new URLSearchParams({
+                    'old_password': oldPassword,
+                    'password': newPassword,
+                    'password2': confirmPassword,
+                    'csrf_token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                })
+            });
+
+            if (response.ok) {
+                showToast('Password changed successfully!', 'success');
+                this.reset();
+                document.getElementById('passwordStrength').style.width = '0%';
+                document.getElementById('passwordStrengthText').textContent = 'Enter a password to see its strength';
+            } else {
+                const text = await response.text();
+                if (text.includes('Invalid current password')) {
+                    showToast('Current password is incorrect', 'danger');
+                } else {
+                    showToast('Failed to change password. Please try again.', 'danger');
+                }
+            }
+        } catch (error) {
+            showToast('An error occurred. Please try again.', 'danger');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+
+    // 当会话选项卡被激活时加载会话数据
+    document.getElementById('sessions-tab').addEventListener('shown.bs.tab', function() {
+        loadSessions();
+    });
+    {% endif %}
+});
+
+{% if current_user and current_user.username == user.username %}
+// 加载活动会话
+async function loadSessions() {
+    const sessionsContent = document.getElementById('sessionsContent');
+    const sessionCount = document.getElementById('sessionCount');
+    const revokeAllBtn = document.getElementById('revokeAllBtn');
+
+    try {
+        const response = await fetch('/api/user/sessions');
+        if (response.ok) {
+            const sessions = await response.json();
+            displaySessions(sessions);
+
+            // 更新会话计数
+            sessionCount.textContent = sessions.length;
+
+            // 显示/隐藏全部撤销按钮
+            const otherSessions = sessions.filter(s => !s.is_current);
+            revokeAllBtn.style.display = otherSessions.length > 0 ? 'inline-block' : 'none';
+
+        } else {
+            throw new Error('Failed to load sessions');
+        }
+    } catch (error) {
+        sessionsContent.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Failed to load active sessions.
+            </div>
+        `;
+    }
 }
 
-function updateAvatarUrl() {
-    const urlInput = document.getElementById('avatarUrlInput');
-    const url = urlInput ? urlInput.value.trim() : '';
+// 显示会话列表
+function displaySessions(sessions) {
+    const sessionsContent = document.getElementById('sessionsContent');
 
-    if (!url) {
-        showToast('请输入有效的头像URL', 'error');
+    if (sessions.length === 0) {
+        sessionsContent.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No active sessions found.
+            </div>
+        `;
         return;
     }
 
-    fetch('/api/user/{{ user.username }}/update-avatar', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({
-            avatar_url: url
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('头像更新成功！', 'success');
-            document.getElementById('currentAvatar').src = data.avatar_url;
-            closeAvatarModal();
-        } else {
-            showToast(data.error || '头像更新失败', 'error');
+    let html = '<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0"><thead class="table-light"><tr><th width="20%">Device & Location</th><th width="35%">Browser</th><th width="15%">Created</th><th width="15%">Last Activity</th><th width="10%">Status</th><th width="5%">Actions</th></tr></thead><tbody>';
+
+    sessions.forEach(session => {
+        const isCurrent = session.is_current;
+
+        // 解析浏览器信息
+        let browserIcon = 'fas fa-globe';
+        let browserName = 'Browser';
+        let userAgent = session.user_agent || '';
+
+        if (userAgent.includes('Chrome')) {
+            browserIcon = 'fab fa-chrome';
+            browserName = 'Chrome';
+        } else if (userAgent.includes('Firefox')) {
+            browserIcon = 'fab fa-firefox';
+            browserName = 'Firefox';
+        } else if (userAgent.includes('Safari')) {
+            browserIcon = 'fab fa-safari';
+            browserName = 'Safari';
+        } else if (userAgent.includes('Edge')) {
+            browserIcon = 'fab fa-edge';
+            browserName = 'Edge';
         }
-    })
-    .catch(error => {
-        showToast('更新失败，请稍后重试', 'error');
+
+        html += `
+            <tr class="${isCurrent ? 'table-primary' : ''}">
+                <td>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-desktop me-2 text-muted"></i>
+                        <div>
+                            <div class="fw-medium">${session.ip_address || 'Unknown'}</div>
+                            <small class="text-muted">
+                                ${isCurrent ? 'Current Device' : 'Other Device'}
+                            </small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="text-truncate" style="max-width: 300px;" title="${userAgent}">
+                        <i class="${browserIcon} me-1 ${isCurrent ? 'text-primary' : 'text-muted'}"></i>${browserName}
+                        <br>
+                        <small class="text-muted">${userAgent.substring(0, 50)}${userAgent.length > 50 ? '...' : ''}</small>
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <div>${session.created_at ? new Date(session.created_at).toLocaleDateString() : 'Unknown'}</div>
+                        <small class="text-muted">${session.created_at ? new Date(session.created_at).toLocaleTimeString() : ''}</small>
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <div>${session.last_seen ? new Date(session.last_seen).toLocaleDateString() : 'Unknown'}</div>
+                        <small class="text-muted">${session.last_seen ? new Date(session.last_seen).toLocaleTimeString() : ''}</small>
+                    </div>
+                </td>
+                <td>
+                    ${isCurrent ? '<span class="badge bg-primary">Current</span>' : '<span class="badge bg-success">Active</span>'}
+                </td>
+                <td>
+                    ${!isCurrent ? `
+                        <button class="btn btn-sm btn-outline-danger" onclick="revokeSession('${session.id}')" title="Revoke Session">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    ` : '<span class="text-muted">—</span>'}
+                </td>
+            </tr>
+        `;
     });
+
+    html += '</tbody></table></div></div></div>';
+    sessionsContent.innerHTML = html;
 }
 
-function removeAvatar() {
-    if (!confirm('确定要删除头像吗？')) return;
+// 撤销单个会话
+async function revokeSession(sessionId) {
+    if (!confirm('Are you sure you want to revoke this session? The device will be logged out.')) {
+        return;
+    }
 
-    fetch('/api/user/{{ user.username }}/remove-avatar', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('头像删除成功', 'success');
-            document.getElementById('currentAvatar').src = '/static/img/default-avatar.png';
-            closeAvatarModal();
+    try {
+        const response = await fetch(`/api/user/sessions/${sessionId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+
+        if (response.ok) {
+            showToast('Session revoked successfully', 'success');
+            loadSessions(); // 重新加载会话列表
         } else {
-            showToast(data.error || '头像删除失败', 'error');
+            throw new Error('Failed to revoke session');
         }
-    })
-    .catch(error => {
-        showToast('删除失败，请稍后重试', 'error');
+    } catch (error) {
+        showToast('Failed to revoke session', 'danger');
+    }
+}
+
+// 撤销所有其他会话
+async function revokeAllSessions() {
+    if (!confirm('Are you sure you want to sign out all other devices? This will log them out immediately.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/user/sessions/revoke-others', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+
+        if (response.ok) {
+            showToast('All other sessions have been revoked', 'success');
+            loadSessions(); // 重新加载会话列表
+        } else {
+            throw new Error('Failed to revoke sessions');
+        }
+    } catch (error) {
+        showToast('Failed to revoke other sessions', 'danger');
+    }
+}
+
+// 重置个人信息表单
+function resetProfileForm() {
+    document.getElementById('name').value = '{{ current_user.name or "" }}';
+    document.getElementById('email').value = '{{ current_user.email or "" }}';
+    document.getElementById('avatar').value = '{{ current_user.avatar or "" }}';
+}
+
+// 重置密码表单
+function resetPasswordForm() {
+    document.getElementById('changePasswordForm').reset();
+    document.getElementById('passwordStrength').style.width = '0%';
+    document.getElementById('passwordStrengthText').textContent = 'Enter a password to see its strength';
+}
+
+// 确认账户停用
+function confirmAccountDeactivation() {
+    if (confirm('Are you sure you want to deactivate your account? You can reactivate it later by logging in.')) {
+        showToast('Account deactivation is not yet implemented', 'info');
+    }
+}
+
+// 确认账户删除
+function confirmAccountDeletion() {
+    const confirmation = prompt('This action cannot be undone. Type "DELETE" to confirm:');
+    if (confirmation === 'DELETE') {
+        showToast('Account deletion is not yet implemented', 'info');
+    }
+}
+
+// 显示备用码
+function showBackupCodes() {
+    // 创建模态框显示备用码
+    const modalHtml = `
+        <div class="modal fade" id="backupCodesModal" tabindex="-1" aria-labelledby="backupCodesModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="backupCodesModalLabel">
+                            <i class="fas fa-key me-2 text-warning"></i>Backup Codes
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Important:</strong> Save these backup codes in a secure location. Each code can only be used once.
+                        </div>
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading backup codes...</span>
+                            </div>
+                            <p class="mt-2">Loading your backup codes...</p>
+                        </div>
+                        <div id="backupCodesContainer" style="display: none;">
+                            <div class="row g-3" id="backupCodesList">
+                                <!-- 备用码将在这里显示 -->
+                            </div>
+                            <div class="text-center mt-4">
+                                <button class="btn btn-outline-secondary btn-sm" onclick="downloadBackupCodes()">
+                                    <i class="fas fa-download me-1"></i>Download Codes
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="copyBackupCodes()">
+                                    <i class="fas fa-copy me-1"></i>Copy All
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 移除已存在的模态框
+    const existingModal = document.getElementById('backupCodesModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // 添加模态框到页面
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // 显示模态框
+    const modal = new bootstrap.Modal(document.getElementById('backupCodesModal'));
+    modal.show();
+
+    // 加载备用码
+    loadBackupCodes();
+}
+
+// 加载备用码
+async function loadBackupCodes() {
+    try {
+        const response = await fetch('/api/user/backup-codes');
+        if (response.ok) {
+            const data = await response.json();
+            displayBackupCodes(data.backup_codes);
+        } else {
+            throw new Error('Failed to load backup codes');
+        }
+    } catch (error) {
+        document.querySelector('#backupCodesModal .modal-body').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Failed to load backup codes. Please try again later.
+            </div>
+        `;
+    }
+}
+
+// 显示备用码
+function displayBackupCodes(backupCodes) {
+    const container = document.getElementById('backupCodesContainer');
+    const codesList = document.getElementById('backupCodesList');
+    const spinner = document.querySelector('#backupCodesModal .spinner-border').parentElement;
+
+    // 清空并生成备用码显示
+    codesList.innerHTML = '';
+    backupCodes.forEach(code => {
+        codesList.innerHTML += `
+            <div class="col-6 col-md-3">
+                <div class="backup-code-card text-center p-3 bg-light rounded">
+                    <code class="backup-code text-primary fw-bold">${code}</code>
+                </div>
+            </div>
+        `;
     });
+
+    // 显示备用码容器，隐藏加载动画
+    spinner.style.display = 'none';
+    container.style.display = 'block';
+}
+
+// 下载备用码
+function downloadBackupCodes() {
+    const codes = Array.from(document.querySelectorAll('.backup-code')).map(el => el.textContent);
+    const content = `双因素认证备用恢复码
+================================
+
+用户: {{ current_user.email }}
+生成时间: ${new Date().toLocaleString()}
+
+请在需要时使用以下任意一个6位恢复码：
+
+${codes.join('\n')}
+
+================================
+重要提示：
+- 每个恢复码只能使用一次
+- 请妥善保存在安全的地方
+- 建议打印出来或保存到密码管理器
+- 如果使用了所有恢复码，请重新设置双因素认证
+`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_codes_${current_user.email}_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showToast('Backup codes downloaded successfully!', 'success');
+}
+
+// 复制所有备用码
+function copyBackupCodes() {
+    const codes = Array.from(document.querySelectorAll('.backup-code')).map(el => el.textContent).join('\n');
+
+    navigator.clipboard.writeText(codes).then(() => {
+        showToast('Backup codes copied to clipboard!', 'success');
+    }).catch(() => {
+        // 降级方案
+        const textArea = document.createElement('textarea');
+        textArea.value = codes;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showToast('Backup codes copied to clipboard!', 'success');
+    });
+}
+{% endif %}
+
+// Toast 消息函数
+function showToast(message, type = 'info') {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+
+    const toastElement = document.createElement('div');
+    toastElement.innerHTML = toastHtml;
+    toastContainer.appendChild(toastElement.firstElementChild);
+
+    const toast = new bootstrap.Toast(toastContainer.lastElementChild);
+    toast.show();
 }
 </script>
 {% endblock %}
