@@ -122,13 +122,20 @@ def handle_file_upload(file, allowed_extensions=None, max_size=16*1024*1024):
     if not file or file.filename == '':
         return None, "No file selected"
 
+    # If allowed_extensions is None or empty, allow all file types
     if allowed_extensions is None:
-        allowed_extensions = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'}
+        from flask import current_app
+        allowed_extensions = current_app.config.get('ALLOWED_EXTENSIONS')
 
-    # Check file extension
-    if not ('.' in file.filename and
-            file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
-        return None, "File type not allowed"
+    if not allowed_extensions:
+        # Allow all file types, just check if filename has an extension
+        if '.' not in file.filename:
+            return None, "Filename must have an extension"
+    else:
+        # Check file extension against allowed list
+        if not ('.' in file.filename and
+                file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
+            return None, "File type not allowed"
 
     # Check file size
     file.seek(0, os.SEEK_END)

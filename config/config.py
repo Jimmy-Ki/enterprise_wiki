@@ -17,7 +17,7 @@ class Config:
     # File upload settings
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     UPLOAD_FOLDER = 'app/static/uploads'
-    ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'}
+    ALLOWED_EXTENSIONS = None  # Allow all file types
 
     # Email settings
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'localhost')

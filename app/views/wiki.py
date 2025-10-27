@@ -715,5 +715,10 @@ def upload_file():
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
+    # If ALLOWED_EXTENSIONS is None or empty, allow all file types
+    allowed_extensions = current_app.config.get('ALLOWED_EXTENSIONS')
+    if not allowed_extensions:
+        return '.' in filename  # Only check if filename has an extension
+
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
+           filename.rsplit('.', 1)[1].lower() in allowed_extensions

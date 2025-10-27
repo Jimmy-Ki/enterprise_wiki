@@ -731,8 +731,12 @@ def download_attachment(attachment_id):
 def allowed_file(filename):
     """Check if file extension is allowed"""
     from flask import current_app
-    ALLOWED_EXTENSIONS = current_app.config.get('ALLOWED_EXTENSIONS',
-        {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'})
+    ALLOWED_EXTENSIONS = current_app.config.get('ALLOWED_EXTENSIONS')
+
+    # If ALLOWED_EXTENSIONS is None or empty, allow all file types
+    if not ALLOWED_EXTENSIONS:
+        return '.' in filename  # Only check if filename has an extension
+
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
