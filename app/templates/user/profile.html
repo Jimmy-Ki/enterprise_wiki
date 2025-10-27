@@ -2549,7 +2549,14 @@ const avatarEditor = {
     }
 };
 
-// 初始化头像编辑器
-avatarEditor.init();
+// 初始化头像编辑器 - 等待DOM加载完成
+document.addEventListener('DOMContentLoaded', function() {
+    // 等待一小段时间确保模态框DOM已加载
+    setTimeout(function() {
+        if (typeof avatarEditor !== 'undefined' && avatarEditor) {
+            avatarEditor.init();
+        }
+    }, 100);
+});
 </script>
 {% endblock %}
