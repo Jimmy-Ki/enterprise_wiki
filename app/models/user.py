@@ -305,12 +305,23 @@ class User(UserMixin, db.Model):
     def verify_totp_token(self, token):
         """验证TOTP令牌"""
         import pyotp
+        from flask import current_app
 
         if not self.two_factor_secret:
+            current_app.logger.error(f"TOTP: User {self.id} has no two_factor_secret")
             return False
 
-        totp = pyotp.TOTP(self.two_factor_secret)
-        return totp.verify(token, valid_window=1)  # 允许1个时间窗口的误差
+        try:
+            totp = pyotp.TOTP(self.two_factor_secret)
+            current_time = pyotp.TOTP(self.two_factor_secret).time()
+            current_app.logger.info(f"TOTP: User {self.id} verifying token {token} against secret {self.two_factor_secret} at time {current_time}")
+
+            result = totp.verify(token, valid_window=1)  # 允许1个时间窗口的误差
+            current_app.logger.info(f"TOTP: User {self.id} verification result: {result}")
+            return result
+        except Exception as e:
+            current_app.logger.error(f"TOTP: User {self.id} verification error: {str(e)}")
+            return False
 
     def generate_backup_codes(self):
         """生成备用恢复码"""

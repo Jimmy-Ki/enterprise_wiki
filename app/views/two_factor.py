@@ -39,26 +39,49 @@ def setup():
 
     if form.validate_on_submit():
         # 验证TOTP码
-        if current_user.verify_totp_token(form.verification_code.data):
+        verification_code = form.verification_code.data
+        current_app.logger.info(f"2FA Setup: User {current_user.id} attempting verification with code: {verification_code}")
+
+        if current_user.verify_totp_token(verification_code):
+            current_app.logger.info(f"2FA Setup: User {current_user.id} verification successful")
+
             # 启用2FA
             current_user.enable_two_factor(current_user.two_factor_secret)
             db.session.commit()
 
             # 生成备用码
-            backup_codes = json.loads(current_user.backup_codes)
+            if isinstance(current_user.backup_codes, str):
+                backup_codes = json.loads(current_user.backup_codes)
+            else:
+                backup_codes = current_user.backup_codes
 
             flash('双因素认证已成功启用！请保存以下备用码：', 'success')
             return render_template('auth/2fa/backup_codes.html',
                                    backup_codes=backup_codes,
                                    now=datetime.now())
         else:
+            current_app.logger.error(f"2FA Setup: User {current_user.id} verification failed with code: {verification_code}")
             flash('验证码无效，请重试', 'danger')
+            # 重新渲染页面，保持secret和qr_code
             return render_template('auth/2fa/setup.html',
                                    form=form,
                                    secret=current_user.two_factor_secret,
                                    qr_code=current_user.generate_totp_qr_code(current_user.two_factor_secret))
 
-    return render_template('auth/2fa/setup.html', form=form)
+    # 如果是GET请求或表单验证失败，重新生成secret和qr_code（如果不存在）
+    if not current_user.two_factor_secret:
+        secret = current_user.generate_totp_secret()
+        db.session.commit()
+        qr_code = current_user.generate_totp_qr_code(secret)
+        return render_template('auth/2fa/setup.html',
+                               form=form,
+                               secret=secret,
+                               qr_code=qr_code)
+    else:
+        return render_template('auth/2fa/setup.html',
+                               form=form,
+                               secret=current_user.two_factor_secret,
+                               qr_code=current_user.generate_totp_qr_code(current_user.two_factor_secret))
 
 
 @two_factor.route('/verify', methods=['GET', 'POST'])

@@ -112,13 +112,55 @@ function copySecret() {
 // Auto-focus verification code input
 document.addEventListener('DOMContentLoaded', function() {
     const codeInput = document.getElementById('verification_code');
-    if (codeInput) {
+    const form = document.querySelector('form');
+
+    if (codeInput && form) {
         codeInput.focus();
 
-        // Remove auto-submit to prevent validation issues
-        // User must manually click the submit button
+        // Handle form submission properly
+        form.addEventListener('submit', function(e) {
+            const code = codeInput.value.trim();
+
+            // Validate that we have exactly 6 digits
+            if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+                e.preventDefault();
+
+                // Show error message
+                codeInput.classList.add('is-invalid');
+
+                // Create or update error message
+                let errorDiv = codeInput.parentNode.querySelector('.invalid-feedback');
+                if (!errorDiv) {
+                    errorDiv = document.createElement('div');
+                    errorDiv.className = 'invalid-feedback d-block';
+                    codeInput.parentNode.appendChild(errorDiv);
+                }
+                errorDiv.textContent = '请输入6位数字验证码';
+
+                return false;
+            }
+
+            // Remove any existing error states
+            codeInput.classList.remove('is-invalid');
+            const errorDiv = codeInput.parentNode.querySelector('.invalid-feedback');
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+
+            // Allow form to submit normally
+            return true;
+        });
+
+        // Visual feedback when 6 digits are entered
         codeInput.addEventListener('input', function(e) {
-            // Visual feedback when 6 digits are entered
+            // Remove any existing error state
+            e.target.classList.remove('is-invalid');
+            const errorDiv = e.target.parentNode.querySelector('.invalid-feedback');
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+
+            // Add visual feedback
             if (e.target.value.length === 6) {
                 e.target.classList.add('is-valid');
                 document.querySelector('button[type="submit"]').classList.add('btn-success');
@@ -127,6 +169,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.target.classList.remove('is-valid');
                 document.querySelector('button[type="submit"]').classList.remove('btn-success');
                 document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-check me-2"></i>启用双因素认证';
+            }
+        });
+
+        // Also handle paste events
+        codeInput.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+            const digits = pastedData.replace(/\D/g, '').slice(0, 6);
+
+            if (digits.length === 6) {
+                e.target.value = digits;
+                e.target.classList.add('is-valid');
+                document.querySelector('button[type="submit"]').classList.add('btn-success');
+                document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-check me-2"></i>验证并启用双因素认证';
+            } else {
+                e.target.value = digits;
             }
         });
     }
