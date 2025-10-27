@@ -25,10 +25,13 @@ def setup():
     if request.method == 'GET':
         # 如果用户还没有TOTP密钥，生成一个新的
         if not current_user.two_factor_secret:
+            current_app.logger.info(f"2FA Setup: User {current_user.id} has no secret, generating new one")
             secret = current_user.generate_totp_secret()
             db.session.commit()
+            current_app.logger.info(f"2FA Setup: Generated and saved secret for user {current_user.id}: {secret}")
         else:
             secret = current_user.two_factor_secret
+            current_app.logger.info(f"2FA Setup: User {current_user.id} already has secret: {secret}")
 
         qr_code = current_user.generate_totp_qr_code(secret)
 
@@ -41,6 +44,7 @@ def setup():
         # 验证TOTP码
         verification_code = form.verification_code.data
         current_app.logger.info(f"2FA Setup: User {current_user.id} attempting verification with code: {verification_code}")
+        current_app.logger.info(f"2FA Setup: User {current_user.id} current secret: {current_user.two_factor_secret}")
 
         if current_user.verify_totp_token(verification_code):
             current_app.logger.info(f"2FA Setup: User {current_user.id} verification successful")

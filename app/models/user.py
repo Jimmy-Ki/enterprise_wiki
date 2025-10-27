@@ -262,13 +262,17 @@ class User(UserMixin, db.Model):
 
     # 2FA (Two-Factor Authentication) methods
     def generate_totp_secret(self):
-        """生成TOTP密钥"""
+        """生成TOTP密钥并保存到用户对象"""
         import pyotp
         import base64
         import secrets
 
         # 生成16字节的随机密钥
         secret = base64.b32encode(secrets.token_bytes(16)).decode('utf-8')
+
+        # 保存到用户对象
+        self.two_factor_secret = secret
+
         return secret
 
     def generate_totp_qr_code(self, secret, issuer_name="Enterprise Wiki"):
@@ -305,6 +309,7 @@ class User(UserMixin, db.Model):
     def verify_totp_token(self, token):
         """验证TOTP令牌"""
         import pyotp
+        import time
         from flask import current_app
 
         if not self.two_factor_secret:
@@ -313,7 +318,7 @@ class User(UserMixin, db.Model):
 
         try:
             totp = pyotp.TOTP(self.two_factor_secret)
-            current_time = pyotp.TOTP(self.two_factor_secret).time()
+            current_time = int(time.time())
             current_app.logger.info(f"TOTP: User {self.id} verifying token {token} against secret {self.two_factor_secret} at time {current_time}")
 
             result = totp.verify(token, valid_window=1)  # 允许1个时间窗口的误差
