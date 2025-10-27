@@ -194,7 +194,10 @@ def backup_code_login():
 def generate_qrcode():
     """生成新的QR码"""
     secret = current_user.generate_totp_secret()
+    db.session.commit()
     qr_code = current_user.generate_totp_qr_code(secret)
+
+    current_app.logger.info(f"2FA QR Code: User {current_user.id} generated new secret: {secret}")
 
     return jsonify({
         'success': True,

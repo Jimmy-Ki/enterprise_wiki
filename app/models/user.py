@@ -268,7 +268,9 @@ class User(UserMixin, db.Model):
         import secrets
 
         # 生成16字节的随机密钥
-        secret = base64.b32encode(secrets.token_bytes(16)).decode('utf-8')
+        secret_bytes = secrets.token_bytes(16)
+        # 生成Base32编码，去掉填充等号以兼容所有认证器
+        secret = base64.b32encode(secret_bytes).decode('utf-8').rstrip('=')
 
         # 保存到用户对象
         self.two_factor_secret = secret
@@ -310,6 +312,7 @@ class User(UserMixin, db.Model):
         """验证TOTP令牌"""
         import pyotp
         import time
+        import base64
         from flask import current_app
 
         if not self.two_factor_secret:
@@ -317,9 +320,16 @@ class User(UserMixin, db.Model):
             return False
 
         try:
-            totp = pyotp.TOTP(self.two_factor_secret)
+            # 确保密钥格式正确 - 重新添加必要的填充等号
+            secret = self.two_factor_secret
+            # 计算需要添加的填充等号数量
+            padding_needed = (8 - len(secret) % 8) % 8
+            if padding_needed > 0:
+                secret = secret + '=' * padding_needed
+
+            totp = pyotp.TOTP(secret)
             current_time = int(time.time())
-            current_app.logger.info(f"TOTP: User {self.id} verifying token {token} against secret {self.two_factor_secret} at time {current_time}")
+            current_app.logger.info(f"TOTP: User {self.id} verifying token {token} against secret {self.two_factor_secret} (with padding) at time {current_time}")
 
             result = totp.verify(token, valid_window=1)  # 允许1个时间窗口的误差
             current_app.logger.info(f"TOTP: User {self.id} verification result: {result}")
