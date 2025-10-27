@@ -1,0 +1,401 @@
+<!-- 上传管理器组件 -->
+<div id="uploadManager" class="upload-manager">
+    <!-- 上传进度遮罩 -->
+    <div id="uploadOverlay" class="upload-overlay" style="display: none;">
+        <div class="upload-modal">
+            <div class="upload-content">
+                <h4 class="mb-3">
+                    <i class="fas fa-cloud-upload-alt me-2"></i>
+                    正在上传文件...
+                </h4>
+
+                <!-- 进度条 -->
+                <div class="upload-progress mb-3">
+                    <div class="progress">
+                        <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" style="width: 0%">
+                            <span class="sr-only">0%</span>
+                        </div>
+                    </div>
+                    <div class="progress-info text-center mt-2">
+                        <span id="uploadProgressText">准备上传...</span>
+                    </div>
+                </div>
+
+                <!-- 上传文件列表 -->
+                <div id="uploadFileList" class="upload-file-list">
+                    <!-- 动态生成 -->
+                </div>
+
+                <!-- 取消按钮 -->
+                <div class="text-center mt-3">
+                    <button id="cancelUploadBtn" class="btn btn-outline-danger">
+                        <i class="fas fa-times me-1"></i>
+                        取消上传
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 上传管理器样式 */
+.upload-manager {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.upload-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.upload-modal {
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.upload-content {
+    text-align: center;
+}
+
+.upload-progress {
+    width: 100%;
+}
+
+.progress {
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.upload-file-list {
+    max-height: 300px;
+    overflow-y: auto;
+    text-align: left;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.upload-file-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.upload-file-item:last-child {
+    border-bottom: none;
+}
+
+.file-icon {
+    margin-right: 10px;
+    color: #6c757d;
+}
+
+.file-info {
+    flex: 1;
+}
+
+.file-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.file-size {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.file-status {
+    margin-left: 10px;
+}
+
+.file-status.pending {
+    color: #ffc107;
+}
+
+.file-status.uploading {
+    color: var(--primary-color);
+}
+
+.file-status.success {
+    color: #28a745;
+}
+
+.file-status.error {
+    color: #dc3545;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .upload-modal {
+        padding: 20px;
+        margin: 20px;
+    }
+}
+</style>
+
+<script>
+// 全局上传管理器
+class UploadManager {
+    constructor() {
+        this.uploads = new Map(); // 存储上传状态
+        this.isUploading = false;
+        this.totalFiles = 0;
+        this.completedFiles = 0;
+        this.currentFile = null;
+        this.onComplete = null;
+        this.onError = null;
+
+        this.initElements();
+        this.bindEvents();
+    }
+
+    initElements() {
+        this.overlay = document.getElementById('uploadOverlay');
+        this.progressBar = document.getElementById('uploadProgressBar');
+        this.progressText = document.getElementById('uploadProgressText');
+        this.fileList = document.getElementById('uploadFileList');
+        this.cancelBtn = document.getElementById('cancelUploadBtn');
+    }
+
+    bindEvents() {
+        this.cancelBtn.addEventListener('click', () => this.cancel());
+    }
+
+    show() {
+        this.overlay.style.display = 'flex';
+        this.isUploading = true;
+    }
+
+    hide() {
+        this.overlay.style.display = 'none';
+        this.isUploading = false;
+        this.uploads.clear();
+        this.totalFiles = 0;
+        this.completedFiles = 0;
+        this.currentFile = null;
+        this.updateProgress();
+    }
+
+    addFile(file, uploadId) {
+        const uploadInfo = {
+            id: uploadId,
+            file: file,
+            status: 'pending',
+            progress: 0,
+            error: null
+        };
+
+        this.uploads.set(uploadId, uploadInfo);
+        this.totalFiles++;
+        this.renderFileList();
+
+        if (!this.isUploading) {
+            this.show();
+        }
+    }
+
+    updateUploadProgress(uploadId, progress, status = null) {
+        const upload = this.uploads.get(uploadId);
+        if (!upload) return;
+
+        upload.progress = progress;
+        if (status) upload.status = status;
+
+        this.currentFile = upload;
+        this.updateProgress();
+        this.renderFileList();
+    }
+
+    setUploadError(uploadId, error) {
+        const upload = this.uploads.get(uploadId);
+        if (!upload) return;
+
+        upload.status = 'error';
+        upload.error = error;
+        this.completedFiles++;
+        this.updateProgress();
+        this.renderFileList();
+
+        if (this.onError) {
+            this.onError(uploadId, error);
+        }
+    }
+
+    setUploadComplete(uploadId) {
+        const upload = this.uploads.get(uploadId);
+        if (!upload) return;
+
+        upload.status = 'success';
+        upload.progress = 100;
+        this.completedFiles++;
+        this.updateProgress();
+        this.renderFileList();
+
+        // 如果所有文件都上传完成
+        if (this.completedFiles === this.totalFiles) {
+            setTimeout(() => {
+                this.complete();
+            }, 1000);
+        }
+    }
+
+    updateProgress() {
+        const totalProgress = this.totalFiles > 0 ?
+            (this.completedFiles * 100 + (this.currentFile ? this.currentFile.progress : 0)) / this.totalFiles : 0;
+
+        this.progressBar.style.width = `${Math.round(totalProgress)}%`;
+        this.progressBar.setAttribute('aria-valuenow', Math.round(totalProgress));
+
+        if (this.currentFile) {
+            this.progressText.textContent =
+                `正在上传: ${this.currentFile.file.name} (${Math.round(totalProgress)}%)`;
+        } else if (this.completedFiles === this.totalFiles && this.totalFiles > 0) {
+            this.progressText.textContent = '上传完成！';
+        } else if (this.completedFiles === this.totalFiles) {
+            this.progressText.textContent = '没有文件需要上传';
+        } else {
+            this.progressText.textContent = '准备上传...';
+        }
+    }
+
+    renderFileList() {
+        this.fileList.innerHTML = '';
+
+        this.uploads.forEach((upload, uploadId) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'upload-file-item';
+            fileItem.innerHTML = `
+                <div class="file-icon">
+                    ${this.getFileIcon(upload.file)}
+                </div>
+                <div class="file-info">
+                    <div class="file-name">${upload.file.name}</div>
+                    <div class="file-size">${this.formatFileSize(upload.file.size)}</div>
+                </div>
+                <div class="file-status ${upload.status}">
+                    ${this.getStatusIcon(upload)}
+                </div>
+            `;
+            this.fileList.appendChild(fileItem);
+        });
+    }
+
+    getFileIcon(file) {
+        const extension = file.name.split('.').pop().toLowerCase();
+        const iconMap = {
+            'pdf': 'fas fa-file-pdf text-danger',
+            'doc': 'fas fa-file-word text-primary',
+            'docx': 'fas fa-file-word text-primary',
+            'xls': 'fas fa-file-excel text-success',
+            'xlsx': 'fas fa-file-excel text-success',
+            'ppt': 'fas fa-file-powerpoint text-warning',
+            'pptx': 'fas fa-file-powerpoint text-warning',
+            'txt': 'fas fa-file-alt text-secondary',
+            'jpg': 'fas fa-file-image text-info',
+            'jpeg': 'fas fa-file-image text-info',
+            'png': 'fas fa-file-image text-info',
+            'gif': 'fas fa-file-image text-info'
+        };
+
+        return `<i class="${iconMap[extension] || 'fas fa-file text-muted'}"></i>`;
+    }
+
+    getStatusIcon(upload) {
+        const statusIcons = {
+            'pending': '<i class="fas fa-clock text-warning"></i> 等待',
+            'uploading': '<i class="fas fa-spinner fa-spin text-primary"></i> 上传中',
+            'success': '<i class="fas fa-check-circle text-success"></i> 完成',
+            'error': '<i class="fas fa-exclamation-circle text-danger"></i> ${upload.error || '失败'}'
+        };
+
+        return statusIcons[upload.status] || statusIcons.pending;
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    complete() {
+        this.hide();
+        if (this.onComplete) {
+            this.onComplete(Array.from(this.uploads.values()));
+        }
+    }
+
+    cancel() {
+        // 这里可以实现取消上传的逻辑
+        // 目前只是隐藏界面
+        this.hide();
+    }
+
+    // 设置回调函数
+    setCompleteCallback(callback) {
+        this.onComplete = callback;
+    }
+
+    setErrorCallback(callback) {
+        this.onError = callback;
+    }
+}
+
+// 创建全局实例
+window.uploadManager = new UploadManager();
+
+// 全局上传函数（兼容现有代码）
+window.showUploadProgress = function() {
+    window.uploadManager.show();
+};
+
+window.hideUploadProgress = function() {
+    window.uploadManager.hide();
+};
+
+window.addUploadFile = function(file, uploadId) {
+    window.uploadManager.addFile(file, uploadId);
+    return window.uploadManager;
+};
+</script>

@@ -45,9 +45,42 @@ class Config:
     FASTGPT_APP_ID = os.environ.get('FASTGPT_APP_ID', 'default')
     FASTGPT_TIMEOUT = int(os.environ.get('FASTGPT_TIMEOUT', '60'))  # seconds
 
+    # Storage settings
+    @staticmethod
+    def get_storage_config():
+        storage_type = os.environ.get('STORAGE_TYPE', 'local')
+        storage_config = {
+            'type': storage_type,
+        }
+
+        if storage_type == 'local':
+            storage_config.update({
+                'upload_folder': os.environ.get('UPLOAD_FOLDER', 'app/static/uploads'),
+                'base_url': os.environ.get('BASE_URL', '/static/uploads')
+            })
+        elif storage_type == 's3':
+            # 检查必需的S3配置
+            required_s3_vars = ['S3_ENDPOINT_URL', 'S3_ACCESS_KEY', 'S3_SECRET_KEY', 'S3_BUCKET_NAME']
+            missing_vars = [var for var in required_s3_vars if not os.environ.get(var)]
+
+            if missing_vars:
+                raise ValueError(f"缺少必需的S3配置环境变量: {', '.join(missing_vars)}")
+
+            storage_config.update({
+                'endpoint_url': os.environ.get('S3_ENDPOINT_URL'),
+                'access_key': os.environ.get('S3_ACCESS_KEY'),
+                'secret_key': os.environ.get('S3_SECRET_KEY'),
+                'bucket_name': os.environ.get('S3_BUCKET_NAME'),
+                'region': os.environ.get('S3_REGION', 'auto'),  # auto, us-east-1, etc.
+                'cdn_url': os.environ.get('S3_CDN_URL')  # 可选的CDN URL
+            })
+
+        return storage_config
+
     @staticmethod
     def init_app(app):
-        pass
+        # 动态设置存储配置
+        app.config['STORAGE_CONFIG'] = Config.get_storage_config()
 
 class DevelopmentConfig(Config):
     DEBUG = True

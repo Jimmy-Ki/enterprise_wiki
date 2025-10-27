@@ -1,0 +1,404 @@
+<!-- 上传工具组件 -->
+<script>
+// 改进的上传函数，支持进度条和用户阻止
+class ImprovedUploader {
+    constructor(options = {}) {
+        this.maxConcurrent = options.maxConcurrent || 1; // 同时上传文件数
+        this.onComplete = options.onComplete || null;
+        this.onError = options.onError || null;
+        this.onProgress = options.onProgress || null;
+
+        this.uploadQueue = [];
+        this.activeUploads = new Map();
+        this.isProcessing = false;
+    }
+
+    // 文件验证函数
+    validateFile(file) {
+        const maxSize = 16 * 1024 * 1024; // 16MB
+        const allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'text/plain',
+            'image/png',
+            'image/jpeg',
+            'image/gif'
+        ];
+
+        // 检查文件大小
+        if (file.size > maxSize) {
+            showToast(`文件 ${file.name} 太大，最大支持16MB`, 'error');
+            return false;
+        }
+
+        // 检查文件类型
+        if (!allowedTypes.includes(file.type) && !this.isAllowedFileExtension(file.name)) {
+            showToast(`文件 ${file.name} 格式不支持`, 'error');
+            return false;
+        }
+
+        return true;
+    }
+
+    isAllowedFileExtension(filename) {
+        const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx',
+                                    '.ppt', '.pptx', '.txt', '.png', '.jpg', '.jpeg', '.gif'];
+        const extension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+        return allowedExtensions.includes(extension);
+    }
+
+    // 添加文件到上传队列
+    addFiles(files) {
+        const validFiles = Array.from(files).filter(file => this.validateFile(file));
+
+        if (validFiles.length === 0) {
+            return;
+        }
+
+        // 显示上传进度界面
+        window.uploadManager.show();
+
+        // 添加到队列
+        validFiles.forEach(file => {
+            const uploadId = 'upload_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            window.uploadManager.addFile(file, uploadId);
+            this.uploadQueue.push({ file, uploadId });
+        });
+
+        // 开始处理队列
+        this.processQueue();
+    }
+
+    // 处理上传队列
+    async processQueue() {
+        if (this.isProcessing || this.uploadQueue.length === 0) {
+            return;
+        }
+
+        this.isProcessing = true;
+
+        while (this.uploadQueue.length > 0 && this.activeUploads.size < this.maxConcurrent) {
+            const { file, uploadId } = this.uploadQueue.shift();
+            this.uploadFile(file, uploadId);
+        }
+
+        this.isProcessing = false;
+    }
+
+    // 上传单个文件
+    async uploadFile(file, uploadId) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // 如果有额外数据
+        if (this.extraData) {
+            Object.entries(this.extraData).forEach(([key, value]) => {
+                formData.append(key, value);
+            });
+        }
+
+        this.activeUploads.set(uploadId, {
+            file,
+            startTime: Date.now()
+        });
+
+        try {
+            // 使用XMLHttpRequest以支持进度
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const progress = (e.loaded / e.total) * 100;
+                    window.uploadManager.updateUploadProgress(uploadId, progress);
+
+                    if (this.onProgress) {
+                        this.onProgress(uploadId, progress, file);
+                    }
+                }
+            });
+
+            xhr.addEventListener('load', () => {
+                this.activeUploads.delete(uploadId);
+
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const response = JSON.parse(xhr.responseText);
+
+                    if (response.success) {
+                        window.uploadManager.setUploadComplete(uploadId);
+
+                        if (this.onComplete) {
+                            this.onComplete(response, uploadId);
+                        }
+                    } else {
+                        window.uploadManager.setUploadError(uploadId, response.error || '上传失败');
+
+                        if (this.onError) {
+                            this.onError(response.error || '上传失败', uploadId, file);
+                        }
+                    }
+                } else {
+                    const error = `上传失败，状态码: ${xhr.status}`;
+                    window.uploadManager.setUploadError(uploadId, error);
+
+                    if (this.onError) {
+                        this.onError(error, uploadId, file);
+                    }
+                }
+
+                // 继续处理队列
+                this.processQueue();
+            });
+
+            xhr.addEventListener('error', () => {
+                this.activeUploads.delete(uploadId);
+                const error = '网络错误，上传失败';
+
+                window.uploadManager.setUploadError(uploadId, error);
+
+                if (this.onError) {
+                    this.onError(error, uploadId, file);
+                }
+
+                this.processQueue();
+            });
+
+            xhr.addEventListener('timeout', () => {
+                this.activeUploads.delete(uploadId);
+                const error = '上传超时';
+
+                window.uploadManager.setUploadError(uploadId, error);
+
+                if (this.onError) {
+                    this.onError(error, uploadId, file);
+                }
+
+                this.processQueue();
+            });
+
+            xhr.open('POST', '/api/upload');
+            xhr.setRequestHeader('X-CSRFToken', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+            xhr.timeout = 300000; // 5分钟超时
+
+            xhr.send(formData);
+
+        } catch (error) {
+            this.activeUploads.delete(uploadId);
+            window.uploadManager.setUploadError(uploadId, error.message);
+
+            if (this.onError) {
+                this.onError(error.message, uploadId, file);
+            }
+
+            this.processQueue();
+        }
+    }
+
+    // 设置额外的表单数据
+    setExtraData(data) {
+        this.extraData = data;
+        return this;
+    }
+
+    // 取消所有上传
+    cancelAll() {
+        this.activeUploads.forEach((upload, uploadId) => {
+            // 这里可以添加取消逻辑
+            console.log(`Cancelling upload: ${uploadId}`);
+        });
+
+        this.activeUploads.clear();
+        this.uploadQueue = [];
+        this.isProcessing = false;
+
+        window.uploadManager.hide();
+    }
+
+    // 获取上传状态
+    getUploadStatus() {
+        return {
+            queueLength: this.uploadQueue.length,
+            activeUploads: this.activeUploads.size,
+            isProcessing: this.isProcessing
+        };
+    }
+}
+
+// 增强的文件选择器
+function createFileUploadSelector(options = {}) {
+    const container = document.createElement('div');
+    container.className = 'enhanced-file-upload';
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = options.multiple !== false;
+    input.accept = options.accept || '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif';
+    input.style.display = 'none';
+
+    const dropZone = document.createElement('div');
+    dropZone.className = 'drop-zone enhanced-drop-zone';
+
+    // 构建拖放区域HTML
+    dropZone.innerHTML = `
+        <div class="drop-zone-content">
+            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+            <h5 class="text-muted">${options.title || '选择文件或拖放到此处'}</h5>
+            <p class="text-muted small">${options.subtitle || '支持 PDF、DOC、DOCX、XLS、XLSX、PPT、PPTX、TXT、PNG、JPG、GIF 格式'}</p>
+            ${options.hint ? `<p class="text-muted small">${options.hint}</p>` : ''}
+        </div>
+    `;
+
+    // 事件处理
+    dropZone.addEventListener('click', () => input.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+
+        if (options.onFilesSelected) {
+            options.onFilesSelected(e.dataTransfer.files);
+        }
+    });
+
+    input.addEventListener('change', (e) => {
+        if (options.onFilesSelected) {
+            options.onFilesSelected(e.target.files);
+        }
+    });
+
+    container.appendChild(input);
+    container.appendChild(dropZone);
+
+    return {
+        element: container,
+        input: input,
+        showFileSelector: () => input.click(),
+        getFiles: () => input.files
+    };
+}
+
+// 全局函数（兼容现有代码）
+function showToast(message, type = 'info') {
+    // 实现Toast提示
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type} show`;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#007bff'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-weight: 500;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.3s ease;
+        max-width: 300px;
+        word-wrap: break-word;
+    `;
+
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center;">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // 显示动画
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    }, 100);
+
+    // 自动隐藏
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+            if (document.body.contains(toast)) {
+                document.body.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
+</script>
+
+<style>
+.enhanced-file-upload {
+    width: 100%;
+    margin: 20px 0;
+}
+
+.enhanced-drop-zone {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.enhanced-drop-zone:hover {
+    border-color: var(--primary-color);
+    background-color: #e3f2fd;
+}
+
+.enhanced-drop-zone.dragover {
+    border-color: var(--primary-color);
+    background-color: #e3f2fd;
+    transform: scale(1.02);
+}
+
+.drop-zone-content {
+    pointer-events: none;
+}
+
+.toast {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .enhanced-drop-zone {
+        padding: 30px 15px;
+        min-height: 150px;
+    }
+
+    .drop-zone-content h5 {
+        font-size: 16px;
+    }
+
+    .drop-zone-content p {
+        font-size: 12px;
+    }
+}
+</style>

@@ -5,6 +5,7 @@ from app import db
 from app.models import Page, Category, Attachment, PageVersion, Permission, User
 from app.decorators import permission_required
 from app.forms.wiki import PageForm, CategoryForm, SearchForm
+from app.services.storage_service import create_storage_service
 from werkzeug.utils import secure_filename
 import os
 import markdown
@@ -668,22 +669,28 @@ def upload_file():
         return jsonify({'error': 'No file selected'}), 400
 
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        # Add timestamp to make filename unique
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        unique_filename = f"{timestamp}_{filename}"
+        # 初始化存储服务
+        storage_service = create_storage_service(current_app.config['STORAGE_CONFIG'])
 
-        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
-        os.makedirs(os.path.dirname(upload_path), exist_ok=True)
-        file.save(upload_path)
+        # 使用存储服务上传文件
+        folder = request.form.get('folder', 'attachments')  # 默认文件夹
+        upload_result = storage_service.upload_file(
+            file_data=file,
+            filename=file.filename,
+            content_type=file.mimetype,
+            folder=folder
+        )
+
+        if not upload_result['success']:
+            return jsonify({'error': upload_result.get('message', 'Upload failed')}), 500
 
         # Create attachment record
         page_id = request.form.get('page_id', type=int)
         attachment = Attachment(
-            filename=unique_filename,
-            original_filename=filename,
-            file_path=upload_path,
-            file_size=os.path.getsize(upload_path),
+            filename=upload_result['filename'],
+            original_filename=upload_result['original_filename'],
+            file_path=upload_result['relative_path'],  # 存储相对路径而不是绝对路径
+            file_size=upload_result['file_size'],
             mime_type=file.mimetype,
             page_id=page_id,
             uploaded_by=current_user.id,
@@ -697,9 +704,9 @@ def upload_file():
             'success': True,
             'attachment': {
                 'id': attachment.id,
-                'filename': unique_filename,
-                'original_filename': filename,
-                'url': url_for('static', filename=f'uploads/{unique_filename}'),
+                'filename': upload_result['filename'],
+                'original_filename': upload_result['original_filename'],
+                'url': upload_result['url'],  # 使用存储服务返回的URL
                 'size': attachment.get_size_display()
             }
         })

@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -14,6 +16,9 @@ mail = Mail()
 csrf = CSRFProtect()
 
 def create_app(config_name='default'):
+    # 加载.env文件
+    load_dotenv()
+
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)

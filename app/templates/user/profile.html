@@ -450,6 +450,66 @@
         color: #6b7280;
     }
 
+    /* 头像上传区域样式 */
+    .avatar-section {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+    .current-avatar {
+        position: relative;
+        display: inline-block;
+    }
+
+    .avatar-actions {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        display: flex;
+        gap: 8px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .current-avatar:hover .avatar-actions {
+        opacity: 1;
+    }
+
+    .avatar-upload-area {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 16px 0;
+    }
+
+    .avatar-upload-area .upload-zone {
+        border: 2px dashed #dee2e6;
+        background: #ffffff;
+        padding: 30px;
+        min-height: 150px;
+    }
+
+    .avatar-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 16px;
+        text-align: center;
+    }
+
+    .avatar-preview img {
+        border: 2px solid var(--border-color);
+    }
+
+    .avatar-actions {
+        margin-top: 16px;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+    }
+
     /* 响应式设计 */
     @media (max-width: 768px) {
         .profile-tabs {
@@ -495,12 +555,54 @@
     <div class="col-lg-8">
         <!-- 用户信息卡片 -->
         <div class="user-info-card">
-            <img src="{{ user.get_avatar() or '/static/img/default-avatar.png' }}"
-                 alt="{{ user.username }}"
-                 class="user-avatar-large">
-            <div class="user-name">{{ user.name or user.username }}</div>
-            <div class="user-email">{{ user.email }}</div>
-            <div class="user-role">{{ user.role.name if user.role else '用户' }}</div>
+            <div class="avatar-section">
+                <img id="currentAvatar" src="{{ user.get_avatar() or '/static/img/default-avatar.png' }}"
+                     alt="{{ user.username }}"
+                     class="user-avatar-large">
+                <div class="avatar-actions">
+                    <button id="uploadAvatarBtn" class="btn btn-primary btn-sm">
+                        <i class="fas fa-camera"></i>
+                        上传头像
+                    </button>
+                    {% if user.get_avatar() %}
+                        <button id="removeAvatarBtn" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-trash"></i>
+                            移除
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 头像上传区域（默认隐藏） -->
+            <div id="avatarUploadArea" class="avatar-upload-area" style="display: none;">
+                <div class="upload-zone" id="avatarDropZone">
+                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">拖放图片到此处或点击选择</h5>
+                    <p class="text-muted small">支持 JPG、PNG、GIF 格式，最大 2MB</p>
+                    <input type="file" id="avatarInput" accept=".jpg,.jpeg,.png,.gif" style="display: none;">
+                </div>
+
+                <div class="avatar-preview" style="display: none;">
+                    <h6>头像预览</h6>
+                    <img id="avatarPreview" src="" alt="预览" style="max-width: 200px; max-height: 200px; border-radius: 50%; border: 2px solid var(--border-color);">
+                    <div class="avatar-actions">
+                        <button id="confirmAvatarBtn" class="btn btn-success">
+                            <i class="fas fa-check"></i>
+                            确认
+                        </button>
+                        <button id="cancelAvatarBtn" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i>
+                            取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="user-info">
+                <div class="user-name">{{ user.name or user.username }}</div>
+                <div class="user-email">{{ user.email }}</div>
+                <div class="user-role">{{ user.role.name if user.role else '用户' }}</div>
+            </div>
         </div>
 
         <!-- 选项卡导航 -->
@@ -1969,5 +2071,188 @@ function showToast(message, type = 'info') {
     const toast = new bootstrap.Toast(toastContainer.lastElementChild);
     toast.show();
 }
+
+// 头像上传功能
+const avatarUploader = {
+    init() {
+        this.bindEvents();
+    },
+
+    bindEvents() {
+        // 上传头像按钮
+        document.getElementById('uploadAvatarBtn').addEventListener('click', () => {
+            document.getElementById('avatarUploadArea').style.display = 'block';
+        });
+
+        // 移除头像按钮
+        document.getElementById('removeAvatarBtn').addEventListener('click', () => {
+            this.removeAvatar();
+        });
+
+        // 头像文件选择
+        document.getElementById('avatarDropZone').addEventListener('click', () => {
+            document.getElementById('avatarInput').click();
+        });
+
+        // 文件拖放
+        const dropZone = document.getElementById('avatarDropZone');
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                this.handleFileSelect(files[0]);
+            }
+        });
+
+        // 文件选择
+        document.getElementById('avatarInput').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        // 取消上传
+        document.getElementById('cancelAvatarBtn').addEventListener('click', () => {
+            this.cancelUpload();
+        });
+    },
+
+    handleFileSelect(file) {
+        // 验证文件类型
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!validTypes.includes(file.type)) {
+            showToast('请选择有效的图片文件（JPG、PNG、GIF）', 'error');
+            return;
+        }
+
+        // 验证文件大小（最大2MB）
+        const maxSize = 2 * 1024 * 1024;
+        if (file.size > maxSize) {
+            showToast('图片文件过大，最大支持2MB', 'error');
+            return;
+        }
+
+        // 显示预览
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('avatarPreview').src = e.target.result;
+            document.getElementById('avatarPreview').parentElement.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+
+        // 保存文件引用
+        this.selectedFile = file;
+    },
+
+    uploadAvatar() {
+        if (!this.selectedFile) return;
+
+        const formData = new FormData();
+        formData.append('avatar_url', '');
+        formData.append('avatar_file', this.selectedFile);
+
+        // 显示进度
+        window.uploadManager.show();
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/user/{{ user.username }}/upload-avatar', true);
+
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                const progress = (e.loaded / e.total) * 100;
+                window.uploadManager.progressBar.style.width = `${progress}%`;
+                window.uploadManager.progressText.textContent = `正在上传头像... ${Math.round(progress)}%`;
+            }
+        });
+
+        xhr.onload = () => {
+            window.uploadManager.hide();
+
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                    showToast('头像上传成功！', 'success');
+                    this.updateAvatarDisplay(response.avatar_url);
+                    this.cancelUpload();
+                } else {
+                    showToast(response.error || '头像上传失败', 'error');
+                }
+            } else {
+                showToast('上传失败，请稍后重试', 'error');
+            }
+        };
+
+        xhr.onerror = () => {
+            window.uploadManager.hide();
+            showToast('网络错误，请检查连接', 'error');
+        };
+
+        xhr.send(formData);
+    },
+
+    updateAvatarDisplay(avatarUrl) {
+        document.getElementById('currentAvatar').src = avatarUrl;
+        if (document.getElementById('removeAvatarBtn')) {
+            document.getElementById('removeAvatarBtn').style.display = 'inline-block';
+        }
+    },
+
+    removeAvatar() {
+        if (!confirm('确定要删除头像吗？')) return;
+
+        // 显示进度
+        window.uploadManager.show();
+        window.uploadManager.progressText.textContent = '正在删除头像...';
+
+        fetch('/api/user/{{ user.username }}/remove-avatar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            window.uploadManager.hide();
+
+            if (data.success) {
+                showToast('头像删除成功', 'success');
+                // 恢复默认头像
+                this.updateAvatarDisplay('/static/img/default-avatar.png');
+                if (document.getElementById('removeAvatarBtn')) {
+                    document.getElementById('removeAvatarBtn').style.display = 'none';
+                }
+            } else {
+                showToast(data.error || '头像删除失败', 'error');
+            }
+        })
+        .catch(error => {
+            window.uploadManager.hide();
+            showToast('删除失败，请稍后重试', 'error');
+        });
+    },
+
+    cancelUpload() {
+        document.getElementById('avatarUploadArea').style.display = 'none';
+        document.getElementById('avatarPreview').parentElement.style.display = 'none';
+        document.getElementById('avatarPreview').src = '';
+        this.selectedFile = null;
+    }
+};
+
+// 初始化头像上传器
+avatarUploader.init();
 </script>
 {% endblock %}

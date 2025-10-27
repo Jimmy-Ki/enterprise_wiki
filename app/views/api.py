@@ -621,21 +621,13 @@ def api_upload():
         original_filename = file.filename
         filename = secure_filename(file.filename)
 
-        # Generate UUID for storage while preserving extension
-        file_extension = os.path.splitext(filename)[1]
-        uuid_filename = f"{uuid.uuid4().hex}{file_extension}"
-
-        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], uuid_filename)
-        os.makedirs(os.path.dirname(upload_path), exist_ok=True)
-        file.save(upload_path)
-
-        # Create attachment record
+        # Create attachment record first
         page_id = request.form.get('page_id', type=int)
         attachment = Attachment(
-            filename=uuid_filename,
+            filename='',  # Will be set after upload
             original_filename=original_filename,
-            file_path=upload_path,
-            file_size=os.path.getsize(upload_path),
+            file_path='',  # Will be set after upload
+            file_size=0,  # Will be set after upload
             mime_type=file.mimetype,
             page_id=page_id,
             uploaded_by=current_user.id,
@@ -643,17 +635,46 @@ def api_upload():
         )
 
         db.session.add(attachment)
-        db.session.commit()
+        db.session.flush()  # Get the ID without committing
 
-        return jsonify({
-            'id': attachment.id,
-            'filename': uuid_filename,
-            'original_filename': original_filename,
-            'url': url_for('api.download_attachment', attachment_id=attachment.id),
-            'download_url': url_for('api.download_attachment', attachment_id=attachment.id, download=1),
-            'size': attachment.get_size_display(),
-            'mime_type': attachment.mime_type
-        }), 201
+        # Use storage service for upload
+        try:
+            from app.services.storage_service import create_storage_service
+            storage_service = create_storage_service(current_app.config['STORAGE_CONFIG'])
+
+            # Upload file to storage (local or S3)
+            upload_result = storage_service.upload_file(
+                file_data=file.stream,
+                filename=original_filename,
+                content_type=file.mimetype,
+                folder='attachments'  # Store in attachments folder
+            )
+
+            if not upload_result.get('success'):
+                db.session.rollback()
+                return api_error(f"Upload failed: {upload_result.get('message', 'Unknown error')}", 500)
+
+            # Update attachment with storage info
+            attachment.filename = upload_result.get('filename')
+            attachment.file_path = upload_result.get('relative_path')
+            attachment.file_size = upload_result.get('file_size', 0)
+
+            db.session.commit()
+
+            # Generate URLs using Attachment model
+            return jsonify({
+                'id': attachment.id,
+                'filename': upload_result.get('filename'),
+                'original_filename': upload_result.get('original_filename'),
+                'url': attachment.get_url(),
+                'download_url': f"{attachment.get_url()}?download=1",
+                'size': attachment.get_size_display(),
+                'mime_type': attachment.mime_type
+            }), 201
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Upload error: {str(e)}")
+            return api_error(f'Upload failed: {str(e)}', 500)
 
     return api_error('File type not allowed', 400)
 
@@ -666,30 +687,43 @@ def download_attachment(attachment_id):
     if not attachment.can_view(current_user):
         return api_error('Permission denied', 403)
 
+    from flask import redirect, request
     import os
-    from flask import send_file
-
-    # Convert relative path to absolute path
-    file_path = attachment.file_path
-    if not os.path.isabs(file_path):
-        # Remove leading 'app/' if present to avoid double path issue
-        if file_path.startswith('app/'):
-            file_path = file_path[4:]
-        file_path = os.path.join(current_app.root_path, file_path)
-
-    if not os.path.exists(file_path):
-        return api_error('File not found', 404)
 
     # Get download parameter
     force_download = request.args.get('download', '0') == '1'
 
     try:
-        return send_file(
-            file_path,
-            as_attachment=force_download,
-            download_name=attachment.original_filename,
-            mimetype=attachment.mime_type
-        )
+        # Check if this is S3 storage
+        if current_app.config['STORAGE_CONFIG'].get('type') == 's3':
+            # For S3, redirect to the file URL
+            file_url = attachment.get_url()
+            if force_download:
+                file_url += f"?download=1"
+            return redirect(file_url)
+        else:
+            # For local storage, use send_file
+            import os
+            from flask import send_file
+
+            # Convert relative path to absolute path
+            file_path = attachment.file_path
+            if not os.path.isabs(file_path):
+                # Remove leading 'app/' if present to avoid double path issue
+                if file_path.startswith('app/'):
+                    file_path = file_path[4:]
+                file_path = os.path.join(current_app.root_path, file_path)
+
+            if not os.path.exists(file_path):
+                return api_error('File not found', 404)
+
+            return send_file(
+                file_path,
+                as_attachment=force_download,
+                download_name=attachment.original_filename,
+                mimetype=attachment.mime_type
+            )
+
     except Exception as e:
         current_app.logger.error(f"Download error: {str(e)}")
         return api_error(f'Error downloading file: {str(e)}', 500)

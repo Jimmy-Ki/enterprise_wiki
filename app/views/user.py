@@ -495,3 +495,126 @@ def get_backup_codes():
             'success': False,
             'message': 'Failed to retrieve backup codes'
         }), 500
+
+@user.route('/<username>/upload-avatar', methods=['POST'])
+@login_required
+def upload_avatar_file(username):
+    """上传头像文件"""
+    try:
+        current_app.logger.info(f"Avatar upload request for user: {username}")
+
+        user = User.query.filter_by(username=username).first_or_404()
+        current_app.logger.info(f"Found user: {user.username} (ID: {user.id})")
+
+        # 检查权限
+        if current_user.id != user.id and not current_user.is_administrator():
+            current_app.logger.warning(f"Access denied for user {current_user.username} trying to upload avatar for {username}")
+            return jsonify({'error': 'Access denied'}), 403
+
+        # 检查是否有文件
+        if 'avatar_file' not in request.files:
+            current_app.logger.error("No file provided")
+            return jsonify({'error': 'No file provided'}), 400
+
+        file = request.files['avatar_file']
+        if file.filename == '':
+            current_app.logger.error("No file selected")
+            return jsonify({'error': 'No file selected'}), 400
+
+        # 验证文件类型
+        allowed_mimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
+        if file.mimetype not in allowed_mimes:
+            current_app.logger.error(f"Invalid file type: {file.mimetype}")
+            return jsonify({'error': 'Invalid file type. Only JPG, PNG, GIF are allowed'}), 400
+
+        # 验证文件大小（最大2MB）
+        max_size = 2 * 1024 * 1024
+        if file.content_length > max_size:
+            current_app.logger.error(f"File too large: {file.content_length} bytes")
+            return jsonify({'error': 'File too large. Maximum size is 2MB'}), 400
+
+        # 创建附件记录
+        from app.services.storage_service import create_storage_service
+
+        attachment = Attachment(
+            filename='',
+            original_filename=file.filename,
+            file_path='',
+            file_size=0,
+            mime_type=file.mimetype,
+            uploaded_by=current_user.id,
+            description=f'Avatar for {user.username}'
+        )
+
+        db.session.add(attachment)
+        db.session.flush()  # 获取ID但不提交
+
+        try:
+            # 使用存储服务上传文件
+            storage_service = create_storage_service(current_app.config['STORAGE_CONFIG'])
+
+            upload_result = storage_service.upload_file(
+                file_data=file.stream,
+                filename=f"avatar_{user.id}_{file.filename}",
+                content_type=file.mimetype,
+                folder='avatars'
+            )
+
+            if not upload_result.get('success'):
+                db.session.rollback()
+                current_app.logger.error(f"Upload failed: {upload_result.get('message')}")
+                return jsonify({'error': f"Upload failed: {upload_result.get('message', 'Unknown error')}"}), 500
+
+            # 更新附件记录
+            attachment.filename = upload_result.get('filename')
+            attachment.file_path = upload_result.get('relative_path')
+            attachment.file_size = upload_result.get('file_size', 0)
+
+            # 更新用户头像URL
+            user.avatar = upload_result.get('url')
+            db.session.commit()
+
+            current_app.logger.info(f"Avatar uploaded successfully: {user.avatar}")
+
+            return jsonify({
+                'success': True,
+                'avatar_url': user.avatar
+            })
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error during avatar upload: {str(e)}")
+            return jsonify({'error': f"Upload failed: {str(e)}"}), 500
+
+    except Exception as e:
+        current_app.logger.error(f"Error uploading avatar: {str(e)}")
+        return jsonify({'error': 'Failed to upload avatar'}), 500
+
+@user.route('/<username>/remove-avatar', methods=['POST'])
+@login_required
+def remove_avatar(username):
+    """删除头像"""
+    try:
+        current_app.logger.info(f"Avatar removal request for user: {username}")
+
+        user = User.query.filter_by(username=username).first_or_404()
+
+        # 检查权限
+        if current_user.id != user.id and not current_user.is_administrator():
+            current_app.logger.warning(f"Access denied for user {current_user.username} trying to remove avatar for {username}")
+            return jsonify({'error': 'Access denied'}), 403
+
+        # 清空头像URL（恢复默认头像）
+        user.avatar = None
+        db.session.commit()
+
+        current_app.logger.info(f"Avatar removed successfully for {user.username}")
+
+        return jsonify({
+            'success': True,
+            'message': 'Avatar removed successfully'
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error removing avatar: {str(e)}")
+        return jsonify({'error': 'Failed to remove avatar'}), 500

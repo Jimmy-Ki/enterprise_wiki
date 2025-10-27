@@ -3,6 +3,7 @@ from sqlalchemy import text
 from app import db
 import bleach
 import re
+import os
 
 class Category(db.Model):
     __tablename__ = 'categories'
@@ -351,6 +352,41 @@ class Attachment(db.Model):
             return f"{self.file_size / 1024:.1f} KB"
         else:
             return f"{self.file_size / (1024 * 1024):.1f} MB"
+
+    def get_url(self):
+        """
+        获取文件访问URL
+        支持本地存储和S3存储的URL生成
+        """
+        from flask import current_app
+
+        # 检查存储类型
+        storage_type = current_app.config['STORAGE_CONFIG'].get('type', 'local')
+
+        if storage_type == 'local':
+            # 本地存储，使用Flask的static URL
+            if self.file_path.startswith('app/static/'):
+                relative_path = self.file_path[len('app/static/'):]
+                from flask import url_for
+                return url_for('static', filename=relative_path)
+            elif self.file_path.startswith('app/'):
+                relative_path = self.file_path[4:]  # Remove 'app/' prefix
+                from flask import url_for
+                return url_for('static', filename=relative_path)
+            else:
+                # 处理纯相对路径
+                from flask import url_for
+                return url_for('static', filename=f'uploads/{self.file_path}')
+        else:
+            # S3存储，需要获取存储服务来生成URL
+            try:
+                from app.services.storage_service import create_storage_service
+                storage_service = create_storage_service(current_app.config['STORAGE_CONFIG'])
+                return storage_service.get_file_url(self.file_path)
+            except Exception as e:
+                # 如果获取存储服务失败，返回相对路径
+                current_app.logger.error(f"Error generating file URL: {e}")
+                return self.file_path
 
     def can_view(self, user):
         if self.is_public:
