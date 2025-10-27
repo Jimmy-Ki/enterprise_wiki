@@ -1,0 +1,144 @@
+<!-- 头像编辑功能 -->
+<script>
+// 简单的头像编辑功能
+function showUploadSection() {
+    document.getElementById('uploadSection').style.display = 'block';
+    document.getElementById('urlSection').style.display = 'none';
+}
+
+function showUrlSection() {
+    document.getElementById('urlSection').style.display = 'block';
+    document.getElementById('uploadSection').style.display = 'none';
+}
+
+function uploadAvatar() {
+    const fileInput = document.getElementById('avatarFileInput');
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+        showToast('请先选择图片文件', 'error');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append('avatar_url', '');
+    formData.append('avatar_file', file);
+
+    // 显示进度
+    window.uploadManager.show();
+
+    fetch('/api/user/{{ user.username }}/upload-avatar', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        window.uploadManager.hide();
+
+        if (data.success) {
+            showToast('头像上传成功！', 'success');
+            document.getElementById('currentAvatar').src = data.avatar_url;
+            closeAvatarModal();
+        } else {
+            showToast(data.error || '头像上传失败', 'error');
+        }
+    })
+    .catch(error => {
+        window.uploadManager.hide();
+        showToast('上传失败，请稍后重试', 'error');
+    });
+}
+
+function updateAvatarUrl() {
+    const urlInput = document.getElementById('avatarUrlInput');
+    const url = urlInput ? urlInput.value.trim() : '';
+
+    if (!url) {
+        showToast('请输入有效的头像URL', 'error');
+        return;
+    }
+
+    fetch('/api/user/{{ user.username }}/update-avatar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            avatar_url: url
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('头像更新成功！', 'success');
+            document.getElementById('currentAvatar').src = data.avatar_url;
+            closeAvatarModal();
+        } else {
+            showToast(data.error || '头像更新失败', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('更新失败，请稍后重试', 'error');
+    });
+}
+
+function removeAvatar() {
+    if (!confirm('确定要删除头像吗？')) return;
+
+    fetch('/api/user/{{ user.username }}/remove-avatar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('头像删除成功', 'success');
+            document.getElementById('currentAvatar').src = '/static/img/default-avatar.png';
+            closeAvatarModal();
+        } else {
+            showToast(data.error || '头像删除失败', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('删除失败，请稍后重试', 'error');
+    });
+}
+
+function closeAvatarModal() {
+    const modal = document.getElementById('avatarEditModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function cancelAvatarEdit() {
+    closeAvatarModal();
+}
+
+// 页面加载时绑定编辑按钮事件
+document.addEventListener('DOMContentLoaded', function() {
+    const editBtn = document.getElementById('editAvatarBtn');
+    if (editBtn) {
+        editBtn.addEventListener('click', function() {
+            const modal = document.getElementById('avatarEditModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                showUploadSection();
+            }
+        });
+    }
+
+    // 检查模态框是否已正确创建
+    setTimeout(function() {
+        const modal = document.getElementById('avatarEditModal');
+        if (modal) {
+            console.log('头像编辑模态框已找到');
+        } else {
+            console.log('头像编辑模态框未找到');
+        }
+    }, 100);
+});
+</script>
