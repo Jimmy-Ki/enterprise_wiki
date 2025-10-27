@@ -1,0 +1,410 @@
+<!-- File Viewer Modal -->
+<div class="modal fade" id="fileViewerModal" tabindex="-1" aria-labelledby="fileViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fileViewerModalLabel">
+                    <i class="fas fa-eye me-2"></i>
+                    <span id="fileViewerTitle">文件查看器</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Loading indicator -->
+                <div id="fileViewerLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-2 text-muted">正在加载文件...</p>
+                </div>
+
+                <!-- File content container -->
+                <div id="fileViewerContent" style="display: none;">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+
+                <!-- Error message -->
+                <div id="fileViewerError" class="alert alert-danger m-3" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="fileViewerErrorMessage">无法加载文件</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <a id="fileViewerDownloadBtn" href="#" class="btn btn-primary" download>
+                    <i class="fas fa-download me-2"></i>下载
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// File Viewer Module
+window.FileViewer = {
+    currentFile: null,
+    supportedTypes: {
+        // Images
+        'image': ['png', 'jpg', 'jpeg', 'gif', 'svg', 'bmp', 'tiff', 'webp'],
+        // Videos
+        'video': ['mp4', 'avi', 'mkv', 'mov', 'flv', 'wmv', 'ogg'],
+        // Audio
+        'audio': ['mp3', 'wav'],
+        // PDF
+        'pdf': ['pdf'],
+        // Text files
+        'text': ['txt', 'md', 'html', 'csv', 'json', 'xml'],
+        // Code files
+        'code': ['js', 'css', 'py', 'java', 'cpp', 'c', 'html', 'xml', 'json', 'yaml', 'yml', 'sql', 'sh', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'scala', 'r', 'm', 'pl', 'lua', 'ts', 'jsx', 'tsx', 'vue', 'dart'],
+        // Office documents (iframe embedded)
+        'office': ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']
+    },
+
+    init: function() {
+        this.setupEventListeners();
+    },
+
+    setupEventListeners: function() {
+        const modal = document.getElementById('fileViewerModal');
+        if (modal) {
+            modal.addEventListener('hidden.bs.modal', function() {
+                this.cleanup();
+            }.bind(this));
+        }
+    },
+
+    viewFile: function(attachmentId, filename, downloadUrl) {
+        const modal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
+        const fileExt = this.getFileExtension(filename);
+
+        this.currentFile = {
+            id: attachmentId,
+            filename: filename,
+            downloadUrl: downloadUrl,
+            extension: fileExt
+        };
+
+        // Update modal title
+        document.getElementById('fileViewerTitle').textContent = filename;
+        document.getElementById('fileViewerDownloadBtn').href = downloadUrl;
+
+        // Show loading
+        this.showLoading();
+
+        // Show modal
+        modal.show();
+
+        // Load file content based on type
+        this.loadFileContent(fileExt);
+    },
+
+    getFileExtension: function(filename) {
+        return filename.split('.').pop().toLowerCase();
+    },
+
+    getFileType: function(extension) {
+        for (const [type, extensions] of Object.entries(this.supportedTypes)) {
+            if (extensions.includes(extension)) {
+                return type;
+            }
+        }
+        return 'unknown';
+    },
+
+    showLoading: function() {
+        document.getElementById('fileViewerLoading').style.display = 'block';
+        document.getElementById('fileViewerContent').style.display = 'none';
+        document.getElementById('fileViewerError').style.display = 'none';
+    },
+
+    showError: function(message) {
+        document.getElementById('fileViewerLoading').style.display = 'none';
+        document.getElementById('fileViewerContent').style.display = 'none';
+        document.getElementById('fileViewerError').style.display = 'block';
+        document.getElementById('fileViewerErrorMessage').textContent = message;
+    },
+
+    showContent: function(content) {
+        document.getElementById('fileViewerLoading').style.display = 'none';
+        document.getElementById('fileViewerError').style.display = 'none';
+        const container = document.getElementById('fileViewerContent');
+        container.style.display = 'block';
+        container.innerHTML = content;
+    },
+
+    loadFileContent: function(extension) {
+        const fileType = this.getFileType(extension);
+
+        switch(fileType) {
+            case 'image':
+                this.loadImage();
+                break;
+            case 'video':
+                this.loadVideo();
+                break;
+            case 'audio':
+                this.loadAudio();
+                break;
+            case 'pdf':
+                this.loadPDF();
+                break;
+            case 'text':
+            case 'code':
+                this.loadTextFile(extension);
+                break;
+            case 'office':
+                this.loadOfficeDocument();
+                break;
+            default:
+                this.showError('不支持的文件类型，请下载后查看');
+        }
+    },
+
+    loadImage: function() {
+        const content = `
+            <div class="text-center p-3">
+                <img src="${this.currentFile.downloadUrl}"
+                     alt="${this.currentFile.filename}"
+                     class="img-fluid"
+                     style="max-height: 70vh; object-fit: contain;">
+            </div>
+        `;
+        this.showContent(content);
+    },
+
+    loadVideo: function() {
+        const content = `
+            <div class="d-flex justify-content-center p-3">
+                <video controls class="img-fluid" style="max-height: 70vh;">
+                    <source src="${this.currentFile.downloadUrl}" type="video/${this.currentFile.extension}">
+                    您的浏览器不支持视频播放。
+                </video>
+            </div>
+        `;
+        this.showContent(content);
+    },
+
+    loadAudio: function() {
+        const content = `
+            <div class="d-flex justify-content-center align-items-center p-5">
+                <div class="text-center">
+                    <i class="fas fa-music fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted mb-3">${this.currentFile.filename}</h5>
+                    <audio controls class="w-100" style="max-width: 500px;">
+                        <source src="${this.currentFile.downloadUrl}" type="audio/${this.currentFile.extension}">
+                        您的浏览器不支持音频播放。
+                    </audio>
+                </div>
+            </div>
+        `;
+        this.showContent(content);
+    },
+
+    loadPDF: function() {
+        const content = `
+            <div class="p-2" style="height: 70vh;">
+                <iframe src="${this.currentFile.downloadUrl}"
+                        class="w-100 h-100"
+                        style="border: none;"
+                        title="${this.currentFile.filename}">
+                    <p>您的浏览器不支持PDF预览。<a href="${this.currentFile.downloadUrl}" download>点击下载</a></p>
+                </iframe>
+            </div>
+        `;
+        this.showContent(content);
+    },
+
+    loadTextFile: function(extension) {
+        // For text and code files, we need to fetch the content
+        fetch(this.currentFile.downloadUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('无法加载文件内容');
+                }
+                return response.text();
+            })
+            .then(content => {
+                const fileType = this.getFileType(extension);
+                if (fileType === 'code') {
+                    this.showCodeFile(content, extension);
+                } else {
+                    this.showTextFile(content);
+                }
+            })
+            .catch(error => {
+                this.showError('无法加载文件内容：' + error.message);
+            });
+    },
+
+    showTextFile: function(content) {
+        const escapedContent = this.escapeHtml(content);
+        const contentHtml = `
+            <div class="p-3">
+                <pre class="bg-light p-3 rounded" style="white-space: pre-wrap; word-wrap: break-word; max-height: 60vh; overflow-y: auto;">${escapedContent}</pre>
+            </div>
+        `;
+        this.showContent(contentHtml);
+    },
+
+    showCodeFile: function(content, extension) {
+        const escapedContent = this.escapeHtml(content);
+        const language = this.getHighlightLanguage(extension);
+
+        const contentHtml = `
+            <div class="p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-secondary">${extension.toUpperCase()}</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="FileViewer.copyCode()">
+                        <i class="fas fa-copy me-1"></i>复制代码
+                    </button>
+                </div>
+                <pre><code class="language-${language}" id="codeContent">${escapedContent}</code></pre>
+            </div>
+        `;
+        this.showContent(contentHtml);
+
+        // Apply syntax highlighting if Prism is available
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    },
+
+    loadOfficeDocument: function() {
+        // For Office documents, we'll use Microsoft Office Online viewer or Google Docs viewer
+        const encodedUrl = encodeURIComponent(this.currentFile.downloadUrl);
+        const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+
+        const content = `
+            <div class="p-2" style="height: 70vh;">
+                <iframe src="${viewerUrl}"
+                        class="w-100 h-100"
+                        style="border: none;"
+                        title="${this.currentFile.filename}">
+                    <p>您的浏览器不支持Office文档预览。<a href="${this.currentFile.downloadUrl}" download>点击下载</a></p>
+                </iframe>
+            </div>
+        `;
+        this.showContent(content);
+    },
+
+    getHighlightLanguage: function(extension) {
+        const languageMap = {
+            'js': 'javascript', 'jsx': 'jsx',
+            'ts': 'typescript', 'tsx': 'tsx',
+            'py': 'python',
+            'java': 'java',
+            'cpp': 'cpp', 'c': 'c',
+            'html': 'html',
+            'css': 'css',
+            'json': 'json',
+            'xml': 'xml',
+            'yaml': 'yaml', 'yml': 'yaml',
+            'sql': 'sql',
+            'sh': 'bash',
+            'php': 'php',
+            'rb': 'ruby',
+            'go': 'go',
+            'rs': 'rust',
+            'swift': 'swift',
+            'kt': 'kotlin',
+            'scala': 'scala',
+            'r': 'r',
+            'm': 'objectivec',
+            'pl': 'perl',
+            'lua': 'lua',
+            'vue': 'vue',
+            'dart': 'dart'
+        };
+        return languageMap[extension] || 'text';
+    },
+
+    copyCode: function() {
+        const codeElement = document.getElementById('codeContent');
+        if (codeElement) {
+            navigator.clipboard.writeText(codeElement.textContent).then(() => {
+                showToast('代码已复制到剪贴板', 'success');
+            }).catch(() => {
+                showToast('复制失败，请手动选择复制', 'error');
+            });
+        }
+    },
+
+    escapeHtml: function(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
+    cleanup: function() {
+        this.currentFile = null;
+        document.getElementById('fileViewerLoading').style.display = 'none';
+        document.getElementById('fileViewerContent').style.display = 'none';
+        document.getElementById('fileViewerError').style.display = 'none';
+        document.getElementById('fileViewerContent').innerHTML = '';
+    }
+};
+
+// Initialize file viewer when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    FileViewer.init();
+});
+</script>
+
+<style>
+#fileViewerContent {
+    max-height: 70vh;
+    overflow: auto;
+}
+
+#fileViewerContent pre {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+#fileViewerContent code {
+    background: transparent !important;
+}
+
+/* Video and Audio responsive styling */
+#fileViewerContent video,
+#fileViewerContent audio {
+    max-width: 100%;
+    height: auto;
+}
+
+/* PDF iframe styling */
+#fileViewerContent iframe {
+    border-radius: 4px;
+}
+
+/* Code block styling */
+#fileViewerContent pre[class*="language-"] {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 0;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+#fileViewerContent code[class*="language-"] {
+    background: transparent;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* Image styling */
+#fileViewerContent img {
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Office document iframe styling */
+#fileViewerContent iframe[src*="officeapps.live.com"] {
+    border-radius: 4px;
+    background: white;
+}
+</style>
