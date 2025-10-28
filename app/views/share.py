@@ -24,7 +24,9 @@ def index():
                           .order_by(S3Share.created_at.desc())\
                           .paginate(page=page, per_page=per_page, error_out=False)
 
-    return render_template('share/index.html', shares=shares.items)
+    # Convert S3Share objects to dictionaries for JSON serialization
+    shares_data = [share.to_dict() for share in shares.items]
+    return render_template('share/index.html', shares=shares_data)
 
 
 @share.route('/upload', methods=['POST'])
@@ -286,4 +288,6 @@ def my_shares():
                           .order_by(S3Share.created_at.desc())\
                           .paginate(page=page, per_page=per_page, error_out=False)
 
-    return render_template('share/my_shares.html', shares=shares)
+    # Convert S3Share objects to dictionaries for JSON serialization
+    shares_data = [share.to_dict() for share in shares.items]
+    return render_template('share/my_shares.html', shares=shares_data)
