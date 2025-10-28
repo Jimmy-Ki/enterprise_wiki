@@ -1,0 +1,579 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}S3公盘 - 企业知识库{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="page-breadcrumb mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
+                    <i class="fas fa-home me-1"></i>
+                    <span>空间</span>
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <span class="breadcrumb-current">S3公盘</span>
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-top">
+        <div class="page-title-section">
+            <h1 class="page-title">
+                <i class="fas fa-cloud-upload-alt me-2"></i>S3公盘
+            </h1>
+            <div class="page-status-badges">
+                <span class="status-badge category">
+                    <i class="fas fa-share-alt me-1"></i>文件分享
+                </span>
+                <span class="status-badge published">
+                    <i class="fas fa-database me-1"></i>S3存储
+                </span>
+            </div>
+        </div>
+
+        <div class="page-actions">
+            <button class="btn-wiki primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                <i class="fas fa-cloud-upload-alt me-2"></i>上传文件
+            </button>
+            <button class="btn-wiki" onclick="refreshShareList()">
+                <i class="fas fa-sync-alt me-2"></i>刷新
+            </button>
+        </div>
+    </div>
+
+    <div class="page-meta">
+        <div class="meta-item">
+            <i class="fas fa-file me-1"></i>
+            <span>共 <strong id="totalShares">{{ shares|length }}</strong> 个分享文件</span>
+        </div>
+        <div class="meta-item">
+            <i class="fas fa-chart-line me-1"></i>
+            <span>总下载 <strong id="totalDownloads">{{ shares|sum(attribute='download_count') }}</strong> 次</span>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">
+                    <i class="fas fa-cloud-upload-alt me-2"></i>上传文件到S3公盘
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-zone" id="uploadZone">
+                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">拖放文件到此处或点击浏览</h5>
+                    <p class="text-muted">支持所有文件类型，单个文件最大100MB</p>
+                    <input type="file" id="fileInput" multiple style="display: none;">
+                    <button type="button" class="btn-wiki primary" id="browseBtn">
+                        <i class="fas fa-folder-open me-1"></i>浏览文件
+                    </button>
+                </div>
+
+                <div id="uploadProgress" style="display: none;">
+                    <h6 class="mb-3">上传进度</h6>
+                    <div id="fileList" class="file-list"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Share Details Modal -->
+<div class="modal fade" id="shareDetailsModal" tabindex="-1" aria-labelledby="shareDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareDetailsModalLabel">
+                    <i class="fas fa-share-alt me-2"></i>分享详情
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="shareDetailsContent">
+                <!-- 动态内容 -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Share List -->
+<div class="card mt-4" style="border: 1px solid var(--border-color);">
+    <div class="card-header" style="background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color);">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-share-alt me-2"></i>我的分享文件 ({{ shares|length }})
+            </h5>
+            <div class="d-flex gap-2">
+                <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="搜索文件..." style="width: 200px;">
+                <select class="form-select form-select-sm" id="sortSelect" style="width: 150px;">
+                    <option value="created_at_desc">最新上传</option>
+                    <option value="created_at_asc">最早上传</option>
+                    <option value="download_count_desc">下载最多</option>
+                    <option value="original_filename_asc">文件名 A-Z</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if shares %}
+        <div class="table-responsive">
+            <table class="table table-hover" id="sharesTable">
+                <thead>
+                    <tr>
+                        <th>文件</th>
+                        <th>大小</th>
+                        <th>分享链接</th>
+                        <th>状态</th>
+                        <th>下载次数</th>
+                        <th>上传时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for share in shares %}
+                    <tr data-share-id="{{ share.id }}">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    {% if share.file_type.startswith('image/') %}
+                                    <i class="{{ share.file_icon }} fa-2x text-primary"></i>
+                                    {% else %}
+                                    <i class="{{ share.file_icon }} fa-2x text-muted"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 text-truncate" style="max-width: 200px;" title="{{ share.original_filename }}">
+                                        {{ share.original_filename }}
+                                    </h6>
+                                    <small class="text-muted">{{ share.file_extension.upper() }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ share.file_size_display }}</td>
+                        <td>
+                            <div class="input-group input-group-sm" style="max-width: 300px;">
+                                <input type="text" class="form-control" value="{{ request.host_url }}share/{{ share.share_code }}" readonly id="shareUrl-{{ share.id }}">
+                                <button class="btn btn-outline-secondary" type="button" onclick="copyShareUrl('{{ share.id }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            {% if share.is_expired %}
+                                <span class="badge bg-danger">已过期</span>
+                            {% elif share.is_download_limit_reached %}
+                                <span class="badge bg-warning">已达限制</span>
+                            {% elif not share.is_active %}
+                                <span class="badge bg-secondary">已禁用</span>
+                            {% else %}
+                                <span class="badge bg-success">正常</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ share.download_count }}</td>
+                        <td>{{ share.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="showShareDetails({{ share.id }})" title="查看详情">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-info" onclick="downloadFile('{{ share.s3_url }}', '{{ share.original_filename }}')" title="下载">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="editShare({{ share.id }})" title="编辑">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteShare({{ share.id }})" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-share-alt fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">暂无分享文件</h5>
+            <p class="text-muted">
+                点击"上传文件"按钮开始分享您的文件
+            </p>
+            <button class="btn-wiki primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                <i class="fas fa-cloud-upload-alt me-2"></i>开始上传
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentShares = {{ shares | tojson }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeUploadZone();
+    initializeSearchAndSort();
+});
+
+function initializeUploadZone() {
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const browseBtn = document.getElementById('browseBtn');
+
+    // Browse button click
+    browseBtn.addEventListener('click', () => fileInput.click());
+
+    // Upload zone click
+    uploadZone.addEventListener('click', (e) => {
+        if (e.target !== browseBtn) {
+            fileInput.click();
+        }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+
+    // Drag and drop
+    uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+        uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+}
+
+function handleFiles(files) {
+    const fileList = document.getElementById('fileList');
+    const uploadProgress = document.getElementById('uploadProgress');
+
+    uploadProgress.style.display = 'block';
+    fileList.innerHTML = '';
+
+    Array.from(files).forEach((file, index) => {
+        if (file.size > 100 * 1024 * 1024) { // 100MB limit
+            showToast(`文件 ${file.name} 超过100MB限制`, 'error');
+            return;
+        }
+
+        const fileItem = createFileItem(file, index);
+        fileList.appendChild(fileItem);
+        uploadFile(file, index);
+    });
+}
+
+function createFileItem(file, index) {
+    const div = document.createElement('div');
+    div.className = 'file-item mb-2 p-2 border rounded';
+    div.id = `file-${index}`;
+
+    const fileIcon = getFileIcon(file.type);
+    const fileSize = formatFileSize(file.size);
+
+    div.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <i class="${fileIcon} me-2"></i>
+                <div>
+                    <div class="fw-bold">${file.name}</div>
+                    <small class="text-muted">${fileSize}</small>
+                </div>
+            </div>
+            <div class="upload-status">
+                <div class="progress" style="width: 200px;">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return div;
+}
+
+function uploadFile(file, index) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const fileItem = document.getElementById(`file-${index}`);
+    const progressBar = fileItem.querySelector('.progress-bar');
+
+    fetch('/api/s3/upload', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            progressBar.style.width = '100%';
+            progressBar.classList.add('bg-success');
+
+            setTimeout(() => {
+                fileItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <div>
+                                <div class="fw-bold">${file.name}</div>
+                                <small class="text-muted">上传成功</small>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-success" onclick="showShareDetails(${data.share_id})">
+                                查看分享
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }, 1000);
+
+            showToast(`文件 ${file.name} 上传成功`, 'success');
+        } else {
+            progressBar.classList.add('bg-danger');
+            showToast(`文件 ${file.name} 上传失败: ${data.message}`, 'error');
+        }
+    })
+    .catch(error => {
+        progressBar.classList.add('bg-danger');
+        showToast(`文件 ${file.name} 上传失败`, 'error');
+    });
+}
+
+function copyShareUrl(shareId) {
+    const input = document.getElementById(`shareUrl-${shareId}`);
+    input.select();
+    input.setSelectionRange(0, 99999);
+
+    navigator.clipboard.writeText(input.value).then(() => {
+        showToast('分享链接已复制到剪贴板', 'success');
+    }).catch(() => {
+        document.execCommand('copy');
+        showToast('分享链接已复制到剪贴板', 'success');
+    });
+}
+
+function showShareDetails(shareId) {
+    const share = currentShares.find(s => s.id === shareId);
+    if (!share) return;
+
+    const modal = new bootstrap.Modal(document.getElementById('shareDetailsModal'));
+    const content = document.getElementById('shareDetailsContent');
+
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-md-8">
+                <h6>文件信息</h6>
+                <table class="table table-sm">
+                    <tr><td>文件名</td><td>${share.original_filename}</td></tr>
+                    <tr><td>文件大小</td><td>${share.file_size_display}</td></tr>
+                    <tr><td>文件类型</td><td>${share.file_type}</td></tr>
+                    <tr><td>上传时间</td><td>${new Date(share.created_at).toLocaleString()}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-4">
+                <h6>分享链接</h6>
+                <div class="input-group input-group-sm mb-3">
+                    <input type="text" class="form-control" value="${window.location.origin}/share/${share.share_code}" readonly>
+                    <button class="btn btn-outline-secondary" onclick="copyToClipboard(this.previousElementSibling.value)">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <h6>下载统计</h6>
+                <p>下载次数: ${share.download_count}</p>
+                ${share.last_accessed_at ? `<p>最后访问: ${new Date(share.last_accessed_at).toLocaleString()}</p>` : ''}
+            </div>
+        </div>
+    `;
+
+    modal.show();
+}
+
+function deleteShare(shareId) {
+    if (confirm('确定要删除这个分享吗？此操作无法撤销。')) {
+        fetch(`/api/s3/share/${shareId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('分享已删除', 'success');
+                location.reload();
+            } else {
+                showToast('删除失败: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            showToast('删除失败', 'error');
+        });
+    }
+}
+
+function initializeSearchAndSort() {
+    const searchInput = document.getElementById('searchInput');
+    const sortSelect = document.getElementById('sortSelect');
+
+    searchInput.addEventListener('input', filterTable);
+    sortSelect.addEventListener('change', sortTable);
+}
+
+function filterTable() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#sharesTable tbody tr');
+
+    rows.forEach(row => {
+        const filename = row.querySelector('td:first-child h6').textContent.toLowerCase();
+        row.style.display = filename.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+function sortTable() {
+    const sortBy = document.getElementById('sortSelect').value;
+    const tbody = document.querySelector('#sharesTable tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    rows.sort((a, b) => {
+        const aValue = getSortValue(a, sortBy);
+        const bValue = getSortValue(b, sortBy);
+        return compareValues(aValue, bValue, sortBy);
+    });
+
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function getSortValue(row, sortBy) {
+    const shareId = parseInt(row.dataset.shareId);
+    const share = currentShares.find(s => s.id === shareId);
+
+    switch(sortBy) {
+        case 'created_at_desc':
+        case 'created_at_asc':
+            return new Date(share.created_at);
+        case 'download_count_desc':
+            return share.download_count;
+        case 'original_filename_asc':
+            return share.original_filename.toLowerCase();
+        default:
+            return 0;
+    }
+}
+
+function compareValues(a, b, sortBy) {
+    if (sortBy.includes('desc')) {
+        return b > a ? 1 : b < a ? -1 : 0;
+    } else {
+        return a > b ? 1 : a < b ? -1 : 0;
+    }
+}
+
+function refreshShareList() {
+    location.reload();
+}
+
+function downloadFile(url, filename) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('链接已复制到剪贴板', 'success');
+    });
+}
+
+function getFileIcon(fileType) {
+    if (fileType.startsWith('image/')) return 'fas fa-image text-primary';
+    if (fileType.startsWith('video/')) return 'fas fa-video text-danger';
+    if (fileType.startsWith('audio/')) return 'fas fa-music text-success';
+    if (fileType.includes('pdf')) return 'fas fa-file-pdf text-danger';
+    if (fileType.includes('word') || fileType.includes('document')) return 'fas fa-file-word text-primary';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fas fa-file-excel text-success';
+    if (fileType.includes('powerpoint') || fileType.includes('presentation')) return 'fas fa-file-powerpoint text-warning';
+    if (fileType.includes('zip') || fileType.includes('rar')) return 'fas fa-file-archive text-secondary';
+    if (fileType.includes('text')) return 'fas fa-file-alt text-info';
+    return 'fas fa-file text-muted';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+</script>
+
+<style>
+.upload-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--sidebar-bg);
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+    border-color: var(--primary-color);
+    background: #f8f9fa;
+}
+
+.file-item {
+    transition: all 0.3s ease;
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+#sharesTable {
+    font-size: 14px;
+}
+
+#sharesTable td {
+    vertical-align: middle;
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+</style>
+{% endblock %}

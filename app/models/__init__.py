@@ -7,9 +7,10 @@ from .organization import (
     Department, Project, Workspace, UserDepartment, UserProject, UserWorkspace,
     AccessLevel, OrganizationService
 )
+from .share import S3Share
 
 __all__ = ['User', 'Role', 'Permission', 'UserSession', 'Page', 'Category',
            'Attachment', 'PageVersion', 'SearchIndex', 'Watch', 'WatchNotification',
            'WatchTargetType', 'WatchEventType', 'Comment', 'CommentMention', 'CommentTargetType',
            'Department', 'Project', 'Workspace', 'UserDepartment', 'UserProject', 'UserWorkspace',
-           'AccessLevel', 'OrganizationService']
+           'AccessLevel', 'OrganizationService', 'S3Share']

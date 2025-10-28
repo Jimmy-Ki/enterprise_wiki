@@ -865,6 +865,12 @@
                                 首页
                             </a>
                         </li>
+                        <li class="tree-item">
+                            <a href="{{ url_for('share.index') }}" class="tree-link {{ 'active' if request.endpoint and 'share' in request.endpoint }}">
+                                <i class="fas fa-cloud-upload-alt tree-icon"></i>
+                                S3公盘
+                            </a>
+                        </li>
                     </ul>
                 </div>
 

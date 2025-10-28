@@ -1,0 +1,427 @@
+<!-- Enhanced Editor with S3 Upload Support -->
+<script>
+// Enhanced Editor Module
+window.EnhancedEditor = {
+    editor: null,
+    editorInstance: null,
+    uploadConfig: {
+        maxSize: 10 * 1024 * 1024, // 10MB
+        allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
+        uploadUrl: '/api/s3/image-upload'
+    },
+
+    init: function(editorId, options = {}) {
+        this.editorId = editorId;
+        this.editor = document.getElementById(editorId);
+
+        if (!this.editor) {
+            console.error('Editor element not found:', editorId);
+            return;
+        }
+
+        // Merge options
+        this.uploadConfig = { ...this.uploadConfig, ...options };
+
+        // Initialize CodeMirror
+        this.initializeCodeMirror();
+
+        // Setup event listeners
+        this.setupEventListeners();
+
+        // Add toolbar buttons
+        this.addToolbarButtons();
+
+        console.log('Enhanced editor initialized for:', editorId);
+    },
+
+    initializeCodeMirror: function() {
+        if (typeof CodeMirror !== 'undefined') {
+            this.editorInstance = CodeMirror.fromTextArea(this.editor, {
+                mode: 'markdown',
+                theme: 'default',
+                lineNumbers: true,
+                lineWrapping: true,
+                autofocus: true,
+                extraKeys: {
+                    "Ctrl-B": this.bold.bind(this),
+                    "Cmd-B": this.bold.bind(this),
+                    "Ctrl-I": this.italic.bind(this),
+                    "Cmd-I": this.italic.bind(this),
+                    "Ctrl-K": this.insertLink.bind(this),
+                    "Cmd-K": this.insertLink.bind(this),
+                    "Ctrl-Shift-K": this.insertCode.bind(this),
+                    "Cmd-Shift-K": this.insertCode.bind(this)
+                },
+                dragDrop: true,
+                paste: this.handlePaste.bind(this)
+            });
+
+            // Setup drag and drop
+            this.setupDragAndDrop();
+        }
+    },
+
+    setupEventListeners: function() {
+        if (!this.editorInstance) return;
+
+        // Update original textarea on change
+        this.editorInstance.on('change', () => {
+            this.editor.value = this.editorInstance.getValue();
+            this.triggerChange();
+        });
+
+        // Setup paste event for images
+        this.editorInstance.on('paste', this.handlePaste.bind(this));
+    },
+
+    setupDragAndDrop: function() {
+        if (!this.editorInstance) return;
+
+        const cm = this.editorInstance;
+
+        // Handle drag over
+        cm.on('dragover', (cm, event) => {
+            event.preventDefault();
+            cm.getWrapperElement().classList.add('drag-over');
+        });
+
+        // Handle drag leave
+        cm.on('dragleave', (cm, event) => {
+            event.preventDefault();
+            cm.getWrapperElement().classList.remove('drag-over');
+        });
+
+        // Handle drop
+        cm.on('drop', (cm, event) => {
+            event.preventDefault();
+            cm.getWrapperElement().classList.remove('drag-over');
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                this.handleFiles(files);
+            }
+        });
+    },
+
+    handlePaste: function(cm, event) {
+        const clipboardData = event.clipboardData || event.originalEvent.clipboardData;
+        if (!clipboardData) return;
+
+        const items = clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+
+            if (item.type.indexOf('image') !== -1) {
+                event.preventDefault();
+                const file = item.getAsFile();
+                this.uploadImage(file);
+                return;
+            }
+        }
+    },
+
+    handleFiles: function(files) {
+        Array.from(files).forEach(file => {
+            if (this.uploadConfig.allowedTypes.includes(file.type)) {
+                this.uploadImage(file);
+            } else {
+                this.showToast('只支持图片文件上传', 'error');
+            }
+        });
+    },
+
+    uploadImage: function(file) {
+        if (file.size > this.uploadConfig.maxSize) {
+            this.showToast('图片文件过大，最大支持10MB', 'error');
+            return;
+        }
+
+        // Show loading indicator
+        const loadingText = `![上传中...](${URL.createObjectURL(file)})`;
+        this.insertText(loadingText);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        fetch(this.uploadConfig.uploadUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Replace loading text with actual image markdown
+                const imageMarkdown = `![${data.original_filename}](${data.url})`;
+                this.replaceLastLine(loadingText, imageMarkdown);
+                this.showToast('图片上传成功', 'success');
+            } else {
+                this.replaceLastLine(loadingText, '');
+                this.showToast('图片上传失败: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            this.replaceLastLine(loadingText, '');
+            this.showToast('图片上传失败', 'error');
+            console.error('Upload error:', error);
+        });
+    },
+
+    insertText: function(text) {
+        if (this.editorInstance) {
+            const doc = this.editorInstance.getDoc();
+            doc.replaceSelection(text);
+        } else {
+            this.editor.value += text;
+            this.triggerChange();
+        }
+    },
+
+    replaceLastLine: function(oldText, newText) {
+        if (this.editorInstance) {
+            const doc = this.editorInstance.getDoc();
+            const content = doc.getValue();
+            const lines = content.split('\n');
+
+            // Find and replace the last occurrence
+            for (let i = lines.length - 1; i >= 0; i--) {
+                if (lines[i].includes(oldText)) {
+                    lines[i] = lines[i].replace(oldText, newText);
+                    break;
+                }
+            }
+
+            doc.setValue(lines.join('\n'));
+        } else {
+            this.editor.value = this.editor.value.replace(oldText, newText);
+            this.triggerChange();
+        }
+    },
+
+    addToolbarButtons: function() {
+        // Find the editor toolbar or create one
+        let toolbar = document.querySelector('.editor-toolbar');
+        if (!toolbar) {
+            toolbar = document.createElement('div');
+            toolbar.className = 'editor-toolbar mb-2';
+            this.editor.parentNode.insertBefore(toolbar, this.editor);
+        }
+
+        // Add image upload button
+        const imageButton = this.createToolbarButton('image', 'fas fa-image', '上传图片', () => {
+            this.triggerImageUpload();
+        });
+
+        toolbar.appendChild(imageButton);
+    },
+
+    createToolbarButton: function(command, icon, title, onClick) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-sm btn-outline-secondary me-1';
+        button.title = title;
+        button.innerHTML = `<i class="${icon}"></i>`;
+        button.onclick = onClick;
+        return button;
+    },
+
+    triggerImageUpload: function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+
+        input.onchange = (e) => {
+            this.handleFiles(e.target.files);
+        };
+
+        input.click();
+    },
+
+    // Markdown formatting functions
+    bold: function() {
+        this.wrapSelection('**', '**');
+    },
+
+    italic: function() {
+        this.wrapSelection('*', '*');
+    },
+
+    insertLink: function() {
+        const url = prompt('请输入链接地址:');
+        if (url) {
+            this.wrapSelection('[', `](${url})`);
+        }
+    },
+
+    insertCode: function() {
+        this.wrapSelection('`', '`');
+    },
+
+    wrapSelection: function(before, after) {
+        if (this.editorInstance) {
+            const doc = this.editorInstance.getDoc();
+            const selection = doc.getSelection();
+            if (selection) {
+                doc.replaceSelection(before + selection + after);
+            } else {
+                const cursor = doc.getCursor();
+                doc.replaceRange(before + after, cursor);
+                doc.setCursor(cursor.line, cursor.ch + before.length);
+            }
+        } else {
+            const start = this.editor.selectionStart;
+            const end = this.editor.selectionEnd;
+            const text = this.editor.value;
+            const selectedText = text.substring(start, end);
+
+            this.editor.value = text.substring(0, start) + before + selectedText + after + text.substring(end);
+            this.editor.focus();
+            this.editor.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+            this.triggerChange();
+        }
+    },
+
+    triggerChange: function() {
+        // Trigger change event for any listeners
+        const event = new Event('change', { bubbles: true });
+        this.editor.dispatchEvent(event);
+    },
+
+    showToast: function(message, type = 'info') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+        } else {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+    },
+
+    // Public API
+    getValue: function() {
+        return this.editorInstance ? this.editorInstance.getValue() : this.editor.value;
+    },
+
+    setValue: function(value) {
+        if (this.editorInstance) {
+            this.editorInstance.setValue(value);
+        } else {
+            this.editor.value = value;
+        }
+    },
+
+    focus: function() {
+        if (this.editorInstance) {
+            this.editorInstance.focus();
+        } else {
+            this.editor.focus();
+        }
+    }
+};
+
+// Auto-initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Look for editors with class 'enhanced-editor'
+    const editors = document.querySelectorAll('.enhanced-editor');
+    editors.forEach(editor => {
+        EnhancedEditor.init(editor.id);
+    });
+
+    // Also initialize content textarea if it exists
+    const contentTextarea = document.getElementById('content');
+    if (contentTextarea && !contentTextarea.classList.contains('enhanced-editor')) {
+        EnhancedEditor.init('content');
+    }
+});
+</script>
+
+<style>
+/* Enhanced Editor Styles */
+.editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color, #dfe1e6);
+    margin-bottom: 0;
+}
+
+.editor-toolbar .btn {
+    border-radius: 4px;
+    font-size: 14px;
+    padding: 6px 10px;
+}
+
+.editor-toolbar .btn:hover {
+    background-color: var(--sidebar-hover, #ebedf0);
+}
+
+.CodeMirror {
+    border: 1px solid var(--border-color, #dfe1e6);
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.CodeMirror.drag-over {
+    border-color: var(--primary-color, #0c66e4);
+    background-color: rgba(12, 102, 228, 0.05);
+}
+
+.CodeMirror-selected {
+    background-color: rgba(12, 102, 228, 0.2);
+}
+
+/* Loading animation for image uploads */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.upload-loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Image preview in editor */
+.editor-preview img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 10px 0;
+}
+
+/* Drag and drop overlay */
+.drag-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(12, 102, 228, 0.1);
+    border: 2px dashed var(--primary-color, #0c66e4);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--primary-color, #0c66e4);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.drag-overlay.show {
+    opacity: 1;
+}
+
+.drag-overlay i {
+    margin-right: 10px;
+    font-size: 24px;
+}
+</style>

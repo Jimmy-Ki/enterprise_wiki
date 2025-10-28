@@ -1,0 +1,241 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}{{ share.original_filename }} - 文件分享{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-share-alt me-2"></i>文件分享
+                        </h5>
+                        <span class="badge bg-light text-dark">S3公盘</span>
+                    </div>
+                </div>
+                <div class="card-body text-center">
+                    <!-- 文件图标和名称 -->
+                    <div class="mb-4">
+                        <div class="mb-3">
+                            {% if share.file_type.startswith('image/') %}
+                            <i class="{{ share.file_icon }} fa-5x text-primary"></i>
+                            {% else %}
+                            <i class="{{ share.file_icon }} fa-5x text-muted"></i>
+                            {% endif %}
+                        </div>
+                        <h4 class="text-truncate" title="{{ share.original_filename }}">{{ share.original_filename }}</h4>
+                        <p class="text-muted">
+                            文件大小: {{ share.file_size_display }} |
+                            上传时间: {{ share.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </p>
+                    </div>
+
+                    <!-- 下载按钮 -->
+                    <div class="mb-4">
+                        <a href="{{ share.s3_url }}"
+                           download="{{ share.original_filename }}"
+                           class="btn btn-lg btn-success"
+                           onclick="trackDownload()">
+                            <i class="fas fa-download me-2"></i>下载文件
+                        </a>
+                    </div>
+
+                    <!-- 分享链接复制 -->
+                    <div class="mb-4">
+                        <div class="input-group mb-3">
+                            <input type="text"
+                                   class="form-control"
+                                   value="{{ request.host_url }}share/{{ share.share_code }}"
+                                   readonly
+                                   id="shareUrl">
+                            <button class="btn btn-outline-secondary"
+                                    type="button"
+                                    onclick="copyShareUrl()">
+                                <i class="fas fa-copy me-1"></i>复制链接
+                            </button>
+                        </div>
+                        <small class="text-muted">分享此链接给他人下载文件</small>
+                    </div>
+
+                    <!-- 文件预览 -->
+                    {% if share.file_type.startswith('image/') %}
+                    <div class="mb-4">
+                        <img src="{{ share.s3_url }}"
+                             alt="{{ share.original_filename }}"
+                             class="img-fluid rounded shadow"
+                             style="max-height: 400px; object-fit: contain;">
+                    </div>
+                    {% endif %}
+
+                    <!-- 分享信息 -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-info-circle me-2"></i>分享信息
+                                    </h6>
+                                    <div class="small">
+                                        <div class="mb-2">
+                                            <strong>分享代码:</strong> {{ share.share_code }}
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>状态:</strong>
+                                            {% if share.is_expired %}
+                                                <span class="badge bg-danger">已过期</span>
+                                            {% elif share.is_download_limit_reached %}
+                                                <span class="badge bg-warning">已达限制</span>
+                                            {% else %}
+                                                <span class="badge bg-success">正常</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if share.expires_at %}
+                                        <div class="mb-2">
+                                            <strong>过期时间:</strong> {{ share.expires_at.strftime('%Y-%m-%d %H:%M') }}
+                                        </div>
+                                        {% endif %}
+                                        {% if share.max_downloads %}
+                                        <div class="mb-2">
+                                            <strong>下载限制:</strong> {{ share.download_count }}/{{ share.max_downloads }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-chart-line me-2"></i>统计信息
+                                    </h6>
+                                    <div class="small">
+                                        <div class="mb-2">
+                                            <strong>下载次数:</strong> {{ share.download_count }}
+                                        </div>
+                                        {% if share.last_accessed_at %}
+                                        <div class="mb-2">
+                                            <strong>最后访问:</strong> {{ share.last_accessed_at.strftime('%Y-%m-%d %H:%M') }}
+                                        </div>
+                                        {% endif %}
+                                        <div class="mb-2">
+                                            <strong>文件类型:</strong> {{ share.file_type }}
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>上传者:</strong> {{ share.uploader.name if share.uploader else '匿名' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 返回链接 -->
+            <div class="text-center mt-3">
+                <a href="{{ url_for('share.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>返回S3公盘
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyShareUrl() {
+    const input = document.getElementById('shareUrl');
+    input.select();
+    input.setSelectionRange(0, 99999);
+
+    navigator.clipboard.writeText(input.value).then(() => {
+        showToast('分享链接已复制到剪贴板', 'success');
+    }).catch(() => {
+        document.execCommand('copy');
+        showToast('分享链接已复制到剪贴板', 'success');
+    });
+}
+
+function trackDownload() {
+    // 下载计数在后端自动增加
+    console.log('File download tracked');
+}
+
+function showToast(message, type = 'info') {
+    // 创建toast提示
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'primary'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+
+    // 创建容器（如果不存在）
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+
+    // 添加toast
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+
+    // 自动移除
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+</script>
+
+<style>
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+}
+
+.btn-lg {
+    padding: 12px 30px;
+    font-size: 18px;
+}
+
+.input-group {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-control {
+    border-radius: 8px 0 0 8px;
+}
+
+.btn-outline-secondary {
+    border-radius: 0 8px 8px 0;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.text-truncate {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+</style>
+{% endblock %}
