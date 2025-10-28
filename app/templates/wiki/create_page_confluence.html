@@ -137,7 +137,7 @@
                         </div>
                         <div class="editor-content">
                             <div class="editor-pane">
-                                {{ form.content(class="editor-input", id="contentInput", rows=20, placeholder="Start writing your page content in Markdown...") }}
+                                {{ form.content(class="editor-input enhanced-editor", id="contentInput", rows=20, placeholder="Start writing your page content in Markdown...") }}
                             </div>
                             <div class="editor-pane editor-preview" id="previewPane">
                                 <div class="preview-content" id="previewContent">
@@ -868,4 +868,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- Enhanced Editor Component -->
+{% include 'components/enhanced_editor.html' %}
 {% endblock %}

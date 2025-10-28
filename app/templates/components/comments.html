@@ -79,7 +79,7 @@
                     </div>
 
                     <!-- 富文本编辑器 -->
-                    <div class="comment-editor" id="main-comment-editor" contenteditable="true"
+                    <div class="comment-editor enhanced-editor" id="main-comment-editor" contenteditable="true"
                          data-placeholder="分享您的想法...使用@username提及用户">
                     </div>
 
@@ -232,4 +232,54 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+</script>
+
+<!-- Enhanced Editor Component for Comments -->
+{% include 'components/enhanced_editor.html' %}
+
+<script>
+// 为评论编辑器添加特殊的图片上传处理
+document.addEventListener('DOMContentLoaded', function() {
+    const commentEditor = document.getElementById('main-comment-editor');
+    if (commentEditor) {
+        // 添加图片粘贴功能到评论编辑器
+        commentEditor.addEventListener('paste', function(e) {
+            const clipboardData = e.clipboardData || e.originalEvent.clipboardData;
+            if (!clipboardData) return;
+
+            const items = clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    EnhancedEditor.uploadImage(file);
+                    return;
+                }
+            }
+        });
+
+        // 添加拖拽功能到评论编辑器
+        commentEditor.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            commentEditor.classList.add('drag-over');
+        });
+
+        commentEditor.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            commentEditor.classList.remove('drag-over');
+        });
+
+        commentEditor.addEventListener('drop', function(e) {
+            e.preventDefault();
+            commentEditor.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            Array.from(files).forEach(file => {
+                if (EnhancedEditor.uploadConfig.allowedTypes.includes(file.type)) {
+                    EnhancedEditor.uploadImage(file);
+                }
+            });
+        });
+    }
+});
 </script>

@@ -324,7 +324,7 @@ function uploadFile(file, index) {
     const fileItem = document.getElementById(`file-${index}`);
     const progressBar = fileItem.querySelector('.progress-bar');
 
-    fetch('/api/s3/upload', {
+    fetch('/share/api/s3/upload', {
         method: 'POST',
         body: formData,
         headers: {
