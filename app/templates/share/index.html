@@ -186,7 +186,7 @@
                             {% endif %}
                         </td>
                         <td>{{ share.download_count }}</td>
-                        <td>{{ share.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ share.created_at if share.created_at is string else (share.created_at.strftime('%Y-%m-%d %H:%M') if share.created_at else '') }}</td>
                         <td>
                             <div class="btn-group btn-group-sm">
                                 <button class="btn btn-outline-primary" onclick="showShareDetails({{ share.id }})" title="查看详情">
@@ -626,14 +626,36 @@ function addShareToTable(share) {
     }
 
     function formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleString('zh-CN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        let date;
+        // Handle different date string formats
+        if (typeof dateString === 'string') {
+            // Try to parse ISO string first
+            date = new Date(dateString);
+        } else if (dateString instanceof Date) {
+            date = dateString;
+        } else {
+            // Fallback to current date
+            date = new Date();
+        }
+
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            // Invalid date, return current time
+            date = new Date();
+        }
+
+        try {
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            // Fallback to simple date format
+            return date.toISOString().split('T')[0];
+        }
     }
 
     const row = document.createElement('tr');

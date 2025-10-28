@@ -504,12 +504,24 @@ def api_patch_page(page_id):
     # Render content first
     import markdown
     import bleach
+    import re
     if page.content:
         html = markdown.markdown(page.content, extensions=['codehilite', 'tables', 'toc'])
         allowed_tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em',
                        'u', 'ol', 'ul', 'li', 'code', 'pre', 'blockquote', 'a',
                        'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td']
-        allowed_attrs = {'a': ['href', 'title'], 'img': ['src', 'alt', 'title', 'width', 'height']}
+        allowed_attrs = {'a': ['href', 'title'], 'img': ['src', 'alt', 'title', 'class']}
+
+        # Add responsive class to images
+        def add_img_class(match):
+            img_tag = match.group(0)
+            if 'class=' in img_tag:
+                img_tag = re.sub(r'class="([^"]*)"', r'class="\1 img-responsive"', img_tag)
+            else:
+                img_tag = img_tag.replace('<img', '<img class="img-responsive"')
+            return img_tag
+
+        html = re.sub(r'<img[^>]*>', add_img_class, html)
         page.content_html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs)
 
     # 先提交页面更改到数据库，确保数据完全保存

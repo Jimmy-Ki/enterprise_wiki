@@ -741,6 +741,75 @@
                 transform: translateY(0);
             }
         }
+
+        /* Responsive Images */
+        .img-responsive {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 1rem 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Image container for better layout */
+        .content-display img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 1rem auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Make images clickable for full screen view */
+        .content-display img {
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .content-display img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Image viewer modal */
+        .image-viewer-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            cursor: pointer;
+        }
+
+        .image-viewer-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .image-viewer-modal .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .image-viewer-modal .close-btn:hover {
+            opacity: 0.7;
+        }
     </style>
     {% block styles %}{% endblock %}
 </head>
@@ -1468,5 +1537,88 @@
     <!-- 上传管理器组件 -->
     {% include 'components/upload_manager.html' %}
     {% include 'components/upload_utils.html' %}
-</body>
+<!-- Image Viewer Modal -->
+  <div id="imageViewerModal" class="image-viewer-modal">
+      <span class="close-btn">&times;</span>
+      <img id="imageViewerImg" src="" alt="">
+  </div>
+
+  <script>
+  // Image viewer functionality
+  document.addEventListener('DOMContentLoaded', function() {
+      const imageViewerModal = document.getElementById('imageViewerModal');
+      const imageViewerImg = document.getElementById('imageViewerImg');
+      const closeBtn = imageViewerModal?.querySelector('.close-btn');
+
+      // Add click event to all images in content display
+      function setupImageViewer() {
+          const contentDisplay = document.querySelector('.content-display');
+          if (contentDisplay) {
+              const images = contentDisplay.querySelectorAll('img');
+              images.forEach(img => {
+                  img.addEventListener('click', function() {
+                      openImageViewer(this.src);
+                  });
+              });
+          }
+      }
+
+      function openImageViewer(src) {
+          if (imageViewerImg && imageViewerModal) {
+              imageViewerImg.src = src;
+              imageViewerModal.style.display = 'flex';
+              document.body.style.overflow = 'hidden'; // Prevent background scrolling
+          }
+      }
+
+      function closeImageViewer() {
+          if (imageViewerModal) {
+              imageViewerModal.style.display = 'none';
+              document.body.style.overflow = ''; // Restore scrolling
+          }
+      }
+
+      // Close on click outside image
+      if (imageViewerModal) {
+          imageViewerModal.addEventListener('click', function(e) {
+              if (e.target === imageViewerModal) {
+                  closeImageViewer();
+              }
+          });
+      }
+
+      // Close on X button click
+      if (closeBtn) {
+          closeBtn.addEventListener('click', closeImageViewer);
+      }
+
+      // Close on Escape key
+      document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && imageViewerModal?.style.display === 'flex') {
+              closeImageViewer();
+          }
+      });
+
+      // Setup image viewer initially
+      setupImageViewer();
+
+      // Re-setup image viewer after content changes (for AJAX loaded content)
+      const observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+              if (mutation.type === 'childList') {
+                  setupImageViewer();
+              }
+          });
+      });
+
+      const contentDisplay = document.querySelector('.content-display');
+      if (contentDisplay) {
+          observer.observe(contentDisplay, {
+              childList: true,
+              subtree: true
+          });
+      }
+  });
+  </script>
+  </body>
 </html>

@@ -28,7 +28,7 @@
                         <h4 class="text-truncate" title="{{ share.original_filename }}">{{ share.original_filename }}</h4>
                         <p class="text-muted">
                             文件大小: {{ share.file_size_display }} |
-                            上传时间: {{ share.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            上传时间: {{ share.created_at if share.created_at is string else (share.created_at.strftime('%Y-%m-%d %H:%M') if share.created_at else '') }}
                         </p>
                     </div>
 
@@ -93,7 +93,7 @@
                                         </div>
                                         {% if share.expires_at %}
                                         <div class="mb-2">
-                                            <strong>过期时间:</strong> {{ share.expires_at.strftime('%Y-%m-%d %H:%M') }}
+                                            <strong>过期时间:</strong> {{ share.expires_at if share.expires_at is string else (share.expires_at.strftime('%Y-%m-%d %H:%M') if share.expires_at else '') }}
                                         </div>
                                         {% endif %}
                                         {% if share.max_downloads %}
@@ -117,7 +117,7 @@
                                         </div>
                                         {% if share.last_accessed_at %}
                                         <div class="mb-2">
-                                            <strong>最后访问:</strong> {{ share.last_accessed_at.strftime('%Y-%m-%d %H:%M') }}
+                                            <strong>最后访问:</strong> {{ share.last_accessed_at if share.last_accessed_at is string else (share.last_accessed_at.strftime('%Y-%m-%d %H:%M') if share.last_accessed_at else '') }}
                                         </div>
                                         {% endif %}
                                         <div class="mb-2">

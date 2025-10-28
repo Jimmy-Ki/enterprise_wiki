@@ -122,9 +122,27 @@ class Page(db.Model):
         allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code',
                         'em', 'i', 'li', 'ol', 'pre', 'strong', 'ul',
                         'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br',
-                        'div', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td']
+                        'div', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+                        'img']  # Add img tag for image support
         allowed_attrs = {'a': ['href', 'title'], 'abbr': ['title'], 'acronym': ['title'],
-                        'pre': ['class'], 'code': ['class'], 'div': ['class']}
+                        'pre': ['class'], 'code': ['class'], 'div': ['class'],
+                        'img': ['src', 'alt', 'title', 'class']}  # Add class for styling
+
+        # Add responsive class to images and make them clickable
+        import re
+        # Find all img tags and add responsive class
+        def add_img_class(match):
+            img_tag = match.group(0)
+            # Check if already has class attribute
+            if 'class=' in img_tag:
+                # Add to existing class
+                img_tag = re.sub(r'class="([^"]*)"', r'class="\1 img-responsive"', img_tag)
+            else:
+                # Add new class attribute
+                img_tag = img_tag.replace('<img', '<img class="img-responsive"')
+            return img_tag
+
+        html = re.sub(r'<img[^>]*>', add_img_class, html)
 
         # Clean HTML and make links clickable
         html = bleach.linkify(bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs, strip=True))

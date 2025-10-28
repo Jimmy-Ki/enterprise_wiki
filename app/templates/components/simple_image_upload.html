@@ -17,22 +17,32 @@ window.SimpleImageUpload = {
         // Setup paste events for textareas
         document.addEventListener('paste', this.handlePaste.bind(this));
 
-        // Setup drag and drop for textareas
-        const textareas = document.querySelectorAll('textarea');
+        // Setup drag and drop for textareas (excluding those handled by enhanced_editor)
+        // contentInput and markdownInput are handled by simple_image_upload (custom editors)
+        const textareas = document.querySelectorAll('textarea:not([id="content"])');
         textareas.forEach(textarea => {
             this.setupDragAndDrop(textarea);
         });
 
-        // Setup contenteditable divs
-        const editableDivs = document.querySelectorAll('[contenteditable="true"]');
+        // Setup contenteditable divs (exclude comment editors)
+        const editableDivs = document.querySelectorAll('[contenteditable="true"]:not(.comment-editor):not(#main-comment-editor)');
         editableDivs.forEach(div => {
             this.setupDragAndDrop(div);
         });
+
+        // Note: CodeMirror editors are handled by enhanced_editor.html component
+        // We don't setup CodeMirror here to avoid conflicts
     },
 
     handlePaste: function(e) {
         const target = e.target;
-        if (target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        // Skip CodeMirror editors (handled by enhanced_editor)
+        if (target.closest('.CodeMirror')) {
+            return;
+        }
+
+        if ((target.tagName === 'TEXTAREA' && target.id !== 'content') ||
+            (target.contentEditable === 'true' && !target.classList.contains('comment-editor') && target.id !== 'main-comment-editor')) {
             const clipboardData = e.clipboardData || e.originalEvent.clipboardData;
             if (!clipboardData) return;
 
@@ -50,7 +60,11 @@ window.SimpleImageUpload = {
     },
 
     setupDragAndDrop: function(element) {
-        const element = element;
+        // Skip CodeMirror editors and enhanced_editor textareas
+        if (element.closest('.CodeMirror') ||
+            (element.tagName === 'TEXTAREA' && element.id === 'content')) {
+            return;
+        }
 
         element.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -200,7 +214,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <style>
 /* Drag and drop styles */
 textarea.drag-over,
-[contenteditable="true"].drag-over {
+[contenteditable="true"].drag-over,
+.CodeMirror.drag-over {
     border: 2px dashed var(--primary-color, #0c66e4) !important;
     background-color: rgba(12, 102, 228, 0.05) !important;
 }

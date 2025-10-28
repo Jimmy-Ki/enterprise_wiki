@@ -107,7 +107,7 @@ def upload_file():
         return jsonify({'success': False, 'message': f'上传失败: {str(e)}'})
 
 
-@share.route('/share/<share_code>')
+@share.route('/<share_code>')
 def view_share(share_code):
     """查看分享页面"""
     share = S3Share.find_by_share_code(share_code)

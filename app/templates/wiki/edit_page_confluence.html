@@ -3,28 +3,124 @@
 {% block title %}{{ page.title }} - 编辑 - Enterprise Wiki{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div class="page-header-content">
-        <div class="page-title-section">
-            <h1 class="page-title">
-                <i class="fas fa-edit me-2"></i>{{ page.title }}
-            </h1>
-            <p class="page-breadcrumb">
+<!-- Breadcrumb -->
+<div class="page-breadcrumb mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
                 <a href="{{ url_for('wiki.index') }}" class="breadcrumb-link">
-                    <i class="fas fa-home me-1"></i>首页
+                    <i class="fas fa-home me-1"></i>
+                    <span>空间</span>
                 </a>
-                <span class="breadcrumb-separator">/</span>
+            </li>
+            {% if page.category %}
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('wiki.category_view', category_id=page.category.id) }}" class="breadcrumb-link">
+                    <i class="fas fa-folder me-1"></i>
+                    <span>{{ page.category.name }}</span>
+                </a>
+            </li>
+            {% endif %}
+            <li class="breadcrumb-item">
                 <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="breadcrumb-link">
                     {{ page.title }}
                 </a>
-                <span class="breadcrumb-separator">/</span>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
                 <span class="breadcrumb-current">编辑</span>
-            </p>
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-top">
+        <div class="page-title-section">
+            <h1 class="page-title" id="pageTitle">{{ page.title }}</h1>
+            <div class="page-status-badges">
+                {% if page.is_published %}
+                <span class="status-badge published">已发布</span>
+                {% else %}
+                <span class="status-badge draft">草稿</span>
+                {% endif %}
+                {% if page.is_public %}
+                <span class="status-badge public">公开</span>
+                {% else %}
+                <span class="status-badge private">私有</span>
+                {% endif %}
+                {% if page.category %}
+                <span class="status-badge category">
+                    <i class="fas fa-folder me-1"></i>{{ page.category.name }}
+                </span>
+                {% endif %}
+            </div>
         </div>
+
         <div class="page-actions">
             <a href="{{ url_for('wiki.view_page', slug=page.slug) }}" class="btn-wiki">
-                <i class="fas fa-times me-2"></i>取消
+                <i class="fas fa-arrow-left me-2"></i>返回
             </a>
+
+            {% if current_user.is_authenticated %}
+            <button class="btn-wiki watch-btn"
+                    data-target-type="page"
+                    data-target-id="{{ page.id }}"
+                    title="关注此页面">
+                <i class="fas fa-eye me-2"></i>关注
+            </button>
+            {% endif %}
+
+            <button class="btn-wiki" onclick="window.location.href='{{ url_for('wiki.page_history', page_id=page.id) }}'" title="查看历史">
+                <i class="fas fa-history me-2"></i>历史
+            </button>
+
+            <button class="btn-wiki" onclick="copyToClipboard(window.location.href)" title="复制链接">
+                <i class="fas fa-link me-2"></i>复制链接
+            </button>
+
+            <button class="btn-wiki" onclick="exportPage()" title="导出页面">
+                <i class="fas fa-download me-2"></i>导出
+            </button>
+
+            <button class="btn-wiki" onclick="printPage()" title="打印页面">
+                <i class="fas fa-print me-2"></i>打印
+            </button>
+
+            <button type="submit" form="editPageForm" class="btn-wiki primary">
+                <i class="fas fa-save me-2"></i>保存
+            </button>
+
+            {% if current_user.is_authenticated and current_user.is_administrator() %}
+            <button class="btn-wiki danger" onclick="deletePage({{ page.id }})" title="删除页面">
+                <i class="fas fa-trash me-2"></i>删除
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="page-meta">
+        <div class="meta-item">
+            <i class="fas fa-user me-1"></i>
+            <span>创建者 <strong>{{ page.author.username if page.author else '未知' }}</strong></span>
+            <span class="meta-date">{{ page.created_at.strftime('%B %d, %Y') if page.created_at else '' }}</span>
+        </div>
+        {% if page.last_editor and page.last_editor.id != page.author.id %}
+        <div class="meta-item">
+            <i class="fas fa-edit me-1"></i>
+            <span>最后编辑者 <strong>{{ page.last_editor.username }}</strong></span>
+            <span class="meta-date">{{ page.updated_at.strftime('%B %d, %Y at %I:%M %p') if page.updated_at else '' }}</span>
+        </div>
+        {% elif page.updated_at != page.created_at %}
+        <div class="meta-item">
+            <i class="fas fa-edit me-1"></i>
+            <span>最后编辑</span>
+            <span class="meta-date">{{ page.updated_at.strftime('%B %d, %Y at %I:%M %p') if page.updated_at else '' }}</span>
+        </div>
+        {% endif %}
+        <div class="meta-item">
+            <i class="fas fa-eye me-1"></i>
+            <span>{{ page.view_count }} 次查看</span>
         </div>
     </div>
 </div>
@@ -909,6 +1005,153 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<style>
+/* Page Header Styles - Consistent with page_confluence.html */
+.page-status-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.published {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-badge.draft {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-badge.public {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.status-badge.private {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-badge.category {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+}
+
+.status-badge.editing {
+    background-color: #cce5ff;
+    color: #004085;
+    border: 1px solid #b3d7ff;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+    }
+}
+
+.page-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color, #e9ecef);
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary, #6b778c);
+}
+
+.meta-item i {
+    color: var(--text-muted, #8992a4);
+}
+
+.meta-item strong {
+    color: var(--text-primary, #172b4d);
+    font-weight: 600;
+}
+
+.meta-date {
+    color: var(--text-muted, #8992a4);
+    font-size: 13px;
+}
+</style>
+
 <!-- Enhanced Editor Component -->
 {% include 'components/enhanced_editor.html' %}
+
+<!-- Page Functions -->
+<script>
+// Copy to clipboard function
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('链接已复制到剪贴板', 'success');
+    }).catch(err => {
+        console.error('复制失败:', err);
+        showToast('复制失败', 'error');
+    });
+}
+
+// Export page function
+function exportPage() {
+    showToast('导出功能暂不可用', 'info');
+}
+
+// Print page function
+function printPage() {
+    window.print();
+}
+
+// Delete page function
+function deletePage(pageId) {
+    if (confirm('确定要删除此页面吗？此操作不可恢复。')) {
+        showToast('删除功能暂不可用', 'info');
+    }
+}
+
+// Toast notification
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 5000);
+}
+</script>
 {% endblock %}

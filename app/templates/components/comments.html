@@ -234,52 +234,11 @@ style.textContent = `
 document.head.appendChild(style);
 </script>
 
-<!-- Enhanced Editor Component for Comments -->
-{% include 'components/enhanced_editor.html' %}
-
+<!-- Comment Editor Scripts (Original Style, No Image Upload) -->
 <script>
-// 为评论编辑器添加特殊的图片上传处理
+// Original comment editor functionality without image upload
 document.addEventListener('DOMContentLoaded', function() {
-    const commentEditor = document.getElementById('main-comment-editor');
-    if (commentEditor) {
-        // 添加图片粘贴功能到评论编辑器
-        commentEditor.addEventListener('paste', function(e) {
-            const clipboardData = e.clipboardData || e.originalEvent.clipboardData;
-            if (!clipboardData) return;
-
-            const items = clipboardData.items;
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                if (item.type.indexOf('image') !== -1) {
-                    e.preventDefault();
-                    const file = item.getAsFile();
-                    EnhancedEditor.uploadImage(file);
-                    return;
-                }
-            }
-        });
-
-        // 添加拖拽功能到评论编辑器
-        commentEditor.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            commentEditor.classList.add('drag-over');
-        });
-
-        commentEditor.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            commentEditor.classList.remove('drag-over');
-        });
-
-        commentEditor.addEventListener('drop', function(e) {
-            e.preventDefault();
-            commentEditor.classList.remove('drag-over');
-            const files = e.dataTransfer.files;
-            Array.from(files).forEach(file => {
-                if (EnhancedEditor.uploadConfig.allowedTypes.includes(file.type)) {
-                    EnhancedEditor.uploadImage(file);
-                }
-            });
-        });
-    }
+    // Basic comment editor functionality can be added here if needed
+    console.log('Comment editor initialized');
 });
 </script>

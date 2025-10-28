@@ -331,11 +331,15 @@ document.addEventListener('DOMContentLoaded', function() {
         EnhancedEditor.init(editor.id);
     });
 
-    // Also initialize content textarea if it exists
-    const contentTextarea = document.getElementById('content');
-    if (contentTextarea && !contentTextarea.classList.contains('enhanced-editor')) {
-        EnhancedEditor.init('content');
-    }
+    // Only initialize specific content textareas
+    // Skip contentInput and markdownInput to avoid conflicts with custom editors
+    const contentIds = ['content'];  // Only initialize generic content textareas
+    contentIds.forEach(id => {
+        const textarea = document.getElementById(id);
+        if (textarea && !textarea.classList.contains('enhanced-editor')) {
+            EnhancedEditor.init(id);
+        }
+    });
 });
 </script>
 

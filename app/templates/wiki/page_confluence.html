@@ -138,59 +138,56 @@
 
 <!-- Content Editor (Hidden by default) -->
 <div id="contentEditor" class="content-editor" style="display: none;">
-    <div class="editor-toolbar">
-        <div class="toolbar-group">
-            <button class="toolbar-btn" onclick="formatText('bold')" title="粗体 (Ctrl+B)">
-                <i class="fas fa-bold"></i>
-            </button>
-            <button class="toolbar-btn" onclick="formatText('italic')" title="斜体 (Ctrl+I)">
-                <i class="fas fa-italic"></i>
-            </button>
-            <button class="toolbar-btn" onclick="formatText('heading')" title="标题">
-                <i class="fas fa-heading"></i>
-            </button>
+    <div class="editor-container" id="markdownEditor">
+        <div class="editor-toolbar">
+            <div class="btn-group">
+                <button type="button" class="btn-wiki small" data-command="bold" title="粗体 (Ctrl+B)">
+                    <i class="fas fa-bold"></i>
+                </button>
+                <button type="button" class="btn-wiki small" data-command="italic" title="斜体 (Ctrl+I)">
+                    <i class="fas fa-italic"></i>
+                </button>
+                <button type="button" class="btn-wiki small" data-command="heading" title="标题">
+                    <i class="fas fa-heading"></i>
+                </button>
+                <div class="divider"></div>
+                <button type="button" class="btn-wiki small" data-command="link" title="链接">
+                    <i class="fas fa-link"></i>
+                </button>
+                <button type="button" class="btn-wiki small" data-command="image" title="图片">
+                    <i class="fas fa-image"></i>
+                </button>
+                <button type="button" class="btn-wiki small" data-command="code" title="代码">
+                    <i class="fas fa-code"></i>
+                </button>
+                <div class="divider"></div>
+                <button type="button" class="btn-wiki small" data-command="ul" title="无序列表">
+                    <i class="fas fa-list-ul"></i>
+                </button>
+                <button type="button" class="btn-wiki small" data-command="ol" title="有序列表">
+                    <i class="fas fa-list-ol"></i>
+                </button>
+                <button type="button" class="btn-wiki small" data-command="quote" title="引用">
+                    <i class="fas fa-quote-left"></i>
+                </button>
+                <div class="divider"></div>
+                <button type="button" class="btn-wiki small" data-command="preview" title="切换预览">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button type="button" class="btn-wiki small" data-command="fullscreen" title="全屏">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
         </div>
-
-        <div class="toolbar-group">
-            <button class="toolbar-btn" onclick="formatText('link')" title="链接 (Ctrl+K)">
-                <i class="fas fa-link"></i>
-            </button>
-            <button class="toolbar-btn" onclick="formatText('image')" title="图片">
-                <i class="fas fa-image"></i>
-            </button>
-            <button class="toolbar-btn" onclick="formatText('code')" title="代码">
-                <i class="fas fa-code"></i>
-            </button>
-        </div>
-
-        <div class="toolbar-group">
-            <button class="toolbar-btn" onclick="formatText('ul')" title="无序列表">
-                <i class="fas fa-list-ul"></i>
-            </button>
-            <button class="toolbar-btn" onclick="formatText('ol')" title="有序列表">
-                <i class="fas fa-list-ol"></i>
-            </button>
-            <button class="toolbar-btn" onclick="formatText('quote')" title="引用">
-                <i class="fas fa-quote-left"></i>
-            </button>
-        </div>
-
-        <div class="toolbar-group">
-            <button class="toolbar-btn" id="previewToggle" onclick="togglePreview()" title="切换预览">
-                <i class="fas fa-eye"></i>
-            </button>
-            <button class="toolbar-btn" onclick="insertFullscreen()" title="全屏">
-                <i class="fas fa-expand"></i>
-            </button>
-        </div>
-    </div>
-
-    <div class="editor-content">
-        <div class="editor-pane">
-            <textarea id="markdownInput" class="editor-input" placeholder="开始使用Markdown编写...">{{ page.content or '' }}</textarea>
-        </div>
-        <div class="editor-preview" id="previewPane" style="display: none;">
-            <div id="previewContent"></div>
+        <div class="editor-content">
+            <div class="editor-pane">
+                <textarea id="markdownInput" class="editor-input" placeholder="开始使用Markdown编写...">{{ page.content or '' }}</textarea>
+            </div>
+            <div class="editor-pane editor-preview" id="previewPane" style="display: none;">
+                <div class="preview-content" id="previewContent">
+                    <p class="text-muted">预览将在此处显示...</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -312,6 +309,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 let editor = null;
 let isPreviewMode = false;
@@ -327,44 +325,163 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize inline file upload functionality
     initializeInlineFileUpload();
 
-    // Initialize CodeMirror if we have the markdown input
+    // Initialize simple editor (like create page)
     const markdownInput = document.getElementById('markdownInput');
+    const previewContent = document.getElementById('previewContent');
+    const previewPane = document.getElementById('previewPane');
+    let isPreviewMode = false;
+
     if (markdownInput) {
-        editor = CodeMirror.fromTextArea(markdownInput, {
-            mode: 'markdown',
-            theme: 'default',
-            lineNumbers: true,
-            lineWrapping: true,
-            autoCloseBrackets: true,
-            matchBrackets: true,
-            indentUnit: 4,
-            tabSize: 4,
-            indentWithTabs: false
+        // Preview functionality
+        function updatePreview() {
+            const content = markdownInput.value;
+            if (content.trim()) {
+                // Use the same marked library as create page
+                if (typeof marked !== 'undefined') {
+                    previewContent.innerHTML = marked.parse(content);
+                } else {
+                    previewContent.innerHTML = '<p class="text-muted">Markdown parser not loaded</p>';
+                }
+            } else {
+                previewContent.innerHTML = '<p class="text-muted">预览将在此处显示...</p>';
+            }
+        }
+
+        // Auto-preview as user types
+        let previewTimeout;
+        markdownInput.addEventListener('input', function() {
+            clearTimeout(previewTimeout);
+            previewTimeout = setTimeout(updatePreview, 300);
+
+            // Auto-save functionality
+            clearTimeout(window.autoSaveTimer);
+            window.autoSaveTimer = setTimeout(autoSave, 2000);
         });
 
-        // Auto-save functionality
-        let autoSaveTimer;
-        editor.on('change', function() {
-            clearTimeout(autoSaveTimer);
-            autoSaveTimer = setTimeout(autoSave, 2000);
+        // Initial preview when editor is shown
+        markdownInput.addEventListener('focus', function() {
+            setTimeout(updatePreview, 100);
+        });
+
+        // Toolbar functionality
+        const toolbarButtons = document.querySelectorAll('.editor-toolbar .btn-wiki[data-command]');
+        toolbarButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const command = this.dataset.command;
+                handleCommand(command);
+            });
+        });
+
+        function handleCommand(command) {
+            switch(command) {
+                case 'bold':
+                    insertText('**', '**', '粗体文本');
+                    break;
+                case 'italic':
+                    insertText('*', '*', '斜体文本');
+                    break;
+                case 'heading':
+                    insertText('## ', '', '标题');
+                    break;
+                case 'link':
+                    insertText('[', '](url)', '链接文本');
+                    break;
+                case 'image':
+                    insertText('![', '](image-url)', '图片描述');
+                    break;
+                case 'code':
+                    insertText('`', '`', '代码');
+                    break;
+                case 'ul':
+                    insertText('- ', '', '列表项');
+                    break;
+                case 'ol':
+                    insertText('1. ', '', '编号项');
+                    break;
+                case 'quote':
+                    insertText('> ', '', '引用');
+                    break;
+                case 'preview':
+                    togglePreview();
+                    break;
+                case 'fullscreen':
+                    toggleFullscreen();
+                    break;
+            }
+        }
+
+        function insertText(before, after, placeholder) {
+            const start = markdownInput.selectionStart;
+            const end = markdownInput.selectionEnd;
+            const selectedText = markdownInput.value.substring(start, end);
+            const text = selectedText || placeholder;
+            const newText = before + text + after;
+
+            markdownInput.value = markdownInput.value.substring(0, start) + newText + markdownInput.value.substring(end);
+            markdownInput.selectionStart = start + before.length;
+            markdownInput.selectionEnd = start + before.length + text.length;
+            markdownInput.focus();
 
             if (isPreviewMode) {
                 updatePreview();
             }
-        });
+        }
+
+        function togglePreview() {
+            isPreviewMode = !isPreviewMode;
+            previewPane.style.display = isPreviewMode ? 'block' : 'none';
+            if (isPreviewMode) {
+                updatePreview();
+            }
+        }
+
+        function toggleFullscreen() {
+            const editorContainer = document.getElementById('markdownEditor');
+            editorContainer.classList.toggle('fullscreen');
+        }
 
         // Keyboard shortcuts
-        editor.setOption('extraKeys', {
-            'Ctrl-B': function() { formatText('bold'); },
-            'Cmd-B': function() { formatText('bold'); },
-            'Ctrl-I': function() { formatText('italic'); },
-            'Cmd-I': function() { formatText('italic'); },
-            'Ctrl-K': function() { formatText('link'); },
-            'Cmd-K': function() { formatText('link'); },
-            'Ctrl-S': function() { savePage(); },
-            'Cmd-S': function() { savePage(); },
-            'Escape': function() { cancelEdit(); }
+        markdownInput.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'b':
+                        e.preventDefault();
+                        insertText('**', '**', '粗体文本');
+                        break;
+                    case 'i':
+                        e.preventDefault();
+                        insertText('*', '*', '斜体文本');
+                        break;
+                    case 'k':
+                        e.preventDefault();
+                        insertText('[', '](url)', '链接文本');
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        savePage();
+                        break;
+                }
+            } else if (e.key === 'Escape') {
+                cancelEdit();
+            }
         });
+
+        // Setup global variables for compatibility
+        window.editor = {
+            getValue: function() {
+                return markdownInput.value;
+            },
+            setValue: function(value) {
+                markdownInput.value = value;
+                if (isPreviewMode) {
+                    updatePreview();
+                }
+            },
+            focus: function() {
+                markdownInput.focus();
+            }
+        };
     }
 });
 
@@ -372,7 +489,8 @@ function enableEditMode() {
     if (window.wikiState.isEditing) return;
 
     window.wikiState.isEditing = true;
-    window.wikiState.originalContent = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+    const markdownInput = document.getElementById('markdownInput');
+    window.wikiState.originalContent = markdownInput ? markdownInput.value : '';
 
     // Hide display, show editor
     document.getElementById('contentDisplay').style.display = 'none';
@@ -385,10 +503,14 @@ function enableEditMode() {
     editBtn.innerHTML = '<i class="fas fa-times me-2"></i>取消';
     editBtn.onclick = cancelEdit;
 
-    // Focus editor
-    if (editor) {
-        editor.refresh();
-        editor.focus();
+    // Focus editor and trigger preview
+    if (markdownInput) {
+        markdownInput.focus();
+        // Trigger initial preview after a short delay
+        setTimeout(() => {
+            const event = new Event('input');
+            markdownInput.dispatchEvent(event);
+        }, 100);
     }
 
     // Add editing class to body
@@ -424,7 +546,8 @@ function cancelEdit() {
 }
 
 function savePage() {
-    const content = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+    const markdownInput = document.getElementById('markdownInput');
+    const content = markdownInput ? markdownInput.value : '';
     const changeSummary = document.getElementById('changeSummary').value;
 
     // Prepare uploaded files data
@@ -482,7 +605,8 @@ function savePage() {
 }
 
 function saveDraft() {
-    const content = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+    const markdownInput = document.getElementById('markdownInput');
+    const content = markdownInput ? markdownInput.value : '';
 
     // Prepare uploaded files data
     const uploadedFiles = uploadedInlineFiles.map(file => ({
@@ -589,7 +713,8 @@ function togglePreview() {
 }
 
 function updatePreview() {
-    const content = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+    const markdownInput = document.getElementById('markdownInput');
+    const content = markdownInput ? markdownInput.value : '';
     const previewContent = document.getElementById('previewContent');
     previewContent.innerHTML = marked.parse(content);
 }
@@ -602,7 +727,8 @@ function insertFullscreen() {
 }
 
 function autoSave() {
-    const content = editor ? editor.getValue() : document.getElementById('markdownInput').value;
+    const markdownInput = document.getElementById('markdownInput');
+    const content = markdownInput ? markdownInput.value : '';
     localStorage.setItem('page_draft_{{ page.id }}', JSON.stringify({
         content: content,
         timestamp: new Date().toISOString()
