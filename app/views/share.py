@@ -93,6 +93,10 @@ def upload_file():
             'share_id': s3_share.id,
             'share_code': s3_share.share_code,
             'share_url': s3_share.get_share_url(),
+            's3_url': s3_share.s3_url,
+            'original_filename': s3_share.original_filename,
+            'file_size': s3_share.file_size,
+            'file_type': s3_share.file_type,
             'message': '文件上传成功'
         })
 

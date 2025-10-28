@@ -337,13 +337,34 @@ function uploadFile(file, index) {
             progressBar.style.width = '100%';
             progressBar.classList.add('bg-success');
 
+            // Add new share to the current shares list
+            const newShare = {
+                id: data.share_id,
+                share_code: data.share_code,
+                original_filename: data.original_filename,
+                s3_url: data.s3_url,
+                file_size: data.file_size,
+                file_type: data.file_type,
+                download_count: 0,
+                created_at: new Date().toISOString(),
+                is_active: true,
+                is_expired: false,
+                is_download_limit_reached: false
+            };
+
+            // Add to currentShares array
+            currentShares.unshift(newShare);
+
+            // Update the UI without full page reload
+            addShareToTable(newShare);
+
             setTimeout(() => {
                 fileItem.innerHTML = `
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
                             <i class="fas fa-check-circle text-success me-2"></i>
                             <div>
-                                <div class="fw-bold">${file.name}</div>
+                                <div class="fw-bold">${data.original_filename}</div>
                                 <small class="text-muted">上传成功</small>
                             </div>
                         </div>
@@ -356,7 +377,7 @@ function uploadFile(file, index) {
                 `;
             }, 1000);
 
-            showToast(`文件 ${file.name} 上传成功`, 'success');
+            showToast(`文件 ${data.original_filename} 上传成功`, 'success');
         } else {
             progressBar.classList.add('bg-danger');
             showToast(`文件 ${file.name} 上传失败: ${data.message}`, 'error');
@@ -419,7 +440,7 @@ function showShareDetails(shareId) {
 
 function deleteShare(shareId) {
     if (confirm('确定要删除这个分享吗？此操作无法撤销。')) {
-        fetch(`/api/s3/share/${shareId}`, {
+        fetch(`/share/api/s3/share/${shareId}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -576,4 +597,114 @@ function formatFileSize(bytes) {
     text-overflow: ellipsis;
 }
 </style>
+
+<script>
+function addShareToTable(share) {
+    const tbody = document.querySelector('#sharesTable tbody');
+    if (!tbody) return;
+
+    // Get file icon based on type
+    function getFileIcon(fileType) {
+        if (fileType.startsWith('image/')) return 'fas fa-image text-primary';
+        if (fileType.startsWith('video/')) return 'fas fa-video text-danger';
+        if (fileType.startsWith('audio/')) return 'fas fa-music text-success';
+        if (fileType.includes('pdf')) return 'fas fa-file-pdf text-danger';
+        if (fileType.includes('word') || fileType.includes('document')) return 'fas fa-file-word text-primary';
+        if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fas fa-file-excel text-success';
+        if (fileType.includes('powerpoint') || fileType.includes('presentation')) return 'fas fa-file-powerpoint text-warning';
+        if (fileType.includes('zip') || fileType.includes('rar')) return 'fas fa-file-archive text-secondary';
+        if (fileType.includes('text')) return 'fas fa-file-alt text-info';
+        return 'fas fa-file text-muted';
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    const row = document.createElement('tr');
+    row.dataset.shareId = share.id;
+    row.innerHTML = `
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="${getFileIcon(share.file_type)} fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1 text-truncate" style="max-width: 200px;" title="${share.original_filename}">
+                        ${share.original_filename}
+                    </h6>
+                    <small class="text-muted">${share.file_type.split('/')[1].toUpperCase()}</small>
+                </div>
+            </div>
+        </td>
+        <td>${formatFileSize(share.file_size)}</td>
+        <td>
+            <div class="input-group input-group-sm" style="max-width: 300px;">
+                <input type="text" class="form-control" value="${window.location.origin}/share/${share.share_code}" readonly id="shareUrl-${share.id}">
+                <button class="btn btn-outline-secondary" type="button" onclick="copyShareUrl('${share.id}')">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        </td>
+        <td>
+            <span class="badge bg-success">正常</span>
+        </td>
+        <td>0</td>
+        <td>${formatDate(share.created_at)}</td>
+        <td>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-primary" onclick="showShareDetails(${share.id})" title="查看详情">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-outline-info" onclick="downloadFile('${share.s3_url}', '${share.original_filename}')" title="下载">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="btn btn-outline-warning" onclick="editShare(${share.id})" title="编辑">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-outline-danger" onclick="deleteShare(${share.id})" title="删除">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </td>
+    `;
+
+    // Add to top of table
+    tbody.insertBefore(row, tbody.firstChild);
+
+    // Update counters
+    const totalSharesElement = document.getElementById('totalShares');
+    if (totalSharesElement) {
+        const currentCount = parseInt(totalSharesElement.textContent);
+        totalSharesElement.textContent = currentCount + 1;
+    }
+
+    // Update total downloads
+    const totalDownloadsElement = document.getElementById('totalDownloads');
+    if (totalDownloadsElement) {
+        totalDownloadsElement.textContent = parseInt(totalDownloadsElement.textContent);
+    }
+
+    // Hide empty state if it exists
+    const emptyState = tbody.querySelector('.text-center.py-5');
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}

@@ -1,0 +1,220 @@
+<!-- Simple Image Upload for Existing Editors -->
+<script>
+// Simple Image Upload Module - Works with existing editor UI
+window.SimpleImageUpload = {
+    uploadConfig: {
+        maxSize: 10 * 1024 * 1024, // 10MB
+        allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
+        uploadUrl: '/share/api/s3/image-upload'
+    },
+
+    init: function() {
+        this.setupEventListeners();
+        console.log('Simple Image Upload initialized');
+    },
+
+    setupEventListeners: function() {
+        // Setup paste events for textareas
+        document.addEventListener('paste', this.handlePaste.bind(this));
+
+        // Setup drag and drop for textareas
+        const textareas = document.querySelectorAll('textarea');
+        textareas.forEach(textarea => {
+            this.setupDragAndDrop(textarea);
+        });
+
+        // Setup contenteditable divs
+        const editableDivs = document.querySelectorAll('[contenteditable="true"]');
+        editableDivs.forEach(div => {
+            this.setupDragAndDrop(div);
+        });
+    },
+
+    handlePaste: function(e) {
+        const target = e.target;
+        if (target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+            const clipboardData = e.clipboardData || e.originalEvent.clipboardData;
+            if (!clipboardData) return;
+
+            const items = clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    this.uploadImage(file, target);
+                    return;
+                }
+            }
+        }
+    },
+
+    setupDragAndDrop: function(element) {
+        const element = element;
+
+        element.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            element.classList.add('drag-over');
+        });
+
+        element.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            element.classList.remove('drag-over');
+        });
+
+        element.addEventListener('drop', (e) => {
+            e.preventDefault();
+            element.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            Array.from(files).forEach(file => {
+                if (this.uploadConfig.allowedTypes.includes(file.type)) {
+                    this.uploadImage(file, element);
+                } else {
+                    this.showToast('只支持图片文件上传', 'error');
+                }
+            });
+        });
+    },
+
+    uploadImage: function(file, targetElement) {
+        if (file.size > this.uploadConfig.maxSize) {
+            this.showToast('图片文件过大，最大支持10MB', 'error');
+            return;
+        }
+
+        // Show loading indicator
+        const loadingText = `![上传中...](loading)`;
+        this.insertTextAtCursor(targetElement, loadingText);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        fetch(this.uploadConfig.uploadUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Replace loading text with actual image markdown
+                const imageMarkdown = `![${data.original_filename}](${data.url})`;
+                this.replaceText(targetElement, loadingText, imageMarkdown);
+                this.showToast('图片上传成功', 'success');
+            } else {
+                this.replaceText(targetElement, loadingText, '');
+                this.showToast('图片上传失败: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            this.replaceText(targetElement, loadingText, '');
+            this.showToast('图片上传失败', 'error');
+            console.error('Upload error:', error);
+        });
+    },
+
+    insertTextAtCursor: function(element, text) {
+        if (element.tagName === 'TEXTAREA') {
+            const start = element.selectionStart;
+            const end = element.selectionEnd;
+            const value = element.value;
+
+            element.value = value.substring(0, start) + text + value.substring(end);
+            element.selectionStart = start + text.length;
+            element.selectionEnd = start + text.length;
+            element.focus();
+
+            // Trigger change event for listeners
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        } else if (element.contentEditable === 'true') {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const textNode = document.createTextNode(text);
+                range.insertNode(textNode);
+                range.collapse(false);
+                range.selectNodeContents(textNode);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } else {
+                element.appendChild(document.createTextNode(text));
+            }
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    },
+
+    replaceText: function(element, oldText, newText) {
+        if (element.tagName === 'TEXTAREA') {
+            const value = element.value;
+            const newValue = value.replace(oldText, newText);
+            element.value = newValue;
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        } else if (element.contentEditable === 'true') {
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let textNode;
+            while (textNode = walker.nextNode()) {
+                if (textNode.nodeValue.includes(oldText)) {
+                    textNode.nodeValue = textNode.nodeValue.replace(oldText, newText);
+                    break;
+                }
+            }
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    },
+
+    showToast: function(message, type = 'info') {
+        // Create toast notification
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
+};
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    SimpleImageUpload.init();
+});
+</script>
+
+<style>
+/* Drag and drop styles */
+textarea.drag-over,
+[contenteditable="true"].drag-over {
+    border: 2px dashed var(--primary-color, #0c66e4) !important;
+    background-color: rgba(12, 102, 228, 0.05) !important;
+}
+
+/* Upload loading indicator */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.upload-loading {
+    animation: pulse 1.5s ease-in-out infinite;
+    font-style: italic;
+    color: var(--text-secondary, #6b778c);
+}
+</style>
