@@ -148,6 +148,44 @@ class User(UserMixin, db.Model):
         if self.email is not None and self.avatar_hash is None:
             self.avatar_hash = self.gravatar_hash()
 
+    @staticmethod
+    def create_from_oauth(provider_user_info, provider, auto_confirm=True):
+        """从OAuth信息创建用户"""
+        import secrets
+        import string
+
+        # 生成随机密码
+        password_chars = string.ascii_letters + string.digits + string.punctuation
+        random_password = ''.join(secrets.choice(password_chars) for _ in range(16))
+
+        # 从OAuth信息中提取用户数据
+        email = provider_user_info.get('email', '')
+        username = provider_user_info.get('username') or provider_user_info.get('login') or email.split('@')[0]
+        name = provider_user_info.get('name', username)
+        avatar_url = provider_user_info.get('avatar_url', '')
+
+        # 创建用户
+        user = User(
+            email=email,
+            username=username,
+            password=random_password,
+            name=name,
+            confirmed=auto_confirm,  # OAuth用户自动确认
+            is_active=True
+        )
+
+        # 设置默认角色
+        if provider and provider.default_role:
+            role = Role.query.filter_by(name=provider.default_role).first()
+            if role:
+                user.role = role
+
+        # 设置头像
+        if avatar_url:
+            user.avatar = avatar_url
+
+        return user
+
     def __repr__(self):
         return f'<User {self.username}>'
 
@@ -699,6 +737,91 @@ class User(UserMixin, db.Model):
                 return None
 
         return None
+
+    # OAuth相关方法
+    def has_oauth_account(self, provider_name):
+        """检查用户是否绑定了指定提供者的OAuth账户"""
+        from app.models.oauth import OAuthAccount, OAuthProvider
+        return self.oauth_accounts.join(OAuthProvider).filter(
+            OAuthProvider.name == provider_name,
+            OAuthAccount.is_active == True
+        ).first() is not None
+
+    def get_oauth_account(self, provider_name):
+        """获取用户绑定的OAuth账户"""
+        from app.models.oauth import OAuthAccount, OAuthProvider
+        return self.oauth_accounts.join(OAuthProvider).filter(
+            OAuthProvider.name == provider_name,
+            OAuthAccount.is_active == True
+        ).first()
+
+    def is_oauth_user(self):
+        """检查用户是否通过OAuth创建"""
+        return self.oauth_accounts.count() > 0
+
+    def should_skip_2fa(self):
+        """检查用户是否应该跳过2FA"""
+        from app.models.oauth import OAuthAccount, OAuthProvider
+        oauth_account = self.oauth_accounts.join(OAuthProvider).filter(
+            OAuthAccount.is_active == True,
+            OAuthProvider.skip_2fa == True
+        ).first()
+        return oauth_account is not None
+
+    def get_oauth_login_info(self):
+        """获取用户的OAuth登录信息"""
+        from app.models.oauth import OAuthAccount, OAuthProvider
+        accounts = []
+        for oauth_account in self.oauth_accounts.filter_by(is_active=True).all():
+            accounts.append({
+                'provider': oauth_account.provider.name,
+                'provider_display_name': oauth_account.provider.display_name,
+                'provider_user_id': oauth_account.provider_user_id,
+                'last_login_at': oauth_account.last_login_at,
+                'login_count': oauth_account.login_count
+            })
+        return accounts
+
+    def link_oauth_account(self, provider, provider_user_info, access_token=None, refresh_token=None):
+        """绑定OAuth账户到当前用户"""
+        from app.models.oauth import OAuthAccount
+
+        # 检查是否已经绑定
+        existing = self.oauth_accounts.filter_by(provider_id=provider.id).first()
+        if existing:
+            raise ValueError(f"已经绑定了{provider.display_name}账户")
+
+        # 创建OAuth账户绑定
+        oauth_account = OAuthAccount(
+            user_id=self.id,
+            provider_id=provider.id,
+            provider_user_id=provider_user_info[provider.user_id_field],
+            access_token=access_token,
+            refresh_token=refresh_token,
+            email=provider_user_info.get('email', self.email),
+            username=provider_user_info.get('username') or provider_user_info.get('login'),
+            name=provider_user_info.get('name', self.name),
+            avatar_url=provider_user_info.get('avatar_url'),
+            is_active=True
+        )
+
+        db.session.add(oauth_account)
+        return oauth_account
+
+    def unlink_oauth_account(self, provider_name):
+        """解绑OAuth账户"""
+        from app.models.oauth import OAuthAccount, OAuthProvider
+
+        oauth_account = self.oauth_accounts.join(OAuthProvider).filter(
+            OAuthProvider.name == provider_name,
+            OAuthAccount.is_active == True
+        ).first()
+
+        if oauth_account:
+            oauth_account.is_active = False
+            db.session.add(oauth_account)
+            return True
+        return False
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):

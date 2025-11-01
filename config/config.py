@@ -45,6 +45,28 @@ class Config:
     FASTGPT_APP_ID = os.environ.get('FASTGPT_APP_ID', 'default')
     FASTGPT_TIMEOUT = int(os.environ.get('FASTGPT_TIMEOUT', '60'))  # seconds
 
+    # OAuth settings
+    @staticmethod
+    def get_oauth_config():
+        """获取OAuth配置"""
+        return {
+            'ukey': {
+                'client_id': os.environ.get('UKEY_CLIENT_ID'),
+                'client_secret': os.environ.get('UKEY_CLIENT_SECRET'),
+                'issuer': os.environ.get('UKEY_ISSUER', 'https://auth.ukey.pw/oidc'),
+                'redirect_uri': os.environ.get('UKEY_REDIRECT_URI'),
+                'scope': os.environ.get('UKEY_SCOPE', 'openid email profile'),
+                'auto_register': os.environ.get('UKEY_AUTO_REGISTER', 'true').lower() == 'true',
+                'skip_2fa': os.environ.get('UKEY_SKIP_2FA', 'true').lower() == 'true',
+                'default_role': os.environ.get('UKEY_DEFAULT_ROLE', 'Viewer')
+            }
+        }
+
+    @staticmethod
+    def get_server_name():
+        """获取服务器名称，优先使用环境变量"""
+        return os.environ.get('SERVER_NAME', '127.0.0.1')
+
     # Storage settings
     @staticmethod
     def get_storage_config():
@@ -87,6 +109,11 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'sqlite:///enterprise_wiki_dev.db'
     SESSION_COOKIE_SECURE = False
 
+    # 开发环境使用生产域名配置（用于OAuth测试）
+    SERVER_NAME = os.environ.get('SERVER_NAME', 'wiki.ukey.pw')
+    PREFERRED_URL_SCHEME = 'https'
+    FORCE_HTTPS = True
+
     # QQ Mail SMTP settings for development
     MAIL_SERVER = 'smtp.qq.com'
     MAIL_PORT = 587
@@ -104,9 +131,25 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///enterprise_wiki.db'
 
+    # Production environment settings
+    DEBUG = False
+    SERVER_NAME = os.environ.get('SERVER_NAME', 'wiki.ukey.pw')
+    PREFERRED_URL_SCHEME = 'https'
+    FORCE_HTTPS = True
+
+    # Enhanced security for production
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Strict'
+
     @classmethod
     def init_app(cls, app):
         Config.init_app(app)
+
+        # Force HTTPS in production
+        if app.config.get('FORCE_HTTPS'):
+            app.config['SESSION_COOKIE_SECURE'] = True
+            app.config['PREFERRED_URL_SCHEME'] = 'https'
 
 config = {
     'development': DevelopmentConfig,

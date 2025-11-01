@@ -30,6 +30,10 @@ def create_app(config_name='default'):
     mail.init_app(app)
     csrf.init_app(app)
 
+    # Initialize OAuth service
+    from app.services.oauth_service import oauth_service
+    oauth_service.init_app(app)
+
     # Configure login manager
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
@@ -40,6 +44,17 @@ def create_app(config_name='default'):
     def inject_permissions():
         from app.models.user import Permission
         return dict(Permission=Permission)
+
+    # Add OAuth context processor
+    @app.context_processor
+    def inject_oauth_providers():
+        def get_oauth_providers():
+            try:
+                from app.models.oauth import OAuthProvider
+                return OAuthProvider.query.filter_by(is_active=True).all()
+            except:
+                return []
+        return dict(get_oauth_providers=get_oauth_providers)
 
     # Custom filters
     @app.template_filter('timeago')
@@ -126,6 +141,9 @@ def create_app(config_name='default'):
     from app.views.share import share as share_blueprint
     app.register_blueprint(share_blueprint, url_prefix='/share')
 
+    from app.views.oauth import oauth as oauth_blueprint
+    app.register_blueprint(oauth_blueprint, url_prefix='/oauth')
+
     # CSRF exemptions for API endpoints
     @csrf.exempt
     def csrf_exempt_register():
@@ -177,5 +195,18 @@ def create_app(config_name='default'):
                 print(f"Processed {notifications_count} watch notifications")
         except Exception as e:
             print(f"Error in teardown watch event processing: {e}")
+
+    # Register CLI commands
+    from app.cli import register_commands
+    register_commands(app)
+
+    # Initialize OAuth providers after app is fully configured
+    with app.app_context():
+        try:
+            from app.services.oauth_service import oauth_service
+            oauth_service._register_providers()
+            app.logger.info("OAuth providers initialized during app startup")
+        except Exception as e:
+            app.logger.error(f"Failed to initialize OAuth providers: {e}")
 
     return app

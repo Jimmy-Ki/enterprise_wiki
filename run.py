@@ -35,4 +35,12 @@ def deploy():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
+
+    # 根据环境配置服务器名称
+    if app.config.get('DEBUG') and not os.environ.get('SERVER_NAME'):
+        # 开发环境默认使用生产域名（用于OAuth测试）
+        app.config['SERVER_NAME'] = 'wiki.ukey.pw'
+    else:
+        app.config['SERVER_NAME'] = os.environ.get('SERVER_NAME', '127.0.0.1')
+
     app.run(debug=True, host='0.0.0.0', port=port)

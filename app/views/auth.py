@@ -65,18 +65,22 @@ def login():
                 db.session.add(user_session)
                 db.session.commit()
 
-                # Check if user has 2FA enabled
-                if user.two_factor_enabled:
+                # Check if user should skip 2FA (SSO users)
+                should_skip_2fa = user.should_skip_2fa()
+
+                # Check if user has 2FA enabled and should not skip
+                if user.two_factor_enabled and not should_skip_2fa:
                     # Store user info in session for 2FA verification
                     session['2fa_user_id'] = user.id
                     session['2fa_next'] = request.args.get('next') or url_for('wiki.index')
                     session['2fa_remember'] = form.remember_me.data
+                    session['sso_login'] = False  # 标记为传统登录
 
                     # Redirect to 2FA verification page
                     flash('请输入双因素认证码', 'info')
                     return redirect(url_for('two_factor.verify'))
                 else:
-                    # Login user normally if 2FA is not enabled
+                    # Login user normally if 2FA is not enabled or should be skipped
                     login_user(user, form.remember_me.data)
                     next_page = request.args.get('next')
                     if next_page is None or not next_page.startswith('/'):

@@ -8,9 +8,10 @@ from .organization import (
     AccessLevel, OrganizationService
 )
 from .share import S3Share
+from .oauth import OAuthProvider, OAuthAccount, SSOSession
 
 __all__ = ['User', 'Role', 'Permission', 'UserSession', 'Page', 'Category',
            'Attachment', 'PageVersion', 'SearchIndex', 'Watch', 'WatchNotification',
            'WatchTargetType', 'WatchEventType', 'Comment', 'CommentMention', 'CommentTargetType',
            'Department', 'Project', 'Workspace', 'UserDepartment', 'UserProject', 'UserWorkspace',
-           'AccessLevel', 'OrganizationService', 'S3Share']
+           'AccessLevel', 'OrganizationService', 'S3Share', 'OAuthProvider', 'OAuthAccount', 'SSOSession']

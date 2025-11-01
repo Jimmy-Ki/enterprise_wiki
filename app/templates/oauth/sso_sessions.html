@@ -1,0 +1,126 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}SSO会话管理 - 企业知识库{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-clock me-2"></i>
+                    SSO会话管理
+                </h2>
+                <a href="{{ url_for('user.profile') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    返回个人资料
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        活跃的SSO会话
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>会话ID</th>
+                                    <th>提供者</th>
+                                    <th>IP地址</th>
+                                    <th>设备信息</th>
+                                    <th>创建时间</th>
+                                    <th>最后访问</th>
+                                    <th>过期时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in sessions %}
+                                <tr>
+                                    <td>
+                                        <code>{{ session.session_id }}</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ session.provider }}</span>
+                                    </td>
+                                    <td>{{ session.ip_address or 'N/A' }}</td>
+                                    <td>
+                                        <small class="text-muted" title="{{ session.user_agent }}">
+                                            {{ session.user_agent[:50] }}{% if session.user_agent|length > 50 %}...{% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span title="{{ session.created_at }}">
+                                            {{ session.created_at | timeago }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span title="{{ session.last_accessed_at }}">
+                                            {{ session.last_accessed_at | timeago }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span title="{{ session.expires_at }}">
+                                            {{ session.expires_at | timeago }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <form action="{{ url_for('oauth.revoke_session', session_id=session.id) }}"
+                                              method="POST"
+                                              onsubmit="return confirm('确定要撤销这个会话吗？')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-times me-1"></i>
+                                                撤销
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">没有活跃的SSO会话</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 安全提示 -->
+            <div class="card mt-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        安全提示
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>定期检查您的SSO会话列表，撤销不认识的会话</li>
+                        <li>如果发现异常登录活动，请立即撤销相关会话并修改密码</li>
+                        <li>在公共设备上使用后，记得及时退出登录</li>
+                        <li>SSO会话有自动过期时间，但建议定期手动清理</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 可以添加会话自动刷新功能
+    console.log('SSO会话管理页面已加载');
+});
+</script>
+{% endblock %}

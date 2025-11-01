@@ -1,0 +1,166 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}OAuth提供者管理 - 企业知识库{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-cogs me-2"></i>
+                    OAuth提供者管理
+                </h2>
+                <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    返回管理面板
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-plug me-2"></i>
+                        OAuth提供者列表
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if providers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>提供者</th>
+                                    <th>显示名称</th>
+                                    <th>状态</th>
+                                    <th>自动注册</th>
+                                    <th>跳过2FA</th>
+                                    <th>默认角色</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for provider in providers %}
+                                <tr>
+                                    <td>
+                                        <code>{{ provider.name }}</code>
+                                    </td>
+                                    <td>{{ provider.display_name }}</td>
+                                    <td>
+                                        {% if provider.is_active %}
+                                            <span class="badge bg-success">启用</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">禁用</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if provider.auto_register %}
+                                            <span class="badge bg-info">是</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark">否</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if provider.skip_2fa %}
+                                            <span class="badge bg-warning">跳过</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">要求</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ provider.default_role }}</span>
+                                    </td>
+                                    <td>
+                                        <small title="{{ provider.created_at }}">
+                                            {{ provider.created_at | timeago }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('oauth.toggle_provider', provider_id=provider.id) }}"
+                                               class="btn btn-sm {% if provider.is_active %}btn-warning{% else %}btn-success{% endif %}">
+                                                {% if provider.is_active %}
+                                                    <i class="fas fa-pause me-1"></i>禁用
+                                                {% else %}
+                                                    <i class="fas fa-play me-1"></i>启用
+                                                {% endif %}
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-plug fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">没有配置OAuth提供者</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 配置说明 -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        配置说明
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>回调地址配置</h6>
+                            <p>在您的OAuth提供者中配置以下回调地址：</p>
+                            {% for provider in providers %}
+                            <div class="mb-2">
+                                <code>{{ request.host_url.rstrip('/') }}/oauth/callback/{{ provider.name }}</code>
+                                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyToClipboard(this)">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>环境变量配置</h6>
+                            <p>在环境变量中配置以下参数：</p>
+                            <pre class="bg-light p-2 rounded">
+UKEY_CLIENT_ID=13iq0tuehs65mjw5wg4a3
+UKEY_CLIENT_SECRET=cHIRllg0jOtNHTuWC7q8RNeicTP8trCa
+UKEY_ISSUER=https://auth.ukey.pw/oidc
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyToClipboard(button) {
+    const codeElement = button.previousElementSibling;
+    const text = codeElement.textContent;
+
+    navigator.clipboard.writeText(text).then(function() {
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i> 已复制';
+        button.classList.add('btn-success');
+        button.classList.remove('btn-outline-secondary');
+
+        setTimeout(function() {
+            button.innerHTML = originalHTML;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-secondary');
+        }, 2000);
+    }).catch(function(err) {
+        console.error('复制失败:', err);
+    });
+}
+</script>
+{% endblock %}

@@ -527,6 +527,11 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="oauth-tab" data-bs-toggle="tab" data-bs-target="#oauth" type="button" role="tab">
+                    <i class="fas fa-plug"></i>OAuth账户
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="privacy-tab" data-bs-toggle="tab" data-bs-target="#privacy" type="button" role="tab">
                     <i class="fas fa-shield-alt"></i>隐私与安全
                 </button>
@@ -933,6 +938,84 @@
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OAuth账户管理部分 -->
+            <div class="tab-pane fade" id="oauth" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <!-- OAuth账户管理卡片 -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-plug me-2"></i>OAuth账户管理
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-link me-2"></i>已绑定的账户</h6>
+                                        <p class="text-muted">管理您已绑定的第三方登录账户</p>
+                                        <a href="{{ url_for('oauth.manage_accounts') }}" class="btn btn-primary">
+                                            <i class="fas fa-cog me-2"></i>管理OAuth账户
+                                        </a>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-clock me-2"></i>SSO会话</h6>
+                                        <p class="text-muted">查看和管理您的单点登录会话</p>
+                                        <a href="{{ url_for('oauth.sso_sessions') }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-history me-2"></i>查看会话
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- OAuth状态信息 -->
+                                <hr class="my-4">
+                                <div class="oauth-status">
+                                    {% set oauth_accounts = current_user.oauth_accounts.filter_by(is_active=True).all() %}
+                                    {% if oauth_accounts %}
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            您已绑定 {{ oauth_accounts|length }} 个OAuth账户
+                                        </div>
+                                        <div class="row">
+                                            {% for account in oauth_accounts %}
+                                            <div class="col-md-4 mb-2">
+                                                <span class="badge bg-success">
+                                                    {% if account.provider.name == 'google' %}
+                                                        <i class="fab fa-google me-1"></i>
+                                                    {% elif account.provider.name == 'github' %}
+                                                        <i class="fab fa-github me-1"></i>
+                                                    {% elif account.provider.name == 'microsoft' %}
+                                                        <i class="fab fa-microsoft me-1"></i>
+                                                    {% endif %}
+                                                    {{ account.provider.display_name }}
+                                                </span>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            您还没有绑定任何OAuth账户
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- 安全提示 -->
+                                    <div class="alert alert-warning mt-3">
+                                        <h6><i class="fas fa-shield-alt me-2"></i>安全提示</h6>
+                                        <ul class="mb-0">
+                                            <li>OAuth登录可以提供更便捷的登录体验</li>
+                                            <li>启用OAuth的提供者通常会跳过双因素认证</li>
+                                            <li>定期检查您的OAuth账户绑定状态</li>
+                                            <li>如发现异常，请及时解绑相关账户</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,0 +1,163 @@
+{% extends "base_confluence.html" %}
+
+{% block title %}OAuth账户管理 - 企业知识库{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-plug me-2"></i>
+                    OAuth账户管理
+                </h2>
+                <a href="{{ url_for('user.profile') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    返回个人资料
+                </a>
+            </div>
+
+            <!-- 已绑定的OAuth账户 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-link me-2"></i>
+                        已绑定的账户
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if oauth_accounts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>提供者</th>
+                                    <th>用户信息</th>
+                                    <th>最后登录</th>
+                                    <th>登录次数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for account in oauth_accounts %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if account.provider == 'google' %}
+                                                <i class="fab fa-google fa-lg me-2" style="color: #4285f4;"></i>
+                                            {% elif account.provider == 'github' %}
+                                                <i class="fab fa-github fa-lg me-2" style="color: #333;"></i>
+                                            {% elif account.provider == 'microsoft' %}
+                                                <i class="fab fa-microsoft fa-lg me-2" style="color: #00a1f1;"></i>
+                                            {% elif account.provider == 'ukey' %}
+                                                <i class="fas fa-key fa-lg me-2" style="color: #ff6b35;"></i>
+                                            {% else %}
+                                                <i class="fas fa-sign-in-alt fa-lg me-2 text-primary"></i>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ account.provider_display_name }}</strong><br>
+                                                <small class="text-muted">ID: {{ account.provider_user_id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if account.avatar_url %}
+                                            <img src="{{ account.avatar_url }}" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ account.name or 'N/A' }}</strong><br>
+                                                <small class="text-muted">{{ account.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if account.last_login_at %}
+                                            <span title="{{ account.last_login_at }}">
+                                                {{ account.last_login_at | timeago }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">从未登录</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ account.login_count }}</span>
+                                    </td>
+                                    <td>
+                                        <form action="{{ url_for('oauth.unlink_account', provider_name=account.provider) }}"
+                                              method="POST"
+                                              onsubmit="return confirm('确定要解绑 {{ account.provider_display_name }} 账户吗？')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-unlink me-1"></i>
+                                                解绑
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-plug fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">还没有绑定任何OAuth账户</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 可用的OAuth提供者 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        绑定新账户
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% set available_providers = available_providers | selectattr('is_linked', 'equalto', false) | list %}
+                    {% if available_providers %}
+                    <div class="row">
+                        {% for provider in available_providers %}
+                        <div class="col-md-4 mb-3">
+                            <a href="{{ url_for('oauth.link_account', provider_name=provider.name) }}"
+                               class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center align-items-center p-3">
+                                {% if provider.name == 'google' %}
+                                    <i class="fab fa-google fa-2x mb-2" style="color: #4285f4;"></i>
+                                {% elif provider.name == 'github' %}
+                                    <i class="fab fa-github fa-2x mb-2" style="color: #333;"></i>
+                                {% elif provider.name == 'microsoft' %}
+                                    <i class="fab fa-microsoft fa-2x mb-2" style="color: #00a1f1;"></i>
+                                {% elif provider.name == 'ukey' %}
+                                    <i class="fas fa-key fa-2x mb-2" style="color: #ff6b35;"></i>
+                                {% else %}
+                                    <i class="fas fa-sign-in-alt fa-2x mb-2 text-primary"></i>
+                                {% endif %}
+                                <span>绑定 {{ provider.display_name }}</span>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <p class="text-muted">已绑定所有可用的OAuth账户</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 添加确认对话框
+document.addEventListener('DOMContentLoaded', function() {
+    // 这里可以添加一些额外的交互功能
+    console.log('OAuth账户管理页面已加载');
+});
+</script>
+{% endblock %}
